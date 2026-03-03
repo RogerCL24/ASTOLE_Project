@@ -59,5 +59,46 @@ graph TD
 ### Área 4: UI y Telemetría (Ingeniero 4)
 - **Input:** Narrativa Estructurada (del Ing. 2) + Respuesta de Chat (del Ing. 3).
 - **Proceso:** Visualización en Streamlit y cálculo de consumo de tokens/costes.
-- **Output:** Dashboard Operativo. Interfaz final para Jordi con métricas de eficiencia.
+- **Output:** Dashboard Operativo. Interfaz final para el analista con métricas de eficiencia.
+
+
+## 🛠️ Instalación y Configuración
+
+Todos los miembros del equipo deben seguir estos pasos para asegurar la compatibilidad:
+
+### 1. **Clonar el repositorio:**
+   ```bash
+   git clone https://github.com/RogerCL24/ASTOLE_Project.git
+   cd ASTOLE_Project
+   ```
+
+### 2. **Crear el entorno virtual**
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+### 3. **Instalar dependencias:**
+    ```bash
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    ```
+
+### 4. **Archivos no incluidos (Configuración manual)**
+
+Debido a políticas de seguridad y tamaño de archivos, los siguientes elementos **no están en el repositorio** y deben ser gestionados localmente por cada ingeniero:
+
+### 📁 Carpeta `data/`
+- **Qué hacer:** Crea la carpeta `data/` en la raíz del proyecto.
+- **Contenido:** Descarga el dataset **NF-UNSW-NB15-v3** desde el enlace compartido en el grupo y colócalo aquí. 
+- **Nota:** El Ingeniero 1 (Data) notificará si se requiere una versión específica (.csv o .parquet).
+
+### 🔑 Archivo `.env`
+- **Qué hacer:** Crea un archivo llamado `.env` en la raíz del proyecto.
+- **Contenido:** Define las variables de entorno necesarias para los agentes y APIs:
+  ```env
+  OPENAI_API_KEY=tu_clave_aqui
+  # Si usas modelos locales vía Ollama, asegúrate de que el servicio esté corriendo.
+  ```
+
+
 
