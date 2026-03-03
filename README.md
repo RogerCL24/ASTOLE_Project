@@ -61,6 +61,8 @@ graph TD
 - **Proceso:** Visualización en Streamlit y cálculo de consumo de tokens/costes.
 - **Output:** Dashboard Operativo. Interfaz final para el analista con métricas de eficiencia.
 
+> Consultar [Contrato JSON](docs/CONTRACT.md)
+
 
 ## 🛠️ Instalación y Configuración
 
@@ -87,18 +89,22 @@ Todos los miembros del equipo deben seguir estos pasos para asegurar la compatib
 
 Debido a políticas de seguridad y tamaño de archivos, los siguientes elementos **no están en el repositorio** y deben ser gestionados localmente por cada ingeniero:
 
-### 📁 Carpeta `data/`
+### Carpeta `data/`
 - **Qué hacer:** Crea la carpeta `data/` en la raíz del proyecto.
 - **Contenido:** Descarga el dataset **NF-UNSW-NB15-v3** desde el enlace compartido en el grupo y colócalo aquí. 
 - **Nota:** El Ingeniero 1 (Data) notificará si se requiere una versión específica (.csv o .parquet).
 
-### 🔑 Archivo `.env`
+### Archivo `.env`
 - **Qué hacer:** Crea un archivo llamado `.env` en la raíz del proyecto.
 - **Contenido:** Define las variables de entorno necesarias para los agentes y APIs:
   ```env
   OPENAI_API_KEY=tu_clave_aqui
   # Si usas modelos locales vía Ollama, asegúrate de que el servicio esté corriendo.
   ```
+
+
+> Consulta [Guía de Trabajo con Git](docs/GIT_WORKFLOW.md) antes de empezar
+  
 
 
 
