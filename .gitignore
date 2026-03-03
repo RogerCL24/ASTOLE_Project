@@ -1,0 +1,30 @@
+# Datos y Datasets 
+data/
+*.csv
+*.parquet
+*.json
+!docs/contract.json
+
+# Entornos Virtuales de Python
+venv/
+.venv/
+env/
+bin/
+lib/
+share/
+
+# Cache de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Variables de Entorno (Donde irán las API Keys de los 100€)
+.env
+
+# IDEs (VS Code, PyCharm)
+.vscode/
+.idea/
+
+# Logs y Temporales
+*.log
+.DS_Store
