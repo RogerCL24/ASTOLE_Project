@@ -1,9 +1,6 @@
 # ASTOLE: Narrative Intelligence for Infrastructure Critical
 Proyecto para la asignatura PAE - 2026.
 
-# ASTOLE: Narrative Intelligence for Infrastructure Critical
-Proyecto para la asignatura PAE - 2026.
-
 ## Equipo
 - Ingeniero 1: Data & Ingestion
 - Ingeniero 2: AI Core & Agents
@@ -69,21 +66,22 @@ graph TD
 Todos los miembros del equipo deben seguir estos pasos para asegurar la compatibilidad:
 
 ### 1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/RogerCL24/ASTOLE_Project.git
-   cd ASTOLE_Project
-   ```
+```bash
+git clone https://github.com/RogerCL24/ASTOLE_Project.git
+cd ASTOLE_Project
+```
 
 ### 2. **Crear el entorno virtual**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
 ### 3. **Instalar dependencias:**
-    ```bash
-    pip install --upgrade pip
-    pip install -r requirements.txt
-    ```
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
 
 ### 4. **Archivos no incluidos (Configuración manual)**
 
@@ -97,14 +95,10 @@ Debido a políticas de seguridad y tamaño de archivos, los siguientes elementos
 ### Archivo `.env`
 - **Qué hacer:** Crea un archivo llamado `.env` en la raíz del proyecto.
 - **Contenido:** Define las variables de entorno necesarias para los agentes y APIs:
-  ```env
-  OPENAI_API_KEY=tu_clave_aqui
-  # Si usas modelos locales vía Ollama, asegúrate de que el servicio esté corriendo.
-  ```
+```env
+OPENAI_API_KEY=tu_clave_aqui
+# Si usas modelos locales vía Ollama, asegúrate de que el servicio esté corriendo.
+```
 
 
 > Consulta [Guía de Trabajo con Git](docs/GIT_WORKFLOW.md) antes de empezar
-  
-
-
-
