@@ -60,7 +60,7 @@ git push origin feature/nombre-de-tu-tarea
 
 ---
 
-Nota: Si tienes problemas de autenticación al hacer push (por ejemplo: "Invalid username or token"), usa una de las siguientes opciones:
+> Nota: Si tienes problemas de autenticación al hacer push (por ejemplo: "Invalid username or token"), usa una de las siguientes opciones:
 
 - `gh auth login` para autenticar con GitHub CLI (recomendado).
 - Configurar SSH y usar la URL `git@github.com:...`.
