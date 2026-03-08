@@ -15,3 +15,22 @@
 
 ### Siguientes pasos:
 - Desarrollar la lógica de ventanas temporales de 60 segundos.
+
+---
+
+## [2026-03-08] - Hito: Finalización del Milestone 1 e Infraestructura de Colaboración
+**Responsable:** Ingeniero 1 (Roger)
+
+### Logros:
+- **Generación de Mocks**: Creación de `mock_stream_generator.py` para producir 15 alertas variadas para el desarrollo del Dashboard.
+- **Sincronización de Contratos**: Actualización de `CONTRACT.md` para reflejar con exactitud la estructura de los datos extraídos del dataset V3.
+- **Soporte Forense**: Generación de `raw_sample_53_cols.csv` para que el Ingeniero 3 pueda configurar ChromaDB con el esquema completo.
+- **Reorganización del Repositorio**: Implementación de una estructura de carpetas profesional (`/specs`, `/samples`, `/logs`) para escalar la documentación.
+- **Gestión de Proyecto**: Configuración de Linear con hitos y tareas para los tres ingenieros restantes.
+
+### Descubrimientos técnicos:
+- Se identificó la necesidad de separar las especificaciones técnicas de los datos de ejemplo para mantener el orden en el equipo.
+- Se definió el flujo asíncrono como la mejor opción para la comunicación entre el Ingeniero 1 y el Ingeniero 3.
+
+### Siguientes pasos:
+- Iniciar Milestone 2: Algoritmo de agrupación por ventanas temporales de 60 segundos.
