@@ -57,7 +57,7 @@ def generate_first_alert():
         }
 
         # Guardar en docs para que el equipo lo vea
-        output_path = BASE_DIR / "docs" / "sample_alert.json"
+        output_path = BASE_DIR / "docs" / "samples" / "sample_alert.json"
         
         # Aseguramos que la carpeta docs existe
         output_path.parent.mkdir(parents=True, exist_ok=True)
