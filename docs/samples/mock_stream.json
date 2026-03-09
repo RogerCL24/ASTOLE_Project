@@ -1,0 +1,362 @@
+[
+    {
+        "alert_id": "MOCK-V3-1000",
+        "timestamp": "2026-03-09T16:07:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Exploits",
+            "binary_attack": 1,
+            "confidence_score": 0.85
+        },
+        "network_data": {
+            "src_ip": "175.45.176.3",
+            "dst_ip": "149.171.126.16",
+            "src_port": 2514,
+            "dst_port": 520,
+            "protocol": 17,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 0,
+            "in_bytes": 1064,
+            "out_bytes": 0,
+            "in_pkts": 2,
+            "out_pkts": 0
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1001",
+        "timestamp": "2026-03-09T16:06:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Benign",
+            "binary_attack": 0,
+            "confidence_score": 0.86
+        },
+        "network_data": {
+            "src_ip": "59.166.0.8",
+            "dst_ip": "149.171.126.0",
+            "src_port": 48294,
+            "dst_port": 54121,
+            "protocol": 6,
+            "l7_proto": 37.0
+        },
+        "technical_details": {
+            "duration_ms": 223,
+            "in_bytes": 8928,
+            "out_bytes": 320,
+            "in_pkts": 14,
+            "out_pkts": 6
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1002",
+        "timestamp": "2026-03-09T16:05:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Fuzzers",
+            "binary_attack": 1,
+            "confidence_score": 0.87
+        },
+        "network_data": {
+            "src_ip": "175.45.176.2",
+            "dst_ip": "149.171.126.16",
+            "src_port": 62866,
+            "dst_port": 520,
+            "protocol": 17,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 0,
+            "in_bytes": 1064,
+            "out_bytes": 0,
+            "in_pkts": 2,
+            "out_pkts": 0
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1003",
+        "timestamp": "2026-03-09T16:04:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Benign",
+            "binary_attack": 0,
+            "confidence_score": 0.88
+        },
+        "network_data": {
+            "src_ip": "59.166.0.0",
+            "dst_ip": "149.171.126.3",
+            "src_port": 54352,
+            "dst_port": 80,
+            "protocol": 6,
+            "l7_proto": 7.0
+        },
+        "technical_details": {
+            "duration_ms": 1041,
+            "in_bytes": 1684,
+            "out_bytes": 10168,
+            "in_pkts": 14,
+            "out_pkts": 18
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1004",
+        "timestamp": "2026-03-09T16:03:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Exploits",
+            "binary_attack": 1,
+            "confidence_score": 0.89
+        },
+        "network_data": {
+            "src_ip": "175.45.176.0",
+            "dst_ip": "149.171.126.16",
+            "src_port": 60512,
+            "dst_port": 21,
+            "protocol": 6,
+            "l7_proto": 1.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 9,
+            "out_bytes": 108,
+            "in_pkts": 1,
+            "out_pkts": 1
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1005",
+        "timestamp": "2026-03-09T16:02:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Benign",
+            "binary_attack": 0,
+            "confidence_score": 0.9
+        },
+        "network_data": {
+            "src_ip": "59.166.0.4",
+            "dst_ip": "149.171.126.1",
+            "src_port": 43663,
+            "dst_port": 21,
+            "protocol": 6,
+            "l7_proto": 37.0
+        },
+        "technical_details": {
+            "duration_ms": 5,
+            "in_bytes": 701,
+            "out_bytes": 1052,
+            "in_pkts": 13,
+            "out_pkts": 15
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1006",
+        "timestamp": "2026-03-09T16:01:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Fuzzers",
+            "binary_attack": 1,
+            "confidence_score": 0.9099999999999999
+        },
+        "network_data": {
+            "src_ip": "175.45.176.0",
+            "dst_ip": "149.171.126.16",
+            "src_port": 65288,
+            "dst_port": 179,
+            "protocol": 6,
+            "l7_proto": 13.0
+        },
+        "technical_details": {
+            "duration_ms": 3436,
+            "in_bytes": 904,
+            "out_bytes": 336,
+            "in_pkts": 10,
+            "out_pkts": 8
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1007",
+        "timestamp": "2026-03-09T16:00:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Benign",
+            "binary_attack": 0,
+            "confidence_score": 0.9199999999999999
+        },
+        "network_data": {
+            "src_ip": "59.166.0.4",
+            "dst_ip": "149.171.126.9",
+            "src_port": 7867,
+            "dst_port": 21,
+            "protocol": 6,
+            "l7_proto": 37.0
+        },
+        "technical_details": {
+            "duration_ms": 151,
+            "in_bytes": 1031,
+            "out_bytes": 1474,
+            "in_pkts": 19,
+            "out_pkts": 21
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1008",
+        "timestamp": "2026-03-09T15:59:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Fuzzers",
+            "binary_attack": 1,
+            "confidence_score": 0.9299999999999999
+        },
+        "network_data": {
+            "src_ip": "175.45.176.3",
+            "dst_ip": "149.171.126.16",
+            "src_port": 58645,
+            "dst_port": 520,
+            "protocol": 17,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 0,
+            "in_bytes": 1064,
+            "out_bytes": 0,
+            "in_pkts": 2,
+            "out_pkts": 0
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1009",
+        "timestamp": "2026-03-09T15:58:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.94
+        },
+        "network_data": {
+            "src_ip": "175.45.176.3",
+            "dst_ip": "149.171.126.12",
+            "src_port": 60102,
+            "dst_port": 80,
+            "protocol": 6,
+            "l7_proto": 7.0
+        },
+        "technical_details": {
+            "duration_ms": 445,
+            "in_bytes": 772,
+            "out_bytes": 336,
+            "in_pkts": 10,
+            "out_pkts": 8
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1010",
+        "timestamp": "2026-03-09T15:57:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Exploits",
+            "binary_attack": 1,
+            "confidence_score": 0.95
+        },
+        "network_data": {
+            "src_ip": "175.45.176.3",
+            "dst_ip": "149.171.126.16",
+            "src_port": 25556,
+            "dst_port": 520,
+            "protocol": 17,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 0,
+            "in_bytes": 1066,
+            "out_bytes": 0,
+            "in_pkts": 2,
+            "out_pkts": 0
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1011",
+        "timestamp": "2026-03-09T15:56:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Fuzzers",
+            "binary_attack": 1,
+            "confidence_score": 0.96
+        },
+        "network_data": {
+            "src_ip": "175.45.176.3",
+            "dst_ip": "149.171.126.14",
+            "src_port": 11361,
+            "dst_port": 445,
+            "protocol": 6,
+            "l7_proto": 41.0
+        },
+        "technical_details": {
+            "duration_ms": 2350,
+            "in_bytes": 203906,
+            "out_bytes": 1216,
+            "in_pkts": 158,
+            "out_pkts": 30
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1012",
+        "timestamp": "2026-03-09T15:55:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Exploits",
+            "binary_attack": 1,
+            "confidence_score": 0.97
+        },
+        "network_data": {
+            "src_ip": "175.45.176.3",
+            "dst_ip": "149.171.126.16",
+            "src_port": 19325,
+            "dst_port": 520,
+            "protocol": 17,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 0,
+            "in_bytes": 1064,
+            "out_bytes": 0,
+            "in_pkts": 2,
+            "out_pkts": 0
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1013",
+        "timestamp": "2026-03-09T15:54:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Fuzzers",
+            "binary_attack": 1,
+            "confidence_score": 0.98
+        },
+        "network_data": {
+            "src_ip": "175.45.176.3",
+            "dst_ip": "149.171.126.16",
+            "src_port": 8281,
+            "dst_port": 520,
+            "protocol": 17,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 0,
+            "in_bytes": 1064,
+            "out_bytes": 0,
+            "in_pkts": 2,
+            "out_pkts": 0
+        }
+    },
+    {
+        "alert_id": "MOCK-V3-1014",
+        "timestamp": "2026-03-09T15:53:43Z",
+        "gnn_metadata": {
+            "label_multiclase": "Benign",
+            "binary_attack": 0,
+            "confidence_score": 0.99
+        },
+        "network_data": {
+            "src_ip": "59.166.0.6",
+            "dst_ip": "149.171.126.3",
+            "src_port": 16994,
+            "dst_port": 15854,
+            "protocol": 6,
+            "l7_proto": 11.0
+        },
+        "technical_details": {
+            "duration_ms": 370,
+            "in_bytes": 4920,
+            "out_bytes": 3080,
+            "in_pkts": 28,
+            "out_pkts": 30
+        }
+    }
+]
