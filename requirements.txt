@@ -3,7 +3,7 @@ scikit-learn    # Normalización (Ingeniero 1)
 langchain       # Orquestación de agentes (Ingeniero 2)
 langchain-community 
 chromadb        # Base de datos vectorial (Ingeniero 3)
-pysqlite3-binary # Necesario para ChromaDB en algunos Linux
+# pysqlite3-binary # Necesario para ChromaDB en algunos Linux
 streamlit       # Interfaz de usuario (Ingeniero 4)
 python-dotenv   # Gestión de APIs
 requests        # Llamadas a APIs externas
