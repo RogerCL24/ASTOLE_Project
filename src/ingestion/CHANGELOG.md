@@ -1,0 +1,36 @@
+# 📓 Record - ASTOLE - Ingestion
+
+## [2026-03-04] - Hito: Primer flujo de datos real
+**Responsable:** Ingeniero 1 (Roger)
+
+### Logros:
+- Configuración exitosa del entorno en Debian/WSL2.
+- Mapeo de columnas del dataset **NF-UNSW-NB15-v3**.
+- Creación de `first_alert_generator.py`: Script capaz de filtrar ataques y exportar a JSON según el contrato.
+- Generación de la primera alerta real (`sample_alert.json`) basada en un ataque de tipo **Fuzzers**.
+
+### Descubrimientos técnicos:
+- El dataset V3 tiene invertidas las etiquetas: `Label` es el binario (0/1) y `Attack` es la categoría (Benign, Exploits, etc.).
+- Se requiere el uso de `pathlib` para evitar errores de ruta entre sistemas operativos.
+
+### Siguientes pasos:
+- Desarrollar la lógica de ventanas temporales de 60 segundos.
+
+---
+
+## [2026-03-08] - Hito: Finalización del Milestone 1 e Infraestructura de Colaboración
+**Responsable:** Ingeniero 1 (Roger)
+
+### Logros:
+- **Generación de Mocks**: Creación de `mock_stream_generator.py` para producir 15 alertas variadas para el desarrollo del Dashboard.
+- **Sincronización de Contratos**: Actualización de `CONTRACT.md` para reflejar con exactitud la estructura de los datos extraídos del dataset V3.
+- **Soporte Forense**: Generación de `raw_sample_53_cols.csv` para que el Ingeniero 3 pueda configurar ChromaDB con el esquema completo.
+- **Reorganización del Repositorio**: Implementación de una estructura de carpetas profesional (`/specs`, `/samples`, `/logs`) para escalar la documentación.
+- **Gestión de Proyecto**: Configuración de Linear con hitos y tareas para los tres ingenieros restantes.
+
+### Descubrimientos técnicos:
+- Se identificó la necesidad de separar las especificaciones técnicas de los datos de ejemplo para mantener el orden en el equipo.
+- Se definió el flujo asíncrono como la mejor opción para la comunicación entre el Ingeniero 1 y el Ingeniero 3.
+
+### Siguientes pasos:
+- Iniciar Milestone 2: Algoritmo de agrupación por ventanas temporales de 60 segundos.

@@ -1,0 +1,25 @@
+{
+    "alert_id": "AST-V3-1424242192557",
+    "timestamp": "2015-02-18T07:49:52Z",
+    "gnn_metadata": {
+        "label_multiclase": "Fuzzers",
+        "binary_attack": 1,
+        "confidence_score": 1.0
+    },
+    "network_data": {
+        "src_ip": "175.45.176.0",
+        "dst_ip": "149.171.126.16",
+        "src_port": 43944,
+        "dst_port": 8088,
+        "protocol": 6,
+        "l7_proto": 0.0
+    },
+    "technical_details": {
+        "duration_ms": 754,
+        "in_bytes": 160,
+        "out_bytes": 80,
+        "tcp_flags": 18,
+        "in_pkts": 4,
+        "out_pkts": 2
+    }
+}

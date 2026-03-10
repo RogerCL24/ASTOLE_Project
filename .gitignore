@@ -3,7 +3,11 @@ data/
 *.csv
 *.parquet
 *.json
-!docs/contract.json
+!docs/samples/mock_stream.json
+!docs/samples/raw_sample_53_cols.csv
+!docs/samples/sample_alert.json
+
+
 
 # Entornos Virtuales de Python
 venv/
