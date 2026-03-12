@@ -1,4 +1,4 @@
-# Datos y Datasets 
+# Datos y Datasets
 data/
 *.csv
 *.parquet
@@ -6,6 +6,13 @@ data/
 !docs/samples/mock_stream.json
 !docs/samples/raw_sample_53_cols.csv
 !docs/samples/sample_alert.json
+!docs/samples/live_alerts.json
+
+# ChromaDB (Ing3 - Andrea)
+src/memory/chromadb_data/
+.chroma/
+*.db
+*.sqlite
 
 # Entornos Virtuales de Python
 venv/
@@ -23,14 +30,8 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Variables de Entorno (Donde irán las API Keys de los 100€)
+# Variables de Entorno (API Keys)
 .env
-
-# ChromaDB (Ing3 - Andrea)
-src/memory/chromadb_data/
-.chroma/
-*.db
-*.sqlite
 
 # IDEs (VS Code, PyCharm)
 .vscode/
@@ -42,4 +43,7 @@ src/memory/chromadb_data/
 Thumbs.db
 
 # Cache
-.cache/src/memory/chromadb_data/
+.cache/
+
+# Git
+FETCH_HEAD

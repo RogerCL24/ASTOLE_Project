@@ -43,7 +43,8 @@ class MemoryManager:
         
         # Modelo embeddings
         print("📥 Cargando modelo embeddings...")
-        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        # Forzar dispositivo CPU para evitar requisitos de GPU/instalaciones especiales
+        self.embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
         print("✅ MemoryManager listo\n")
     
     def add_netflow_window(self, window_id: str, dataframe: pd.DataFrame):
@@ -74,15 +75,30 @@ class MemoryManager:
             "timestamp": int(dataframe['FLOW_START_MILLISECONDS'].min()) if 'FLOW_START_MILLISECONDS' in dataframe.columns else 0
         }
         
-        # Guardar en ChromaDB
-        self.collection.add(
-            documents=[text],
-            embeddings=[embedding],
-            metadatas=[metadata],
-            ids=[window_id]
-        )
-        
-        print(f"✅ {window_id} indexada")
+        # Guardar en ChromaDB (con manejo de duplicados)
+        try:
+            self.collection.add(
+                documents=[text],
+                embeddings=[embedding],
+                metadatas=[metadata],
+                ids=[window_id]
+            )
+            print(f"✅ {window_id} indexada")
+        except Exception as e:
+            # Si ya existe, actualizar
+            error_msg = str(e).lower()
+            if "already exists" in error_msg or "duplicate" in error_msg:
+                print(f"⚠️  {window_id} ya existe, actualizando...")
+                self.collection.update(
+                    documents=[text],
+                    embeddings=[embedding],
+                    metadatas=[metadata],
+                    ids=[window_id]
+                )
+                print(f"✅ {window_id} actualizada")
+            else:
+                # Otro tipo de error, re-lanzar
+                raise
     
     def _dataframe_to_text(self, df: pd.DataFrame, window_id: str) -> str:
         """
