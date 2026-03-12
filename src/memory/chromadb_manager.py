@@ -1,19 +1,23 @@
 """
 ChromaDB Manager - Gestión de memoria vectorial
-Ingeniero 3: Andrea
+Ingeniero 3: Andrea Blanco
+Milestone 2: Storage Feed
 """
 
 import chromadb
-from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 import pandas as pd
 from pathlib import Path
-from datetime import datetime
 
 
 class MemoryManager:
     """
     Gestor de ChromaDB para indexar ventanas de tráfico de red.
+    
+    Funcionalidades:
+    - Indexar ventanas de 60s
+    - Búsqueda semántica
+    - Persistencia local
     """
     
     def __init__(self, persist_directory="src/memory/chromadb_data"):
@@ -152,45 +156,3 @@ Ventana {window_id}:
             "total_windows": count,
             "collection_name": self.collection.name
         }
-
-
-# Testing
-if __name__ == "__main__":
-    print("🧪 Testing MemoryManager...\n")
-    
-    # Crear manager
-    manager = MemoryManager()
-    
-    # Cargar CSV de Ing1
-    csv_path = Path(__file__).resolve().parents[2] / "docs" / "samples" / "raw_sample_53_cols.csv"
-    df = pd.read_csv(csv_path)
-    
-    print(f"📊 CSV cargado: {len(df)} filas\n")
-    
-    # Indexar primera ventana (filas 0-9)
-    window_1 = df.iloc[0:10]
-    manager.add_netflow_window("test_window_001", window_1)
-    
-    # Indexar segunda ventana (filas 10-19)
-    window_2 = df.iloc[10:20]
-    manager.add_netflow_window("test_window_002", window_2)
-    
-    # Indexar tercera ventana (filas 20-29)
-    window_3 = df.iloc[20:30]
-    manager.add_netflow_window("test_window_003", window_3)
-    
-    print()
-    
-    # Buscar ventanas con ataques
-    results = manager.search_similar("ataques Fuzzers", n_results=2)
-    
-    print("📋 Resultados:")
-    for i, (id, metadata) in enumerate(zip(results['ids'][0], results['metadatas'][0])):
-        print(f"  {i+1}. {id}")
-        print(f"     Flujos: {metadata['flows_count']}, Ataques: {metadata['attacks_count']}")
-    
-    print()
-    
-    # Stats
-    stats = manager.get_stats()
-    print(f"📊 Stats: {stats}")
