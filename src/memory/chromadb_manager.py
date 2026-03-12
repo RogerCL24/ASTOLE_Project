@@ -39,7 +39,8 @@ class MemoryManager:
         
         # Modelo embeddings
         print("📥 Cargando modelo embeddings...")
-        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        # Forzar dispositivo CPU para evitar requisitos de GPU/instalaciones especiales
+        self.embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
         print("✅ MemoryManager listo\n")
     
     def add_netflow_window(self, window_id: str, dataframe: pd.DataFrame):
