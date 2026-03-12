@@ -7,3 +7,5 @@ pysqlite3-binary # Necesario para ChromaDB en algunos Linux
 streamlit       # Interfaz de usuario (Ingeniero 4)
 python-dotenv   # Gestión de APIs
 requests        # Llamadas a APIs externas
+sentence-transformers  # Embeddings de texto
+torch  # PyTorch runtime (install appropriate wheel for your platform if needed)
