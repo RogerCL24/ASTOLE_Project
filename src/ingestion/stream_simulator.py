@@ -4,13 +4,14 @@ import json
 from pathlib import Path
 from datetime import datetime
 import sys
-from memory.ingest_from_ing1 import index_window, get_queue_status, _window_queue
 
-# Ensure `src/` is on sys.path so imports like `from memory...` work when
-# executing the script directly (not as a package).
 BASE_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = BASE_DIR / "src"
-sys.path.insert(0, str(SRC_DIR))
+
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from memory.ingest_from_ing1 import index_window, wait_for_completion
 
 # Configuración de rutas
 DATASET_PATH = BASE_DIR / "data" / "NF-UNSW-NB15-v3.csv"
@@ -95,7 +96,6 @@ if __name__ == "__main__":
     
     print("\n⏳ Esperando a que el worker de ChromaDB termine de indexar...")
     
-    # Esta función bloquea el cierre del programa hasta que la cola esté vacía
-    _window_queue.join() 
+    wait_for_completion()
     
     print("✅ Todo guardado. Cerrando ASTOLE de forma segura.")
