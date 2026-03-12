@@ -45,17 +45,18 @@ def _worker():
             # Esperar ventana (bloquea hasta que haya)
             window_id, dataframe = _window_queue.get(timeout=1)
             
-            # Procesar
-            manager.add_netflow_window(window_id, dataframe)
-            
-            # Marcar como completado
-            _window_queue.task_done()
-            
+            try:
+                # Procesar
+                manager.add_netflow_window(window_id, dataframe)
+            except Exception as e:
+                print(f"❌ Error procesando {window_id}: {e}")
+            finally:
+                # SIEMPRE marcar como completado (CRÍTICO para join())
+                _window_queue.task_done()
+                
         except queue.Empty:
             # No hay nada en cola, continuar esperando
             continue
-        except Exception as e:
-            print(f"❌ Error en worker: {e}")
 
 
 def start_worker():
@@ -120,3 +121,21 @@ def get_queue_status() -> dict:
         "queue_size": _window_queue.qsize(),
         "worker_alive": _worker_thread.is_alive() if _worker_thread else False
     }
+
+
+def wait_for_completion():
+    """
+    Esperar a que la cola termine de procesar todas las ventanas.
+    
+    Ing1 debe llamar esto antes de terminar el programa
+    para asegurar que todas las ventanas están indexadas.
+    
+    Example:
+        >>> from memory.ingest_from_ing1 import wait_for_completion
+        >>> 
+        >>> # Después de enviar todas las ventanas
+        >>> wait_for_completion()
+        >>> print("✅ Todas las ventanas indexadas")
+    """
+    _window_queue.join()
+    print("✅ Cola procesada completamente")

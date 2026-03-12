@@ -21,26 +21,35 @@ def simulate_stream():
     print("🚀 Iniciando Motor de Ingestión ASTOLE (Milestone 2)")
     print("📡 Conectado a ChromaDB (Docker) vía interface asíncrona.")
     print("-" * 50)
-
+    
+    # CONTADOR GLOBAL (fuera del loop de chunks) - FIX BUG
+    max_windows = 20
+    total_count = 0
+    
     try:
         # 1. Carga eficiente del dataset
         # Usamos chunksize por si el archivo es gigante
         reader = pd.read_csv(DATASET_PATH, chunksize=50000)
         
         for chunk in reader:
+
+            # Si ya procesamos suficientes ventanas, salir del loop de chunks
+            if total_count >= max_windows:
+                break
+            
             # 2. Lógica de Agrupación Temporal (Issue 1 del M2)
             # Creamos el ID de ventana basado en bloques de 60 segundos
             chunk['window_id'] = chunk['FLOW_START_MILLISECONDS'] // 60000
             
             grouped = chunk.groupby('window_id')
             
-            max_windows = 20
-            count = 0
+
             for win_id, data in grouped:
-                if count >= max_windows:
+                # Verificar límite GLOBAL
+                if total_count >= max_windows:
                     print("✅ Simulación completada (límite de ventanas alcanzado).")
                     break
-
+                    
                 str_win_id = f"WIN_{int(win_id)}"
                 
                 # A. ENVIAR A RAG (Ingeniero 3) - 55 columnas
@@ -59,10 +68,12 @@ def simulate_stream():
                 # Pequeño sleep para que podamos ver el progreso en consola
                 # En producción esto sería tiempo real
                 time.sleep(0.1)
-                count += 1
 
+                total_count += 1  # Incrementar contador GLOBAL              
     except Exception as e:
         print(f"❌ Error crítico en el simulador: {e}")
+    
+    print(f"\n📊 Total ventanas procesadas: {total_count}")
 
 def trigger_alert(window_id, row):
     """Genera el JSON según el CONTRACT.md para el Ingeniero 2"""
@@ -75,7 +86,7 @@ def trigger_alert(window_id, row):
         "gnn_metadata": {
             "label_multiclase": str(row['Attack']),
             "binary_attack": int(row['Label']),
-            "confidence_score": 0.98 # Simulado por el momento
+            "confidence_score": 0.98  # Simulado por el momento
         },
         "network_data": {
             "src_ip": str(row['IPV4_SRC_ADDR']),
@@ -97,5 +108,6 @@ if __name__ == "__main__":
     print("\n⏳ Esperando a que el worker de ChromaDB termine de indexar...")
     
     wait_for_completion()
-    
+   
     print("✅ Todo guardado. Cerrando ASTOLE de forma segura.")
+
