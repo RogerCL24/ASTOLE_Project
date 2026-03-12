@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Datos y Datasets 
 data/
 *.csv
@@ -40,3 +40,8 @@ Thumbs.db
 
 # Cache
 .cache/
+=======
+# ChromaDB (Ing3 - Andrea)
+src/memory/chromadb_data/
+# Cache
+.cache/src/memory/chromadb_data/
