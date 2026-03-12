@@ -42,4 +42,4 @@ src/memory/chromadb_data/
 Thumbs.db
 
 # Cache
-.cache/
+.cache/src/memory/chromadb_data/
