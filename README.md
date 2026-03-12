@@ -58,7 +58,7 @@ graph TD
 - **Proceso:** Visualización en Streamlit y cálculo de consumo de tokens/costes.
 - **Output:** Dashboard Operativo. Interfaz final para el analista con métricas de eficiencia.
 
-> Consultar [Contrato JSON](docs/CONTRACT.md)
+> Consultar [Contrato JSON](docs/specs/CONTRACT.md)
 
 
 ## 🛠️ Instalación y Configuración
@@ -101,4 +101,4 @@ OPENAI_API_KEY=tu_clave_aqui
 ```
 
 
-> Consulta [Guía de Trabajo con Git](docs/GIT_WORKFLOW.md) antes de empezar
+> Consulta [Guía de Trabajo con Git](docs/specs/GIT_WORKFLOW.md) antes de empezar
