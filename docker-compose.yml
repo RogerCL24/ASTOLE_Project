@@ -1,0 +1,15 @@
+services:
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: astole-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src/memory/chromadb_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+    restart: unless-stopped
+
+networks:
+  default:
+    name: astole-network

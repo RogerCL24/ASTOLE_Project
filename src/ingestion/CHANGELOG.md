@@ -34,3 +34,17 @@
 
 ### Siguientes pasos:
 - Iniciar Milestone 2: Algoritmo de agrupación por ventanas temporales de 60 segundos.
+
+---
+
+## [2026-03-12] - Hito: Motor de Simulación y Estabilidad (Milestone 2)
+**Responsable:** Ingeniero 1 (Roger)
+
+### Logros:
+- **Agrupación Temporal**: Implementada la lógica de ventanas de 60 segundos basada en `FLOW_START_MILLISECONDS`.
+- **Integración RAG**: Conexión asíncrona validada con el módulo del Ingeniero 3 (ChromaDB en Docker).
+- **Estabilidad de Hardware**: Parche de compatibilidad `device='cpu'` aplicado al `MemoryManager` para permitir ejecución en GPUs de arquitectura antigua.
+- **Cierre Seguro**: Implementado `_window_queue.join()` para evitar desbordamientos de memoria y cierres inesperados (Core Dumped).
+
+### Descubrimientos técnicos:
+- El procesamiento masivo de ventanas en CPU requiere una gestión de hilos que espere a que la cola se vacíe antes de finalizar el proceso principal.
