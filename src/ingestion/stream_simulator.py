@@ -3,7 +3,7 @@ import time
 import json
 import random
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -26,6 +26,7 @@ def simulate_stream(max_windows=100):
     total_count = 0
     total_flows = 0
     total_alerts = 0
+    dropped_windows = 0
     start_sim_time = time.time()
     latencies = []
     
@@ -49,9 +50,20 @@ def simulate_stream(max_windows=100):
 
                 # A. ENVIAR A RAG
                 start_win = time.time()
-                index_window(str_win_id, data)
-                win_latency = time.time() - start_win
-                latencies.append(win_latency)
+                result = index_window(str_win_id, data)
+                # Renombrado a Latencia de Encolado (Queuing Latency)
+                queuing_latency = time.time() - start_win
+                latencies.append(queuing_latency)
+
+                # MANEJO DE FIABILIDAD: Si la cola está llena, reintentamos una vez
+                if isinstance(result, dict) and result.get('status') == 'queue_full':
+                    print(f"⚠️ Cola llena en {str_win_id}. Reintentando en 1s...")
+                    time.sleep(1)
+                    result = index_window(str_win_id, data)
+                    if isinstance(result, dict) and result.get('status') == 'queue_full':
+                        print(f"❌ Ventana {str_win_id} perdida.")
+                        dropped_windows += 1
+                        continue
 
                 # B. TRIGGER DE ANOMALÍAS
                 ataques = data[data['Label'] == 1]
@@ -59,7 +71,7 @@ def simulate_stream(max_windows=100):
                     total_alerts += 1
                     trigger_alert(str_win_id, ataques.iloc[0])
                 
-                print(f"📦 [{total_count+1}/{max_windows}] Ventana {str_win_id} enviada | Flujos: {len(data)} | Alerta: {'SI' if not ataques.empty else 'NO'}")
+                print(f"📦 [{total_count+1}/{max_windows}] Ventana {str_win_id} enviada | Latencia encolado: {queuing_latency:.4f}s | Flujos: {len(data)} | Alerta: {'SI' if not ataques.empty else 'NO'}")
                 
                 # C. ACTUALIZAR MÉTRICAS PARA ING 4 (DASHBOARD)
                 save_system_metrics(total_count + 1, total_flows, total_alerts, latencies) # <--- ¡IMPORTANTE!
@@ -71,11 +83,11 @@ def simulate_stream(max_windows=100):
         print(f"❌ Error crítico en el simulador: {e}")
 
     # Retornamos los resultados para el reporte final
-    return total_count, total_flows, total_alerts, latencies, start_sim_time # <--- Retorno para el main
+    return total_count, total_flows, total_alerts, latencies, start_sim_time, dropped_windows # <--- Retorno para el main
 
 def trigger_alert(window_id, row):
     ts_ms = float(row['FLOW_START_MILLISECONDS'])
-    dt_object = datetime.fromtimestamp(ts_ms / 1000.0)
+    dt_object = datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc)
     simulated_confidence = round(random.uniform(0.92, 0.99), 2)
     
     alert = {
@@ -130,7 +142,7 @@ def save_system_metrics(win_count, total_flows, total_alerts, latencies):
 
 if __name__ == "__main__":
     # 1. Ejecutar simulación
-    win_count, total_flows, total_alerts, latencies, start_time = simulate_stream(max_windows=100)
+    win_count, total_flows, total_alerts, latencies, start_time, dropped_windows = simulate_stream(max_windows=100)
     
     print("\n⏳ Esperando a que el worker de ChromaDB termine de indexar...")
     wait_for_completion()
@@ -146,6 +158,7 @@ if __name__ == "__main__":
     print(f"✅ Ventanas procesadas:    {win_count}")
     print(f"📈 Flujos analizados:     {total_flows:,}")
     print(f"🚨 Alertas generadas:     {total_alerts}")
+    print(f"❌ Ventanas fallidas:     {dropped_windows}")
     print(f"📉 Tasa de Compresión:    {comp:.4f}%")
     print(f"⏱️ Latencia media/win:    {avg_lat:.2f} ms")
     print(f"🚀 Tiempo total sim:      {end_time - start_time:.2f} s")
