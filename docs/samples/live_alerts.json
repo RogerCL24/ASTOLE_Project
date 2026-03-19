@@ -4,7 +4,7 @@
     "gnn_metadata": {
         "label_multiclase": "Exploits",
         "binary_attack": 1,
-        "confidence_score": 0.99
+        "confidence_score": 0.93
     },
     "network_data": {
         "src_ip": "175.45.176.0",
@@ -13,5 +13,13 @@
         "dst_port": 21,
         "protocol": 6,
         "l7_proto": 1.0
+    },
+    "technical_details": {
+        "duration_ms": 767,
+        "in_bytes": 309,
+        "out_bytes": 556,
+        "tcp_flags": 24,
+        "in_pkts": 7,
+        "out_pkts": 7
     }
 }

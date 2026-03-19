@@ -48,3 +48,16 @@
 
 ### Descubrimientos técnicos:
 - El procesamiento masivo de ventanas en CPU requiere una gestión de hilos que espere a que la cola se vacíe antes de finalizar el proceso principal.
+
+---
+## [2026-03-19] - Cierre Milestone 3: Validación y Contratos
+**Responsable:** Ingeniero 1 (Roger)
+
+### Logros:
+- **Validación de Contrato**: Se ha corregido el generador de alertas para incluir `technical_details`, alineando el output con el estándar `sample_alert.json`.
+- **Métricas Finales**: Procesadas 100 ventanas con una tasa de compresión del 99.82% y latencia media de 2.31ms.
+- **Test de Cobertura**: Verificado el funcionamiento del trigger para las 9 categorías de ataque.
+
+### Notas de Integración:
+- El sistema está listo para ser consumido por el Dashboard (Ing 4). 
+- Se ha detectado un posible cuello de botella en la sobrescritura del JSON de alertas; se discutirá con Ing 2 (IA) a su vuelta de vacaciones.
