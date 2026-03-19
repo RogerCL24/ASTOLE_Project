@@ -1,17 +1,17 @@
 {
-    "alert_id": "AST-WIN_23737159-1424229599509",
-    "timestamp": "2015-02-18T04:19:59Z",
+    "alert_id": "AST-WIN_23737684-1424261040240",
+    "timestamp": "2015-02-18T13:04:00Z",
     "gnn_metadata": {
         "label_multiclase": "Exploits",
         "binary_attack": 1,
-        "confidence_score": 0.98
+        "confidence_score": 0.99
     },
     "network_data": {
         "src_ip": "175.45.176.0",
-        "dst_ip": "149.171.126.13",
-        "src_port": 41674,
-        "dst_port": 25,
+        "dst_ip": "149.171.126.16",
+        "src_port": 9832,
+        "dst_port": 21,
         "protocol": 6,
-        "l7_proto": 3.0
+        "l7_proto": 1.0
     }
 }
