@@ -30,3 +30,7 @@ Este documento define la estructura de datos oficial. Los campos marcados son ex
     "out_pkts": "Paquetes salientes"
   }
 }
+```
+
+> [!WARNING]
+> **Nota para Ingeniería de IA**: El campo ``confidence_score`` en ``live_alerts.json`` es actualmente simulado por el Ingestor. El módulo GNN deberá sobreescribir este valor con la salida de la función ``model.predict()``.
