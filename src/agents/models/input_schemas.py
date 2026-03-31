@@ -35,7 +35,7 @@ class AttackCategory(str, Enum):
 class GNNMetadata(BaseModel):
     """Classification metadata from the GNN model."""
 
-    label_binary: str = Field(..., description="Binary classification: Attack or Benign")
+    label_binary: int = Field(..., description="Binary classification: Attack or Benign")
     label_multiclass: AttackCategory = Field(..., description="Attack type (9 classes)")
     confidence_score: float = Field(..., ge=0.0, le=1.0, description="GNN model confidence")
     model_version: str = Field(default="gnn-v3.1", description="Model version that generated the prediction")

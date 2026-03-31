@@ -153,7 +153,14 @@ async def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # --- Build TriageOutput ---
     threat_level = assessment.get("threat_level", "medium")
     attack_flows = window.get("attack_flows", 1)
-    label = gnn.get("label_multiclass", "Unknown")
+
+    # NUEVO
+    raw_label = gnn.get("label_multiclass", "Unknown")
+    label = raw_label.value if hasattr(raw_label, 'value') else str(raw_label)
+    
+    if "." in label:
+        label = label.split(".")[-1]
+    # FIN NUEVO --- 
 
     severity = summary.get("severity", _map_severity(
         threat_level, gnn.get("confidence_score", 0.5), attack_flows
