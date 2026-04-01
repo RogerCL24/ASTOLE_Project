@@ -8,6 +8,9 @@ data/
 !docs/samples/sample_alert.json
 !docs/samples/live_alerts.json
 !docs/samples/system_metrics.json
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
 
 # ChromaDB (Ing3 - Andrea)
 src/memory/chromadb_data/
