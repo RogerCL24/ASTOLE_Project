@@ -1,17 +1,25 @@
 {
-    "alert_id": "AST-WIN_23737159-1424229599509",
-    "timestamp": "2015-02-18T04:19:59Z",
+    "alert_id": "AST-TEST_Shellcode-1424242213692",
+    "timestamp": "2015-02-18T06:50:13Z",
     "gnn_metadata": {
-        "label_multiclase": "Exploits",
+        "label_multiclase": "Shellcode",
         "binary_attack": 1,
-        "confidence_score": 0.98
+        "confidence_score": 0.99
     },
     "network_data": {
         "src_ip": "175.45.176.0",
-        "dst_ip": "149.171.126.13",
-        "src_port": 41674,
-        "dst_port": 25,
-        "protocol": 6,
-        "l7_proto": 3.0
+        "dst_ip": "149.171.126.11",
+        "src_port": 29231,
+        "dst_port": 62077,
+        "protocol": 17,
+        "l7_proto": 0.0
+    },
+    "technical_details": {
+        "duration_ms": 0,
+        "in_bytes": 308,
+        "out_bytes": 0,
+        "tcp_flags": 0,
+        "in_pkts": 2,
+        "out_pkts": 0
     }
 }

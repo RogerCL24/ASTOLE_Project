@@ -7,6 +7,7 @@ data/
 !docs/samples/raw_sample_53_cols.csv
 !docs/samples/sample_alert.json
 !docs/samples/live_alerts.json
+!docs/samples/system_metrics.json
 
 # ChromaDB (Ing3 - Andrea)
 src/memory/chromadb_data/
