@@ -1,3 +1,20 @@
+# Changelog - ASTOLE - Ingestion
+
+## [2026-04-02] - Simulación continua, control y memoria histórica
+
+### Added
+- **Control de simulación**: Lectura de `simulation_config.json` para sincronizar velocidad y estado STOP/RUNNING con el frontend.
+- **Loop infinito**: El simulador vuelve a leer el dataset de forma continua en lugar de detenerse tras un número fijo de ventanas.
+- **Memoria histórica**: Persistencia de `traffic_history` y `latency_history_ms` para alimentar el dashboard analítico.
+
+### Changed
+- **Arranque limpio**: Inicialización de `system_metrics.json` y `live_alerts.json` al comenzar cada ejecución manual del simulador.
+- **Pacing por velocidad**: Ajuste del tiempo por ventana para soportar 1x, 2x, 4x y MAX.
+- **Historial ampliado**: Conservación de hasta 1000 elementos en alertas, tráfico y latencias para la vista histórica de Telemetría.
+
+### Fixed
+- **STOP persistido**: Normalización automática del estado de arranque cuando quedaba un `STOPPED` grabado de una ejecución anterior.
+- **Cierre seguro**: Manejo limpio de la señal STOP con guardado final de métricas antes de salir.
 # 📓 Record - ASTOLE - Ingestion
 
 ## [2026-03-04] - Hito: Primer flujo de datos real

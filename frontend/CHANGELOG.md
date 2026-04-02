@@ -1,5 +1,24 @@
 # Changelog - ASTOLE - Frontend
 
+## [0.4.0-ui] - 2026-04-02
+
+### Added
+- **Capa 1 Triage Refresh**: Rediseñado el dashboard principal como centro de respuesta rápida con narrativa de incidentes compacta, Top Atacantes y métricas operativas separadas.
+- **Top Atacantes**: Lista compacta de las 5 IPs de origen con mayor volumen de alertas en la ventana actual.
+- **Telemetry Slicer**: Selector histórico en Telemetría para consultar Últimas 20, Últimas 100, Últimas 1000 o Todo el Histórico.
+- **Protocol Analytics**: Gráfico de distribución de protocolos en Telemetría filtrado por el rango seleccionado.
+
+### Changed
+- **Header KPIs**: Simplificado el encabezado del Triaje para dejar solo Alertas y Reducción de Ruido; latencia y ventanas procesadas se movieron a Telemetría.
+- **Narrative Feed**: La narrativa de incidentes ahora se renderiza en una caja visual propia, con scroll interno más suave y solo las alertas más recientes visibles.
+- **Threat Composition**: El donut de amenazas se alimenta de alertas reales y se mantiene alineado con el historial operativo.
+- **Engine Status**: El estado del motor en el Sidebar ahora refleja `RUNNING`, `STOPPED` y `COMPLETED` con colores diferenciados.
+
+### Fixed
+- **Hydration Mismatch**: Reducidos los desajustes SSR/cliente usando formato de tiempo estable y evitando accesos inseguros a datos opcionales.
+- **Layout Overflow**: Eliminado el hueco negro entre la gráfica y la narrativa mediante ajustes de altura y alineación de la fila principal.
+- **Runtime Safety**: Corregido el acceso a `technical_details.duration_ms` cuando faltaban campos en algunas alertas.
+
 ## [0.2.0-ui] - 2026-04-01
 
 ### Added
