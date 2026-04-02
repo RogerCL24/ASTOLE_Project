@@ -12,13 +12,22 @@ export default function Sidebar() {
       try {
         const res = await fetch('/api/stats');
         const data = await res.json();
-        if (data.metrics.status === "COMPLETED") setStatus("INGESTA ACTIVA");
-        else setStatus("INACTIVO");
+        const engineStatus = String(data?.metrics?.status ?? "UNKNOWN").toUpperCase();
+
+        if (engineStatus === "RUNNING") setStatus("INGESTA ACTIVA");
+        else if (engineStatus === "STOPPED") setStatus("INACTIVO");
+        else if (engineStatus === "COMPLETED") setStatus("FINALIZADO");
+        else setStatus("DESCONOCIDO");
       } catch (e) {
         setStatus("OFFLINE");
       }
     };
     checkStatus();
+    const interval = window.setInterval(checkStatus, 5000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
   }, []);
 
   const getLinkClass = (path: string) =>
@@ -63,8 +72,8 @@ export default function Sidebar() {
         <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-2">Engine Status</p>
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${status === 'INGESTA ACTIVA' ? 'bg-green-400' : 'bg-red-400'}`}></span>
-            <span className={`relative inline-flex rounded-full h-2 w-2 ${status === 'INGESTA ACTIVA' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${status === 'INGESTA ACTIVA' ? 'bg-green-400' : status === 'FINALIZADO' ? 'bg-amber-400' : 'bg-red-400'}`}></span>
+            <span className={`relative inline-flex rounded-full h-2 w-2 ${status === 'INGESTA ACTIVA' ? 'bg-green-500' : status === 'FINALIZADO' ? 'bg-amber-500' : 'bg-red-500'}`}></span>
           </span>
           <span className="text-[11px] font-mono">{status}</span>
         </div>
