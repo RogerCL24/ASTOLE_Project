@@ -1,10 +1,4 @@
 # Changelog - ASTOLE - Ingestion
-
-## [2026-04-03] - Corrección de timestamps UTC
-
-### Fixed
-- **`last_update` en UTC real**: El simulador ahora genera timestamps con `timezone.utc` cuando emite sufijo `Z`, evitando desfases horarios en el dashboard.
-
 ## [2026-04-02] - Simulación continua, control y memoria histórica
 
 ### Added
@@ -20,6 +14,12 @@
 ### Fixed
 - **STOP persistido**: Normalización automática del estado de arranque cuando quedaba un `STOPPED` grabado de una ejecución anterior.
 - **Cierre seguro**: Manejo limpio de la señal STOP con guardado final de métricas antes de salir.
+
+## [2026-04-03] - Corrección de timestamps UTC
+
+### Fixed
+- **`last_update` en UTC real**: El simulador ahora genera timestamps con `timezone.utc` cuando emite sufijo `Z`, evitando desfases horarios en el dashboard.
+
 # 📓 Record - ASTOLE - Ingestion
 
 ## [2026-03-04] - Hito: Primer flujo de datos real
