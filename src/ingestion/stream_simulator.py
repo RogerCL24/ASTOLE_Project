@@ -24,7 +24,7 @@ MAX_HISTORY_ITEMS = 1000
 
 def reset_output_files():
     initial_metrics = {
-        "last_update": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "last_update": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         "performance": {
             "windows_processed": 0,
             "total_flows_analyzed": 0,
@@ -344,7 +344,7 @@ def save_system_metrics(
         traffic_history = traffic_history[-MAX_HISTORY_ITEMS:]
     
     metrics = {
-        "last_update": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "last_update": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         "performance": {
             "windows_processed": win_count,
             "total_flows_analyzed": total_flows,

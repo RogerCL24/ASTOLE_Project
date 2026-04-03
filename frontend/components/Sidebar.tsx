@@ -6,18 +6,67 @@ import { useEffect, useState } from 'react';
 export default function Sidebar() {
   const pathname = usePathname();
   const [status, setStatus] = useState("Cargando...");
+  const [speedLabel, setSpeedLabel] = useState("1x");
+
+  const SPEED_STORAGE_KEY = "astole.simulation.speed";
+  const SPEED_EVENT_NAME = "astole:speed";
+
+  const formatSpeedLabel = (value: unknown) => {
+    if (value === "MAX") return "MAX";
+    const numeric = typeof value === "number" ? value : Number(value);
+    if ([1, 2, 4].includes(numeric)) return `${numeric}x`;
+    return "1x";
+  };
 
   useEffect(() => {
+    const syncSpeedFromStorage = () => {
+      try {
+        const raw = window.localStorage.getItem(SPEED_STORAGE_KEY);
+        if (!raw) {
+          setSpeedLabel("1x");
+          return;
+        }
+        setSpeedLabel(formatSpeedLabel(JSON.parse(raw)));
+      } catch {
+        setSpeedLabel("1x");
+      }
+    };
+
+    syncSpeedFromStorage();
+
+    const onSpeedEvent = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      setSpeedLabel(formatSpeedLabel(detail));
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === SPEED_STORAGE_KEY) {
+        syncSpeedFromStorage();
+      }
+    };
+
+    window.addEventListener(SPEED_EVENT_NAME, onSpeedEvent as EventListener);
+    window.addEventListener("storage", onStorage);
+
     const checkStatus = async () => {
       try {
-        const res = await fetch('/api/stats');
+        const res = await fetch('/api/stats', { cache: 'no-store' });
         const data = await res.json();
-        const engineStatus = String(data?.metrics?.status ?? "UNKNOWN").toUpperCase();
+        const lastUpdateRaw = data?.metrics?.last_update;
+        const lastUpdateMs = typeof lastUpdateRaw === 'string' ? Date.parse(lastUpdateRaw) : NaN;
+        const ageMs = Number.isFinite(lastUpdateMs) ? Date.now() - lastUpdateMs : Number.POSITIVE_INFINITY;
+        const isFresh = ageMs >= 0 && ageMs <= 30_000;
 
-        if (engineStatus === "RUNNING") setStatus("INGESTA ACTIVA");
+        if (isFresh) {
+          setStatus('ACTIVO');
+          return;
+        }
+
+        const engineStatus = String(data?.metrics?.status ?? "UNKNOWN").toUpperCase();
+        if (engineStatus === "RUNNING") setStatus("ACTIVO");
         else if (engineStatus === "STOPPED") setStatus("INACTIVO");
         else if (engineStatus === "COMPLETED") setStatus("FINALIZADO");
-        else setStatus("DESCONOCIDO");
+        else setStatus("INACTIVO");
       } catch (e) {
         setStatus("OFFLINE");
       }
@@ -26,6 +75,8 @@ export default function Sidebar() {
     const interval = window.setInterval(checkStatus, 5000);
 
     return () => {
+      window.removeEventListener(SPEED_EVENT_NAME, onSpeedEvent as EventListener);
+      window.removeEventListener("storage", onStorage);
       window.clearInterval(interval);
     };
   }, []);
@@ -70,12 +121,19 @@ export default function Sidebar() {
       
       <div className="bg-white/5 rounded-lg p-4 border border-white/5">
         <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-2">Engine Status</p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${status === 'INGESTA ACTIVA' ? 'bg-green-400' : status === 'FINALIZADO' ? 'bg-amber-400' : 'bg-red-400'}`}></span>
-            <span className={`relative inline-flex rounded-full h-2 w-2 ${status === 'INGESTA ACTIVA' ? 'bg-green-500' : status === 'FINALIZADO' ? 'bg-amber-500' : 'bg-red-500'}`}></span>
+            <span
+              className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${status === 'ACTIVO' ? 'bg-green-400' : status === 'FINALIZADO' ? 'bg-amber-400' : 'bg-red-400'}`}
+            ></span>
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${status === 'ACTIVO' ? 'bg-green-500' : status === 'FINALIZADO' ? 'bg-amber-500' : 'bg-red-500'}`}
+            ></span>
           </span>
           <span className="text-[11px] font-mono">{status}</span>
+        </div>
+          <span className="text-[10px] font-mono text-zinc-400">{speedLabel}</span>
         </div>
       </div>
     </nav>

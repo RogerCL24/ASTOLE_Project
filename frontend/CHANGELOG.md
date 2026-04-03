@@ -1,5 +1,23 @@
 # Changelog - ASTOLE - Frontend
 
+## [0.5.0-ui] - 2026-04-03
+
+### Added
+- **Vista Táctica de Activos**: Ficha interactiva al expandir la vista táctica con IP completa, IoC, vectores detectados y logs recientes.
+- **Tooltips IP instantáneos**: Hover sobre cubos muestra la IP completa sin retardo.
+- **Top Atacantes Pro**: Etiqueta del vector principal por IP (coloreado con la misma paleta del donut).
+
+### Changed
+- **Activos 3D Performance**: Cubos estáticos; solo severidad Crítica con brillo pulsante ligero (`animate-pulse`).
+- **Severidad estricta**: Mapeo visual consistente (Critical carmesí, High naranja, Medium amarillo, Low carbón).
+- **Terminología SOC**: “Índice de Compromiso (IoC)” y “Vectores de Intrusión Detectados”.
+- **Claridad temporal**: Prefijo “Log Time:” en narrativa y logs para distinguir datos históricos del dataset.
+- **Telemetría**: Refinos de visualización y formateo de hora estable (Madrid).
+
+### Fixed
+- **Timezone**: Visualización consistente en `Europe/Madrid` para tiempos mostrados en Triaje/Telemetría.
+- **Donut colors**: Paleta consistente con el UI y sin colores repetidos.
+
 ## [0.4.0-ui] - 2026-04-02
 
 ### Added

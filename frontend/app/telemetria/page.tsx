@@ -1,20 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, Card, Grid, Metric, ProgressBar, Text } from "@tremor/react";
+import { Badge, BarList, Card, Metric, Text } from "@tremor/react";
 import {
-  Bar,
-  BarChart,
   Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
-const SLICER_OPTIONS = [20, 100, 1000, "all"] as const;
+const POLL_INTERVAL_MS = 2000;
+const MAX_LATENCY_POINTS = 120;
+const COST_PER_1K_TOKENS_USD = 0.002;
 const PROTOCOL_COLORS = ["#f97316", "#f59e0b", "#eab308", "#94a3b8"];
-const POLL_INTERVAL_MS = 5000;
+
+const HISTORY_RANGE_OPTIONS = [MAX_LATENCY_POINTS, "all"] as const;
+type HistoryRangeOption = (typeof HISTORY_RANGE_OPTIONS)[number];
 
 const seedTraffic = [
   { tiempo: "T-20", "Tráfico Normal": 230, "Tráfico Anómalo": 10 },
@@ -48,6 +54,7 @@ type TrafficPoint = {
 };
 
 type AlertEntry = {
+  timestamp?: string;
   gnn_metadata?: {
     label_multiclass?: string;
     label_binary?: number;
@@ -55,6 +62,11 @@ type AlertEntry = {
   };
   network_data?: {
     protocol?: number;
+  };
+  metadata?: {
+    tokens_used?: {
+      total?: number;
+    };
   };
 };
 
@@ -119,20 +131,37 @@ const fallbackData: StatsResponse = {
 
 const formatNumber = (value: number) => new Intl.NumberFormat("es-ES").format(value);
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(value);
+
+const MADRID_TIME_ZONE = "Europe/Madrid";
+
+const formatMadridTime = (value?: string) => {
+  if (!value) return "--:--:--";
+  try {
+    return new Date(value).toLocaleTimeString("es-ES", { hour12: false, timeZone: MADRID_TIME_ZONE });
+  } catch {
+    return new Date(value).toLocaleTimeString("es-ES", { hour12: false });
+  }
+};
+
 const normalizeTrafficPoint = (point: any): TrafficPoint => ({
   tiempo: String(point?.tiempo ?? "Ventana"),
   "Tráfico Normal": Number(point?.["Tráfico Normal"] ?? point?.trafico_normal ?? 0),
   "Tráfico Anómalo": Number(point?.["Tráfico Anómalo"] ?? point?.trafico_anomalo ?? 0),
 });
 
-const getSliceLimit = (range: (typeof SLICER_OPTIONS)[number]) => (range === "all" ? null : range);
-
-const sliceFromEnd = <T,>(items: T[], limit: number | null) => {
-  if (limit === null) {
-    return items;
+const calculateLatencyAverage = (latencies: number[]) => {
+  if (!latencies.length) {
+    return 0;
   }
 
-  return items.slice(-limit);
+  return latencies.reduce((sum, value) => sum + Number(value || 0), 0) / latencies.length;
 };
 
 const normalizeProtocol = (protocol?: number) => {
@@ -157,46 +186,46 @@ const buildProtocolDistribution = (alerts: AlertEntry[]) => {
 
   const ordered = ["TCP", "UDP", "ICMP", "OTHER"];
 
-  return ordered
-    .filter((protocolName) => (counts[protocolName] ?? 0) > 0)
-    .map((protocolName, index) => ({
-      name: protocolName,
-      value: counts[protocolName],
-      color: PROTOCOL_COLORS[index % PROTOCOL_COLORS.length],
-    }));
+  return ordered.map((name, index) => ({
+    name,
+    value: counts[name] ?? 0,
+    color: PROTOCOL_COLORS[index % PROTOCOL_COLORS.length],
+  }));
 };
 
-const calculateLatencyAverage = (latencies: number[]) => {
-  if (!latencies.length) {
+const calculateAlertsPerMinute = (alerts: AlertEntry[]) => {
+  const timestamps = alerts
+    .map((alert) => (typeof alert?.timestamp === "string" ? Date.parse(alert.timestamp) : NaN))
+    .filter((value) => Number.isFinite(value)) as number[];
+
+  if (timestamps.length < 2) {
     return 0;
   }
 
-  return latencies.reduce((sum, value) => sum + Number(value || 0), 0) / latencies.length;
-};
-
-const calculateCompressionRate = (traffic: TrafficPoint[]) => {
-  const totalNormal = traffic.reduce((sum, point) => sum + Number(point["Tráfico Normal"] ?? 0), 0);
-  const totalAnomalous = traffic.reduce((sum, point) => sum + Number(point["Tráfico Anómalo"] ?? 0), 0);
-  const totalTraffic = totalNormal + totalAnomalous;
-
-  if (totalTraffic <= 0) {
+  const min = Math.min(...timestamps);
+  const max = Math.max(...timestamps);
+  const minutes = (max - min) / 60_000;
+  if (minutes <= 0) {
     return 0;
   }
 
-  return (1 - totalAnomalous / totalTraffic) * 100;
+  return alerts.length / minutes;
 };
 
 export default function TelemetriaPage() {
   const [data, setData] = useState<StatsResponse>(fallbackData);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRange, setSelectedRange] = useState<(typeof SLICER_OPTIONS)[number]>(20);
+  const [isClient, setIsClient] = useState(false);
+  const [historyRange, setHistoryRange] = useState<HistoryRangeOption>(MAX_LATENCY_POINTS);
 
   useEffect(() => {
+    setIsClient(true);
+
     let active = true;
 
     const fetchStats = async () => {
       try {
-        const response = await fetch("/api/stats");
+        const response = await fetch("/api/stats", { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -225,39 +254,55 @@ export default function TelemetriaPage() {
   const performance = data.metrics?.performance ?? fallbackData.metrics?.performance ?? {};
   const trafficHistory = (performance.traffic_history ?? seedTraffic).map(normalizeTrafficPoint);
   const latencyHistory = performance.latency_history_ms ?? fallbackData.metrics?.performance?.latency_history_ms ?? [];
-  const alerts = Array.isArray(data.alerts) ? data.alerts : fallbackData.alerts ?? [];
+  const alerts = (Array.isArray(data.alerts) ? data.alerts : fallbackData.alerts ?? []) as AlertEntry[];
 
-  const limit = getSliceLimit(selectedRange);
-  const selectedTraffic = sliceFromEnd(trafficHistory, limit);
-  const selectedLatencies = sliceFromEnd(latencyHistory, limit);
-  const selectedAlerts = sliceFromEnd(alerts, limit);
+  const alignedPoints =
+    historyRange === "all"
+      ? Math.min(trafficHistory.length, latencyHistory.length)
+      : Math.min(trafficHistory.length, latencyHistory.length, MAX_LATENCY_POINTS);
 
-  const selectedTrafficVolume = selectedTraffic.reduce(
+  const trafficSlice = alignedPoints > 0 ? trafficHistory.slice(-alignedPoints) : [];
+  const latencySlice = alignedPoints > 0 ? latencyHistory.slice(-alignedPoints) : [];
+  const latencyChartData = latencySlice.map((value, index) => ({
+    tiempo: trafficSlice[index]?.tiempo ?? `T-${alignedPoints - 1 - index}`,
+    latencia_ms: Number(value ?? 0),
+  }));
+
+  const observationCycles = Number(performance.windows_processed ?? alignedPoints);
+  const avgLatency = calculateLatencyAverage(latencySlice);
+  const dataVolume = trafficSlice.reduce(
     (sum, point) => sum + Number(point["Tráfico Normal"] ?? 0) + Number(point["Tráfico Anómalo"] ?? 0),
     0
   );
-  const selectedAnomalyVolume = selectedTraffic.reduce((sum, point) => sum + Number(point["Tráfico Anómalo"] ?? 0), 0);
-  const selectedCompressionRate = calculateCompressionRate(selectedTraffic);
-  const selectedAvgLatency = calculateLatencyAverage(selectedLatencies);
-  const selectedProcessTime = selectedLatencies.reduce((sum, value) => sum + Number(value || 0), 0);
-  const selectedWindows = selectedTraffic.length;
-  const protocolDistribution = buildProtocolDistribution(selectedAlerts);
-  const protocolChartData = protocolDistribution.length
-    ? protocolDistribution
-    : [{ name: "Sin datos", value: 1, color: "#334155" }];
 
-  const totalAlerts = performance.total_alerts_triggered ?? 0;
-  const totalFlows = performance.total_flows_analyzed ?? 0;
+  const protocolChartData = buildProtocolDistribution(alerts);
+  const protocolTotal = protocolChartData.reduce((sum, entry) => sum + Number(entry.value || 0), 0);
+  const protocolPieData = protocolTotal > 0 ? protocolChartData.filter((entry) => entry.value > 0) : [{ name: "Sin datos", value: 1, color: "#334155" }];
+
+  const totalAlerts = Number(performance.total_alerts_triggered ?? alerts.length);
+  const alertsPerMinute = calculateAlertsPerMinute(alerts);
+  const compressionRate = Number(performance.compression_rate_percent ?? 0);
+
+  const tokenTotalsByLabel = alerts.reduce((acc: Record<string, number>, alert) => {
+    const label = alert?.gnn_metadata?.label_multiclass ?? "Unknown";
+    const tokens = Number(alert?.metadata?.tokens_used?.total ?? 0);
+    acc[label] = (acc[label] || 0) + tokens;
+    return acc;
+  }, {});
+
+  const tokenCostItems = Object.entries(tokenTotalsByLabel)
+    .map(([label, tokens]) => {
+      const cost = (Number(tokens) / 1000) * COST_PER_1K_TOKENS_USD;
+      return { name: label, value: cost };
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
+
+  const totalTokens = Object.values(tokenTotalsByLabel).reduce((sum, tokens) => sum + Number(tokens || 0), 0);
+  const totalTokenCost = (totalTokens / 1000) * COST_PER_1K_TOKENS_USD;
   const engineStatus = data.metrics?.status ?? "UNKNOWN";
-  const lastUpdate = data.metrics?.last_update
-    ? new Date(data.metrics.last_update).toLocaleString("es-ES", {
-        dateStyle: "medium",
-        timeStyle: "medium",
-      })
-    : "Sin actualización";
-  const sliceLabel = selectedRange === "all" ? "Todo el Histórico" : `Últimas ${selectedRange}`;
-  const normalShare = selectedTrafficVolume > 0 ? ((selectedTrafficVolume - selectedAnomalyVolume) / selectedTrafficVolume) * 100 : 0;
-  const anomalyShare = selectedTrafficVolume > 0 ? (selectedAnomalyVolume / selectedTrafficVolume) * 100 : 0;
+  const lastUpdate = data.metrics?.last_update ? formatMadridTime(data.metrics.last_update) : "Sin actualización";
+  const tokenUnitLabel = `${formatCurrency(COST_PER_1K_TOKENS_USD)} / 1k tokens`;
 
   return (
     <div className="min-h-screen bg-black px-6 py-10 lg:px-12">
@@ -270,22 +315,82 @@ export default function TelemetriaPage() {
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-white lg:text-4xl">Telemetría SOC</h1>
               <Text className="mt-2 max-w-2xl text-sm text-zinc-400">
-                Central analítica para revisar el historial operativo, la salud del sistema y la distribución de protocolos en rangos seleccionados.
+                Monitor de latencia operativa y costes estimados de tokens.
               </Text>
             </div>
           </div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-4 text-right">
+            <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-500">Última actualización</Text>
+            <p className="mt-1 font-mono text-sm text-white">{lastUpdate}</p>
+          </div>
+        </header>
 
-          <div className="flex flex-col gap-3 rounded-2xl border border-white/5 bg-white/5 px-4 py-4 lg:min-w-[420px]">
-            <div className="flex flex-wrap gap-2">
-              {SLICER_OPTIONS.map((option) => {
-                const active = selectedRange === option;
-                const label = option === "all" ? "Todo el Histórico" : `Últimas ${option}`;
+        {error ? (
+          <Card className="border border-red-500/20 bg-red-500/5 ring-0">
+            <Text className="text-red-300">{error}</Text>
+          </Card>
+        ) : null}
+
+        <Card className="border border-white/5 bg-white/5 ring-0">
+          <Text className="text-sm text-zinc-400">
+            Métricas analíticas basadas en el histórico acumulado del motor.
+          </Text>
+        </Card>
+
+        <Card className="border border-hyper-border bg-hyper-surface ring-0">
+          <div className="flex flex-col gap-2 border-b border-white/5 pb-5">
+            <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Rendimiento Histórico</Text>
+            <h2 className="text-2xl font-semibold text-white">KPIs operativos</h2>
+            <Text className="text-sm text-zinc-400">Ventana de Observación: {formatNumber(observationCycles)} ciclos.</Text>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
+              <Text className="text-zinc-400">Total Alertas</Text>
+              <Metric className="mt-3 text-white">{formatNumber(totalAlerts)}</Metric>
+              <Text className="mt-2 text-xs text-zinc-500">Acumuladas por el motor.</Text>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
+              <Text className="text-zinc-400">Alertas/Minuto</Text>
+              <Metric className="mt-3 text-white">{alertsPerMinute > 0 ? alertsPerMinute.toFixed(2) : "--"}</Metric>
+              <Text className="mt-2 text-xs text-zinc-500">Estimado desde timestamps.</Text>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
+              <Text className="text-zinc-400">Reducción de Ruido</Text>
+              <Metric className="mt-3 text-white">{compressionRate.toFixed(2)}%</Metric>
+              <Text className="mt-2 text-xs text-zinc-500">Compresión reportada por el motor.</Text>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
+              <Text className="text-zinc-400">Latencia Media</Text>
+              <Metric className="mt-3 text-white">{avgLatency.toFixed(2)} ms</Metric>
+              <Text className="mt-2 text-xs text-zinc-500">Promedio en la ventana visible.</Text>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
+              <Text className="text-zinc-400">Volumen Procesado</Text>
+              <Metric className="mt-3 text-white">{formatNumber(dataVolume)}</Metric>
+              <Text className="mt-2 text-xs text-zinc-500">Suma de tráfico normal + anómalo.</Text>
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="border border-hyper-border bg-hyper-surface ring-0">
+            <div className="flex flex-col gap-2 border-b border-white/5 pb-5">
+              <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Latencia vs Tiempo</Text>
+              <h2 className="text-2xl font-semibold text-white">Histórico reciente</h2>
+              <Text className="text-sm text-zinc-400">Ventana de Observación: {formatNumber(observationCycles)} ciclos.</Text>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {HISTORY_RANGE_OPTIONS.map((option) => {
+                const active = historyRange === option;
+                const label = option === "all" ? "Todo el histórico" : `Últimas ${option}`;
 
                 return (
                   <button
                     key={String(option)}
                     type="button"
-                    onClick={() => setSelectedRange(option)}
+                    onClick={() => setHistoryRange(option)}
                     className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-200 ${
                       active
                         ? "border-hyper-accent bg-hyper-accent/20 text-white shadow-[0_0_18px_rgba(249,115,22,0.25)]"
@@ -298,117 +403,80 @@ export default function TelemetriaPage() {
               })}
             </div>
 
-            <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-3">
-              <div>
-                <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-500">Rango activo</Text>
-                <p className="mt-1 text-sm text-white">{sliceLabel}</p>
-              </div>
-              <div className="text-right">
-                <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-500">Última actualización</Text>
-                <p className="mt-1 font-mono text-sm text-white">{lastUpdate}</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {error ? (
-          <Card className="border border-red-500/20 bg-red-500/5 ring-0">
-            <Text className="text-red-300">{error}</Text>
-          </Card>
-        ) : null}
-
-        <Grid numItemsSm={2} numItemsLg={4} className="gap-6">
-          <Card className="border border-white/5 bg-zinc-950/80 ring-0">
-            <Text className="text-zinc-400">Latencia Media</Text>
-            <Metric className="mt-3 text-white">{selectedAvgLatency.toFixed(2)} ms</Metric>
-            <Text className="mt-2 text-xs text-zinc-500">Promedio del rango {sliceLabel}</Text>
-          </Card>
-
-          <Card className="border border-white/5 bg-zinc-950/80 ring-0">
-            <Text className="text-zinc-400">Tiempo de Proceso</Text>
-            <Metric className="mt-3 text-white">{selectedProcessTime.toFixed(2)} ms</Metric>
-            <Text className="mt-2 text-xs text-zinc-500">Suma acumulada de las ventanas filtradas</Text>
-          </Card>
-
-          <Card className="border border-white/5 bg-zinc-950/80 ring-0">
-            <Text className="text-zinc-400">Ventanas Totales</Text>
-            <Metric className="mt-3 text-white">{formatNumber(selectedWindows)}</Metric>
-            <Text className="mt-2 text-xs text-zinc-500">Elementos visibles en el slicer actual</Text>
-          </Card>
-
-          <Card className="border border-white/5 bg-zinc-950/80 ring-0">
-            <Text className="text-zinc-400">Tasa de Compresión</Text>
-            <Metric className="mt-3 text-white">{selectedCompressionRate.toFixed(2)}%</Metric>
-            <Text className="mt-2 text-xs text-zinc-500">Ruido eliminado en el rango filtrado</Text>
-          </Card>
-        </Grid>
-
-        <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
-          <Card className="border border-hyper-border bg-hyper-surface ring-0">
-            <div className="flex flex-col gap-2 border-b border-white/5 pb-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Salud histórica</Text>
-                <h2 className="mt-2 text-2xl font-semibold text-white">Resumen operativo del rango</h2>
-                <Text className="mt-2 text-sm text-zinc-400">
-                  El slicer limita la muestra para inspeccionar ventanas recientes o la totalidad del histórico disponible.
-                </Text>
-              </div>
-
-              <Badge color="orange" size="xs">
-                {selectedTraffic.length} ventanas
-              </Badge>
-            </div>
-
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <Text className="text-zinc-300">Tráfico Normal</Text>
-                  <Metric className="text-white">{normalShare.toFixed(1)}%</Metric>
-                </div>
-                <ProgressBar value={Math.max(normalShare, 1)} color="amber" className="mt-3 h-3" />
-                <Text className="mt-2 text-xs text-zinc-500">Proporción de tráfico sin anomalía dentro del rango seleccionado.</Text>
-              </div>
-
-              <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <Text className="text-zinc-300">Tráfico Anómalo</Text>
-                  <Metric className="text-red-300">{anomalyShare.toFixed(1)}%</Metric>
-                </div>
-                <ProgressBar value={Math.max(anomalyShare, 1)} color="red" className="mt-3 h-3" />
-                <Text className="mt-2 text-xs text-zinc-500">Ruido operacional visto por el motor de ingestión.</Text>
+            <div className="mt-6 overflow-x-auto">
+              <div className={`h-80 w-full ${historyRange === "all" ? "min-w-[2000px]" : ""}`}>
+                {isClient ? (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <LineChart data={latencyChartData}>
+                      <XAxis dataKey="tiempo" hide />
+                      <YAxis hide />
+                      <Tooltip
+                        cursor={{ stroke: "rgba(255,255,255,0.08)" }}
+                        contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "12px" }}
+                        itemStyle={{ color: "#fff" }}
+                        formatter={(value: any) => [`${Number(value).toFixed(2)} ms`, "Latencia"]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="latencia_ms"
+                        stroke="#f97316"
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full w-full rounded-xl border border-white/5 bg-black/30" />
+                )}
               </div>
             </div>
           </Card>
 
           <Card className="border border-hyper-border bg-hyper-surface ring-0">
             <div className="flex flex-col gap-2 border-b border-white/5 pb-5">
-              <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Distribución de protocolos</Text>
-              <h2 className="text-2xl font-semibold text-white">TCP, UDP e ICMP</h2>
-              <Text className="text-sm text-zinc-400">
-                Conteo de protocolos en las alertas consideradas por {sliceLabel}.
-              </Text>
+              <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Distribución de Protocolos</Text>
+              <h2 className="text-2xl font-semibold text-white">Donut de Protocolos</h2>
+              <Text className="text-sm text-zinc-400">Conteo sobre alertas recibidas.</Text>
             </div>
 
-            <div className="mt-6 h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={protocolChartData} barSize={42}>
-                  <XAxis dataKey="name" stroke="#71717a" tickLine={false} axisLine={false} />
-                  <YAxis stroke="#71717a" tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip
-                    cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                    contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "12px" }}
-                    itemStyle={{ color: "#fff" }}
-                  />
-                  <Bar dataKey="value" radius={[10, 10, 0, 0]}>
-                    {protocolChartData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="mt-6 h-80 w-full min-w-0 relative">
+              {isClient ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                  <PieChart>
+                    <Pie
+                      data={protocolPieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={62}
+                      outerRadius={96}
+                      paddingAngle={6}
+                      dataKey="value"
+                      stroke="none"
+                      cornerRadius={6}
+                      isAnimationActive={false}
+                    >
+                      {protocolPieData.map((entry) => (
+                        <Cell key={entry.name} fill={(entry as any).color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "12px" }}
+                      itemStyle={{ color: "#fff" }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full rounded-xl border border-white/5 bg-black/30" />
+              )}
+
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-mono text-white">{formatNumber(protocolTotal)}</span>
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest mt-1">Eventos</span>
+              </div>
             </div>
 
-            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {protocolChartData.map((entry) => (
                 <div key={entry.name} className="flex items-center justify-between rounded-xl border border-white/5 bg-black/40 px-3 py-2 text-sm">
                   <div className="flex items-center gap-2">
@@ -420,42 +488,35 @@ export default function TelemetriaPage() {
               ))}
             </div>
           </Card>
+
+          <Card className="border border-hyper-border bg-hyper-surface ring-0">
+            <div className="flex flex-col gap-2 border-b border-white/5 pb-5">
+              <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Costes de Tokens</Text>
+              <h2 className="text-2xl font-semibold text-white">Estimación operativa</h2>
+              <Text className="text-sm text-zinc-400">Modelo mock: {tokenUnitLabel}.</Text>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
+                <Text className="text-zinc-400">Tokens totales</Text>
+                <Metric className="mt-3 text-white">{formatNumber(totalTokens)}</Metric>
+              </div>
+              <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
+                <Text className="text-zinc-400">Coste estimado</Text>
+                <Metric className="mt-3 text-white">{formatCurrency(totalTokenCost)}</Metric>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Text className="text-xs uppercase tracking-[0.25em] text-zinc-500">Top costes por tipo</Text>
+              <BarList
+                data={tokenCostItems}
+                className="mt-3"
+                valueFormatter={(value) => formatCurrency(Number(value))}
+              />
+            </div>
+          </Card>
         </div>
-
-        <Card className="border border-white/5 bg-zinc-950/80 ring-0">
-          <div className="flex flex-col gap-2 border-b border-white/5 pb-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-500">Estado del conjunto</Text>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Volumen total y alertas acumuladas</h2>
-              <Text className="mt-2 text-sm text-zinc-400">
-                Vista general del motor de ingestión sobre el histórico completo cargado por el backend.
-              </Text>
-            </div>
-            <Badge color="green" size="xs">
-              {formatNumber(totalAlerts)} alertas / {formatNumber(totalFlows)} flujos
-            </Badge>
-          </div>
-
-          <div className="mt-8 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-              <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-500">Flujos Analizados</Text>
-              <Metric className="mt-2 text-white">{formatNumber(totalFlows)}</Metric>
-              <Text className="mt-1 text-sm text-zinc-400">Acumulado completo de la simulación.</Text>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-              <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-500">Alertas Generadas</Text>
-              <Metric className="mt-2 text-white">{formatNumber(totalAlerts)}</Metric>
-              <Text className="mt-1 text-sm text-zinc-400">Eventos accionables elevados al SOC.</Text>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-              <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-500">Tasa de Compresión Global</Text>
-              <Metric className="mt-2 text-white">{Number(performance.compression_rate_percent ?? 0).toFixed(2)}%</Metric>
-              <Text className="mt-1 text-sm text-zinc-400">Valor acumulado reportado por el motor.</Text>
-            </div>
-          </div>
-        </Card>
       </div>
     </div>
   );

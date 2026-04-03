@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Badge, Card } from "@tremor/react";
 import {
@@ -15,14 +15,135 @@ import {
   Cell,
 } from "recharts";
 
-const COLORS = ["#f97316", "#f59e0b", "#eab308", "#ef4444", "#8b5cf6"];
+const hashStringToHue = (value: string) => {
+  let hash = 5381;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 33) ^ value.charCodeAt(i);
+  }
+  return Math.abs(hash) % 360;
+};
+
+const buildUniqueColorsByLabel = (labels: string[]) => {
+  const palette = [
+    "#f97316", // orange-500 (hyper accent)
+    "#f59e0b", // amber-500
+    "#eab308", // yellow-500
+    "#ef4444", // red-500
+    "#3b82f6", // blue-500
+    "#6366f1", // indigo-500
+    "#8b5cf6", // violet-500
+    "#a855f7", // purple-500
+    "#d946ef", // fuchsia-500
+    "#ec4899", // pink-500
+    "#22c55e", // green-500
+    "#10b981", // emerald-500
+    "#14b8a6", // teal-500
+    "#06b6d4", // cyan-500
+    "#0ea5e9", // sky-500
+    "#84cc16", // lime-500
+  ];
+
+  const used = new Set<string>();
+  const byLabel: Record<string, string> = {};
+  const goldenAngle = 137.508;
+
+  for (const [index, label] of labels.entries()) {
+    if (index < palette.length) {
+      const color = palette[index];
+      used.add(color);
+      byLabel[label] = color;
+      continue;
+    }
+
+    const baseHue = hashStringToHue(label);
+    let hue = baseHue;
+    let color = `hsl(${hue} 78% 55%)`;
+
+    for (let attempts = 0; attempts < 24 && used.has(color); attempts += 1) {
+      hue = Math.round((hue + goldenAngle) % 360);
+      color = `hsl(${hue} 78% 55%)`;
+    }
+
+    used.add(color);
+    byLabel[label] = color;
+  }
+
+  return byLabel;
+};
 const POLL_INTERVAL_MS = 1000;
 const TRAFFIC_WINDOW_SIZE = 20;
+const MAX_VISIBLE_INCIDENTS = 50;
+const SPEED_STORAGE_KEY = "astole.simulation.speed";
+const SPEED_EVENT_NAME = "astole:speed";
 
 const PROTOCOL_NAMES: Record<number, string> = {
   1: "ICMP",
   6: "TCP",
   17: "UDP",
+};
+
+const MADRID_TIME_ZONE = "Europe/Madrid";
+
+type InfrastructureSeverity = "critical" | "high" | "medium" | "low";
+
+const PRIORITY_ORDER: Record<string, InfrastructureSeverity> = {
+  "Crítica": "critical",
+  "Alta": "high",
+  "Media": "medium",
+  "Baja": "low",
+};
+
+const getInfrastructureThreatPercent = (severity: InfrastructureSeverity) => {
+  switch (severity) {
+    case "critical":
+      return 100;
+    case "high":
+      return 75;
+    case "medium":
+      return 50;
+    default:
+      return 25;
+  }
+};
+
+const getInfrastructureSeverityUi = (severity: InfrastructureSeverity) => {
+  if (severity === "critical") {
+    return {
+      label: "Crítica",
+      cube: "bg-rose-600/22 border-rose-500/45",
+      top: "bg-rose-600/18",
+      side: "bg-rose-600/12",
+      glow: "animate-pulse shadow-[0_0_18px_rgba(225,29,72,0.65)] ring-2 ring-rose-500/25",
+    };
+  }
+
+  if (severity === "high") {
+    return {
+      label: "Alta",
+      cube: "bg-orange-500/22 border-orange-400/45",
+      top: "bg-orange-500/18",
+      side: "bg-orange-500/12",
+      glow: "",
+    };
+  }
+
+  if (severity === "medium") {
+    return {
+      label: "Media",
+      cube: "bg-yellow-400/18 border-yellow-300/35",
+      top: "bg-yellow-400/14",
+      side: "bg-yellow-400/10",
+      glow: "",
+    };
+  }
+
+  return {
+    label: "Baja",
+    cube: "bg-zinc-800/35 border-zinc-600/25",
+    top: "bg-zinc-700/25",
+    side: "bg-zinc-700/18",
+    glow: "",
+  };
 };
 
 const seedTraffic = [
@@ -125,9 +246,7 @@ const normalizeAlert = (alert: any) => ({
       "Analizando comportamiento del flujo con inteligencia narrativa...",
     technical_detail:
       alert?.narrative?.technical_detail ??
-      alert?.technical_details
-        ? `Duración: ${alert?.technical_details?.duration_ms ?? 0}ms`
-        : undefined,
+      (alert?.technical_details ? `Duración: ${alert?.technical_details?.duration_ms ?? 0}ms` : undefined),
   },
   metadata: alert?.metadata ?? {
     tokens_used: { total: 0 },
@@ -137,19 +256,52 @@ const normalizeAlert = (alert: any) => ({
 const formatUtcTime = (value?: string) => {
   if (!value) return "Sin actualización";
 
-  return new Date(value).toLocaleTimeString("es-ES", {
-    hour12: false,
-    timeZone: "UTC",
-  });
+  try {
+    return new Date(value).toLocaleTimeString("es-ES", { hour12: false, timeZone: MADRID_TIME_ZONE });
+  } catch {
+    return new Date(value).toLocaleTimeString("es-ES", { hour12: false });
+  }
 };
 
 const formatIncidentTime = (value?: string) => {
   if (!value) return "--:--:--";
 
-  return new Date(value).toLocaleTimeString("es-ES", {
-    hour12: false,
-    timeZone: "UTC",
-  });
+  try {
+    return new Date(value).toLocaleTimeString("es-ES", { hour12: false, timeZone: MADRID_TIME_ZONE });
+  } catch {
+    return new Date(value).toLocaleTimeString("es-ES", { hour12: false });
+  }
+};
+const isValidSpeed = (value: unknown): value is number | "MAX" => {
+  if (value === "MAX") return true;
+  if (typeof value === "number") return [1, 2, 4].includes(value);
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && [1, 2, 4].includes(parsed);
+  }
+  return false;
+};
+
+const readStoredSpeed = (): number | "MAX" | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(SPEED_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return isValidSpeed(parsed) ? (typeof parsed === "string" ? (parsed === "MAX" ? "MAX" : Number(parsed)) : parsed) : null;
+  } catch {
+    return null;
+  }
+};
+
+const persistSpeed = (speed: number | "MAX") => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(SPEED_STORAGE_KEY, JSON.stringify(speed));
+};
+
+const broadcastSpeed = (speed: number | "MAX") => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(SPEED_EVENT_NAME, { detail: speed }));
 };
 
 const buildSeedTrafficHistory = (performance: any): TrafficPoint[] => {
@@ -237,18 +389,110 @@ const buildTopAttackers = (alerts: any[]): Array<{ srcIp: string; count: number 
     .slice(0, 5);
 };
 
+const buildTopDestinations = (alerts: any[]): Array<{ dstIp: string; count: number }> => {
+  const destinationCounts = alerts.reduce((acc: Record<string, number>, alert: any) => {
+    const destinationIp = alert?.network_data?.dst_ip ?? "Desconocida";
+    acc[destinationIp] = (acc[destinationIp] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(destinationCounts)
+    .map(([dstIp, count]) => ({ dstIp, count: Number(count) }))
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 12);
+};
+
+const computeInfrastructureSeverity = (alerts: any[]): InfrastructureSeverity => {
+  const rank: Record<InfrastructureSeverity, number> = {
+    low: 1,
+    medium: 2,
+    high: 3,
+    critical: 4,
+  };
+
+  let worst: InfrastructureSeverity = "low";
+  for (const alert of alerts) {
+    const confidenceScore = Number(alert?.gnn_metadata?.confidence_score ?? 0);
+    const binaryLabel = Number(alert?.gnn_metadata?.label_binary ?? 0);
+    const priorityLabel = getPriorityLabel(confidenceScore, binaryLabel);
+    const mapped = PRIORITY_ORDER[priorityLabel] ?? "low";
+
+    if (rank[mapped] > rank[worst]) {
+      worst = mapped;
+      if (worst === "critical") break;
+    }
+  }
+  return worst;
+};
+
+const buildInfrastructureAssets = (allAlerts: any[], visibleAlerts: any[]) => {
+  const byDstIp = new Map<string, any[]>();
+  for (const alert of allAlerts) {
+    const dstIp = alert?.network_data?.dst_ip ?? "Desconocida";
+    const list = byDstIp.get(dstIp) ?? [];
+    list.push(alert);
+    byDstIp.set(dstIp, list);
+  }
+
+  const visibleDstIps = Array.from(
+    new Set(visibleAlerts.map((alert) => String(alert?.network_data?.dst_ip ?? "Desconocida")))
+  );
+
+  return visibleDstIps
+    .map((dstIp) => {
+      const entries = byDstIp.get(dstIp) ?? [];
+      return {
+        dstIp,
+        count: entries.length,
+        severity: computeInfrastructureSeverity(entries),
+      };
+    })
+    .sort((a, b) => {
+      const severityOrder: Record<InfrastructureSeverity, number> = {
+        critical: 4,
+        high: 3,
+        medium: 2,
+        low: 1,
+      };
+      const left = severityOrder[a.severity];
+      const right = severityOrder[b.severity];
+      if (right !== left) return right - left;
+      return b.count - a.count;
+    });
+};
+
 export default function Capa1Triaje() {
   const [data, setData] = useState<StatsResponse>(fallbackData);
-  const [speed, setSpeed] = useState<number | string>(1);
+  const [speed, setSpeed] = useState<number | "MAX">(1);
   const [currentTime, setCurrentTime] = useState("");
+  const [isClient, setIsClient] = useState(false);
+  const [isTacticalOpen, setIsTacticalOpen] = useState(false);
+  const [selectedAssetIp, setSelectedAssetIp] = useState<string | null>(null);
+  const [flashCriticalBorder, setFlashCriticalBorder] = useState(false);
+  const previousCriticalAssets = useRef<Set<string>>(new Set());
+  const hasInitializedCriticalAssets = useRef(false);
   const [trafficHistory, setTrafficHistory] = useState<TrafficPoint[]>(() =>
     buildSeedTrafficHistory(fallbackData.metrics?.performance)
   );
 
   useEffect(() => {
+    setIsClient(true);
+
+    const storedSpeed = readStoredSpeed();
+    if (storedSpeed) {
+      setSpeed(storedSpeed);
+      broadcastSpeed(storedSpeed);
+    } else {
+      persistSpeed(1);
+      broadcastSpeed(1);
+    }
+
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/stats");
+        const res = await fetch("/api/stats", { cache: "no-store" });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         const json = (await res.json()) as StatsResponse;
         const performance = json.metrics?.performance ?? fallbackData.metrics?.performance;
         const apiTrafficHistory = performance?.traffic_history;
@@ -266,18 +510,26 @@ export default function Capa1Triaje() {
         } else {
           setTrafficHistory(buildSeedTrafficHistory(performance));
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
+      } catch {
+        // Network hiccups are expected in long-running demos; keep UI running on last known data.
       }
     };
 
     fetchData();
     const interval = window.setInterval(fetchData, POLL_INTERVAL_MS);
     const clock = window.setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString("es-ES", { hour12: false }));
+      try {
+        setCurrentTime(new Date().toLocaleTimeString("es-ES", { hour12: false, timeZone: MADRID_TIME_ZONE }));
+      } catch {
+        setCurrentTime(new Date().toLocaleTimeString("es-ES", { hour12: false }));
+      }
     }, 1000);
 
-    setCurrentTime(new Date().toLocaleTimeString("es-ES", { hour12: false }));
+    try {
+      setCurrentTime(new Date().toLocaleTimeString("es-ES", { hour12: false, timeZone: MADRID_TIME_ZONE }));
+    } catch {
+      setCurrentTime(new Date().toLocaleTimeString("es-ES", { hour12: false }));
+    }
 
     return () => {
       window.clearInterval(interval);
@@ -286,10 +538,15 @@ export default function Capa1Triaje() {
   }, []);
 
   const handleSpeedChange = async (newSpeed: number | string) => {
-    setSpeed(newSpeed);
+    const normalizedSpeed = newSpeed === "MAX" ? "MAX" : Number(newSpeed);
+    const nextSpeed = isValidSpeed(normalizedSpeed) ? (normalizedSpeed === "MAX" ? "MAX" : Number(normalizedSpeed)) : 1;
 
-    const label = newSpeed === "MAX" ? "MAX" : `${newSpeed}x`;
-    console.log("[ASTOLE] Simulation speed selected", { speed: newSpeed, label });
+    setSpeed(nextSpeed);
+    persistSpeed(nextSpeed);
+    broadcastSpeed(nextSpeed);
+
+    const label = nextSpeed === "MAX" ? "MAX" : `${nextSpeed}x`;
+    console.log("[ASTOLE] Simulation speed selected", { speed: nextSpeed, label });
 
     try {
       const response = await fetch("/api/control", {
@@ -297,7 +554,7 @@ export default function Capa1Triaje() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ speed: newSpeed }),
+        body: JSON.stringify({ speed: nextSpeed }),
       });
 
       if (!response.ok) {
@@ -335,59 +592,210 @@ export default function Capa1Triaje() {
   const speedOptions: Array<number | "MAX"> = [1, 2, 4, "MAX"];
   const speedLabel = speed === "MAX" ? "MAX" : `${speed}x`;
 
+  const HeaderTag = (isClient ? motion.header : "header") as any;
+  const MotionGridTag = (isClient ? motion.div : "div") as any;
+  const MotionAlertTag = (isClient ? motion.div : "div") as any;
+
   const metrics = data.metrics?.performance || {};
   const alerts = Array.isArray(data.alerts) ? data.alerts : [data.alerts];
 
-  const alertCounts = alerts.reduce((acc: Record<string, number>, alert: any) => {
-    const label = alert?.gnn_metadata?.label_multiclass || "Unknown";
+  const visibleAlerts = alerts.slice(-MAX_VISIBLE_INCIDENTS).reverse();
+
+  const alertCounts = visibleAlerts.reduce((acc: Record<string, number>, alert: any) => {
+    const label = String(alert?.gnn_metadata?.label_multiclass || "Unknown");
     acc[label] = (acc[label] || 0) + 1;
     return acc;
   }, {});
 
-  const dynamicDistribution = Object.keys(alertCounts).map((key, index) => ({
-    name: key,
-    value: alertCounts[key],
-    color: COLORS[index % COLORS.length],
+  const sortedLabels = Object.entries(alertCounts)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .map(([label]) => label);
+
+  const colorsByLabel = buildUniqueColorsByLabel(sortedLabels);
+  const dynamicDistribution = sortedLabels.map((label) => ({
+    name: label,
+    value: alertCounts[label] ?? 0,
+    color: colorsByLabel[label],
   }));
 
   const totalAlertEvents = dynamicDistribution.reduce((acc, item) => acc + item.value, 0);
-  const topAttackers = buildTopAttackers(alerts);
-  const recentAlerts = alerts.slice(0, 4);
+  const topAttackers = buildTopAttackers(visibleAlerts);
+  const attackerPrimaryTypeByIp = useMemo(() => {
+    const bySrc = new Map<string, Record<string, number>>();
+
+    for (const alert of visibleAlerts) {
+      const srcIp = String(alert?.network_data?.src_ip ?? "Desconocida");
+      const isAttack = Number(alert?.gnn_metadata?.label_binary ?? 0) === 1;
+      if (!isAttack) continue;
+
+      const label = String(alert?.gnn_metadata?.label_multiclass ?? "Desconocido");
+      const counts = bySrc.get(srcIp) ?? {};
+      counts[label] = (counts[label] || 0) + 1;
+      bySrc.set(srcIp, counts);
+    }
+
+    const primary = new Map<string, string>();
+    for (const [srcIp, counts] of bySrc.entries()) {
+      let bestLabel = "";
+      let bestCount = -1;
+      for (const [label, count] of Object.entries(counts)) {
+        const countNumber = Number(count);
+        if (countNumber > bestCount) {
+          bestCount = countNumber;
+          bestLabel = label;
+        }
+      }
+      if (bestLabel) primary.set(srcIp, bestLabel);
+    }
+
+    return primary;
+  }, [visibleAlerts]);
+  const recentAlerts = visibleAlerts;
+  const infrastructureAssets = buildInfrastructureAssets(alerts, visibleAlerts);
+
+  const alertsByDstIp = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const alert of alerts) {
+      const dstIp = String(alert?.network_data?.dst_ip ?? "Desconocida");
+      const list = map.get(dstIp) ?? [];
+      list.push(alert);
+      map.set(dstIp, list);
+    }
+
+    for (const [dstIp, list] of map.entries()) {
+      list.sort((a, b) => {
+        const left = new Date(a?.timestamp ?? 0).getTime();
+        const right = new Date(b?.timestamp ?? 0).getTime();
+        return right - left;
+      });
+      map.set(dstIp, list);
+    }
+
+    return map;
+  }, [alerts]);
+
+  const selectedAsset = useMemo(() => {
+    if (!selectedAssetIp) return null;
+    const asset = infrastructureAssets.find((entry) => String(entry.dstIp) === String(selectedAssetIp));
+    if (!asset) return null;
+
+    const allForIp = alertsByDstIp.get(String(selectedAssetIp)) ?? [];
+    const attackCounts = allForIp.reduce((acc: Record<string, number>, alert: any) => {
+      const isAttack = Number(alert?.gnn_metadata?.label_binary ?? 0) === 1;
+      if (!isAttack) return acc;
+      const label = String(alert?.gnn_metadata?.label_multiclass ?? "Desconocido");
+      acc[label] = (acc[label] || 0) + 1;
+      return acc;
+    }, {});
+
+    const attackSkills = Object.entries(attackCounts)
+      .map(([label, count]) => ({ label, count: Number(count) }))
+      .sort((a, b) => b.count - a.count);
+
+    const recentLogs = allForIp.slice(0, 3);
+    const threatPercent = getInfrastructureThreatPercent(asset.severity);
+    const ui = getInfrastructureSeverityUi(asset.severity);
+
+    return {
+      ...asset,
+      ui,
+      threatPercent,
+      attackSkills,
+      recentLogs,
+    };
+  }, [alertsByDstIp, infrastructureAssets, selectedAssetIp]);
+
+  useEffect(() => {
+    if (!selectedAssetIp) return;
+    const isStillVisible = infrastructureAssets.some((entry) => String(entry.dstIp) === String(selectedAssetIp));
+    if (!isStillVisible) setSelectedAssetIp(null);
+  }, [infrastructureAssets, selectedAssetIp]);
+  const criticalAssetsKey = infrastructureAssets
+    .filter((asset) => asset.severity === "critical")
+    .map((asset) => String(asset.dstIp))
+    .sort()
+    .join("|");
+
+  useEffect(() => {
+    if (!isClient) return;
+
+    const nextSet = new Set(
+      infrastructureAssets.filter((asset) => asset.severity === "critical").map((asset) => String(asset.dstIp))
+    );
+    const prevSet = previousCriticalAssets.current;
+
+    if (!hasInitializedCriticalAssets.current) {
+      previousCriticalAssets.current = nextSet;
+      hasInitializedCriticalAssets.current = true;
+      return;
+    }
+
+    const hasNewCritical = Array.from(nextSet).some((dstIp) => !prevSet.has(dstIp));
+    if (hasNewCritical) {
+      setFlashCriticalBorder(true);
+      window.setTimeout(() => setFlashCriticalBorder(false), 500);
+    }
+
+    previousCriticalAssets.current = nextSet;
+  }, [isClient, criticalAssetsKey]);
 
   const displayTrafficHistory = trafficHistory.map((point, index, array) => ({
     ...point,
     tiempo: index === array.length - 1 ? "Ahora" : `-${array.length - 1 - index}m`,
   }));
 
+  const totalAlertsValueRaw = metrics.total_alerts_triggered;
+  const totalAlertsValue = Number.isFinite(Number(totalAlertsValueRaw))
+    ? Number(totalAlertsValueRaw)
+    : Number.isFinite(Number(totalAlertEvents))
+      ? Number(totalAlertEvents)
+      : 0;
+
+  const analysisCycles = Number(metrics.windows_processed ?? 0);
+  const totalThreats = alerts.filter(Boolean).length;
+
   return (
     <div className="min-h-screen p-8 lg:p-12 font-sans relative z-10 flex flex-col gap-8 bg-black">
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <div
+        className={`pointer-events-none fixed inset-0 z-[60] border-2 border-red-500/40 transition-opacity duration-500 ${
+          flashCriticalBorder ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <HeaderTag
+        {...(isClient
+          ? {
+              initial: { opacity: 0, y: -20 },
+              animate: { opacity: 1, y: 0 },
+              transition: { duration: 0.5 },
+            }
+          : {})}
         className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Triaje en Vivo</h1>
-          <div className="flex flex-col gap-2 text-sm text-zinc-400 sm:flex-row sm:items-center sm:gap-4">
+          <h1 className="text-5xl font-bold tracking-tight text-white mb-2">Triaje en Vivo</h1>
+          <div className="flex flex-col gap-2 text-lg text-zinc-400 sm:flex-row sm:items-center sm:gap-4">
             <p className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
               </span>
-              Última actualización: {formatUtcTime(data.metrics?.last_update)}
+              Última actualización: {isClient ? formatUtcTime(data.metrics?.last_update) : "--:--:--"}
             </p>
             <p className="text-zinc-500 font-mono">
               Flujo en Tiempo Real: <span className="text-white">{currentTime || "--:--:--"}</span> ·
               <span className="text-hyper-accent"> {speedLabel}</span>
             </p>
+            <p className="text-zinc-500 font-mono">
+              Ciclos de Análisis: <span className="text-white">{analysisCycles.toLocaleString("es-ES")}</span> ·
+              <span className="text-hyper-accent"> Amenazas Totales: {totalThreats.toLocaleString("es-ES")}</span>
+            </p>
           </div>
         </div>
 
         <details className="group rounded-2xl border border-white/10 bg-white/5 p-4 xl:min-w-[360px]">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm uppercase tracking-[0.2em] text-zinc-300">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg uppercase tracking-[0.2em] text-zinc-300">
             <span>Admin Settings</span>
-            <span className="text-[10px] text-hyper-accent transition-transform group-open:rotate-180">▾</span>
+            <span className="text-base text-hyper-accent transition-transform group-open:rotate-180">▾</span>
           </summary>
 
           <div className="mt-4 flex flex-col gap-5">
@@ -401,7 +809,7 @@ export default function Capa1Triaje() {
                     key={String(value)}
                     type="button"
                     onClick={() => handleSpeedChange(value)}
-                    className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-200 ${
+                    className={`rounded-full border px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] transition-all duration-200 ${
                       isActive
                         ? "border-hyper-accent bg-hyper-accent/20 text-white shadow-[0_0_18px_rgba(249,115,22,0.55)] ring-1 ring-hyper-accent/70 -translate-y-0.5"
                         : "border-white/10 bg-white/5 text-zinc-400 hover:border-hyper-accent/40 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_10px_rgba(249,115,22,0.15)]"
@@ -416,39 +824,43 @@ export default function Capa1Triaje() {
             <button
               type="button"
               onClick={handleStopSimulation}
-              className="rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-red-200 transition-all hover:bg-red-500/20 hover:text-white hover:shadow-[0_0_16px_rgba(239,68,68,0.3)]"
+              className="rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.25em] text-red-200 transition-all hover:bg-red-500/20 hover:text-white hover:shadow-[0_0_16px_rgba(239,68,68,0.3)]"
             >
               STOP
             </button>
           </div>
         </details>
-      </motion.header>
+      </HeaderTag>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
         <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
-          <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Alertas</p>
-          <p className="text-xl font-mono text-white">{metrics.total_alerts_triggered?.toLocaleString?.() ?? metrics.total_alerts_triggered ?? totalAlertEvents}</p>
-          <p className="text-[10px] text-zinc-500">Eventos detectados por el motor de respuesta</p>
+          <p className="text-base text-zinc-500 uppercase tracking-wider mb-1">Alertas</p>
+          <p className="text-3xl font-mono text-white">{totalAlertsValue.toLocaleString("es-ES")}</p>
+          <p className="text-sm text-zinc-500">Eventos detectados por el motor de respuesta</p>
         </Card>
 
         <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
-          <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Reducción de Ruido</p>
-          <p className="text-xl font-mono text-white">{Number(metrics.compression_rate_percent ?? 0).toFixed(2)}%</p>
-          <p className="text-[10px] text-zinc-500">Ruido eliminado frente al tráfico bruto</p>
+          <p className="text-base text-zinc-500 uppercase tracking-wider mb-1">Reducción de Ruido</p>
+          <p className="text-3xl font-mono text-white">{Number(metrics.compression_rate_percent ?? 0).toFixed(2)}%</p>
+          <p className="text-sm text-zinc-500">Ruido eliminado frente al tráfico bruto</p>
         </Card>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+      <MotionGridTag
+        {...(isClient
+          ? {
+              initial: { opacity: 0, scale: 0.95 },
+              animate: { opacity: 1, scale: 1 },
+              transition: { duration: 0.6, delay: 0.2 },
+            }
+          : {})}
+        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
       >
-        <Card className="bg-hyper-surface border-hyper-border ring-0 lg:col-span-2 min-w-0">
+        <Card className="bg-hyper-surface border-hyper-border ring-0 lg:col-span-3 min-w-0">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-white font-medium mb-1">Firma de Tráfico (Motor Ingestión)</h3>
-              <p className="text-xs text-zinc-500">Ventana operativa de los últimos 20 minutos</p>
+              <p className="text-base text-zinc-500">Ventana operativa de los últimos 20 minutos</p>
             </div>
             <Badge color="orange" size="xs">
               Real-Time Flow
@@ -456,171 +868,426 @@ export default function Capa1Triaje() {
           </div>
 
           <div className="h-80 mt-6 w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-              <AreaChart data={displayTrafficHistory}>
-                <defs>
-                  <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorAnomalo" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="tiempo" stroke="#3f3f46" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "#e4e4e7", fontSize: 10 }} />
-                <YAxis stroke="#3f3f46" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}`} tick={{ fill: "#f59e0b", fontSize: 10 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "8px", fontSize: "12px" }}
-                  itemStyle={{ color: "#fff" }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="Tráfico Normal"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorNormal)"
-                  animationDuration={1500}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="Tráfico Anómalo"
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorAnomalo)"
-                  animationDuration={1500}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {isClient ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <AreaChart data={displayTrafficHistory}>
+                  <defs>
+                    <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorAnomalo" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="tiempo"
+                    stroke="#3f3f46"
+                    fontSize={13}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "#e4e4e7", fontSize: 13 }}
+                  />
+                  <YAxis
+                    stroke="#3f3f46"
+                    fontSize={13}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `${v}`}
+                    tick={{ fill: "#f59e0b", fontSize: 13 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#09090b",
+                      borderColor: "#27272a",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                    }}
+                    itemStyle={{ color: "#fff" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="Tráfico Normal"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorNormal)"
+                    animationDuration={1500}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="Tráfico Anómalo"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorAnomalo)"
+                    animationDuration={1500}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full rounded-xl border border-white/5 bg-black/30" />
+            )}
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 gap-4 min-w-0 self-start xl:grid-cols-2 xl:items-start">
-          <Card className="bg-hyper-surface border-hyper-border ring-0 flex flex-col justify-between min-w-0 h-full">
+        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0 h-full">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-white font-medium text-center mb-1">Composición de Amenazas</h3>
-              <p className="text-xs text-zinc-500 text-center mb-2">Basado en alertas actuales</p>
+              <h3 className="text-white font-medium">Composición de Amenazas</h3>
+              <p className="text-base text-zinc-500">Basado en la ventana visible</p>
             </div>
+            <Badge color="orange" size="xs">Donut</Badge>
+          </div>
 
-            <div className="h-36 w-full relative mt-2 min-w-0">
+          <div className="mt-4 h-44 w-full min-w-0 relative">
+            {isClient ? (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
-                  <Pie data={dynamicDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={6} dataKey="value" stroke="none" cornerRadius={4}>
+                  <Pie
+                    data={dynamicDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={74}
+                    paddingAngle={6}
+                    dataKey="value"
+                    stroke="none"
+                    cornerRadius={4}
+                    isAnimationActive={false}
+                  >
                     {dynamicDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: "#0a0a0a", borderColor: "#1f1f22", borderRadius: "8px", fontSize: "12px" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#0a0a0a",
+                      borderColor: "#1f1f22",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-mono text-white">{totalAlertEvents}</span>
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest mt-1">Eventos</span>
-              </div>
-            </div>
+            ) : (
+              <div className="h-full w-full rounded-xl border border-white/5 bg-black/30" />
+            )}
 
-            <div className="flex flex-col gap-2 mt-4 w-full px-2">
-              {dynamicDistribution.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-zinc-400">{item.name}</span>
-                  </div>
-                  <span className="text-white font-mono">{item.value} eventos</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-3xl font-mono text-white">{totalAlertEvents}</span>
+              <span className="text-sm text-zinc-500 uppercase tracking-widest mt-1">Eventos</span>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 px-2">
+            {dynamicDistribution.slice(0, 6).map((item) => (
+              <div key={item.name} className="flex items-center justify-between text-base">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-zinc-400 truncate">{item.name}</span>
                 </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0 h-full">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div>
-                <h3 className="text-white font-medium">Top Atacantes</h3>
-                <p className="text-xs text-zinc-500">IPs de origen con más alertas en la ventana actual</p>
+                <span className="text-white font-mono">{item.value}</span>
               </div>
-              <Badge color="red" size="xs">Top 5</Badge>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0 h-full">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 className="text-white font-medium">Top Atacantes</h3>
+              <p className="text-base text-zinc-500">IPs de origen con más alertas en la ventana actual</p>
+            </div>
+            <Badge color="red" size="xs">Top 5</Badge>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {topAttackers.length > 0 ? (
+              topAttackers.map((attacker, index) => (
+                <div key={attacker.srcIp} className="rounded-xl border border-white/5 bg-black/40 px-3 py-2">
+                  <div className="flex items-center justify-between gap-3 text-base">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-hyper-accent/10 text-sm font-semibold text-hyper-accent">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0 flex items-center gap-2">
+                        <span className="truncate font-mono text-zinc-200">{attacker.srcIp}</span>
+                        {(() => {
+                          const primaryType = attackerPrimaryTypeByIp.get(String(attacker.srcIp));
+                          if (!primaryType) {
+                            return (
+                              <span className="shrink-0 rounded-full border border-white/10 bg-black/30 px-2 py-0.5 text-xs font-semibold text-zinc-400">
+                                [Benigno]
+                              </span>
+                            );
+                          }
+
+                          const color = colorsByLabel[primaryType] ?? "#f97316";
+                          return (
+                            <span
+                              className="shrink-0 rounded-full border border-white/10 bg-black/30 px-2 py-0.5 text-xs font-semibold"
+                              style={{ color }}
+                            >
+                              [{primaryType}]
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    <span className="font-mono text-white">{attacker.count}</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-hyper-accent to-amber-300"
+                      style={{ width: `${Math.max((attacker.count / Math.max(topAttackers[0]?.count ?? 1, 1)) * 100, 8)}%` }}
+                    />
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-lg text-zinc-500">Sin alertas suficientes para construir un ranking.</p>
+            )}
+          </div>
+        </Card>
+
+        
+      </MotionGridTag>
+
+      {isTacticalOpen ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm p-6"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="mx-auto h-full w-full max-w-7xl rounded-2xl border border-white/10 bg-hyper-surface p-6 overflow-auto"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-4xl font-semibold text-white">Vista Táctica — Estado de Activos Críticos</h2>
+                <p className="mt-1 text-lg text-zinc-400">Grid ampliada para demo (colores y ataques potenciados).</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTacticalOpen(false)}
+                className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-sm font-semibold uppercase tracking-[0.25em] text-zinc-200 transition-all hover:border-white/20 hover:text-white"
+              >
+                Cerrar
+              </button>
             </div>
 
-            <div className="flex flex-col gap-2">
-              {topAttackers.length > 0 ? (
-                topAttackers.map((attacker, index) => (
-                  <div key={attacker.srcIp} className="rounded-xl border border-white/5 bg-black/40 px-3 py-2">
-                    <div className="flex items-center justify-between gap-3 text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-hyper-accent/10 text-[10px] font-semibold text-hyper-accent">
-                          {index + 1}
-                        </span>
-                        <span className="truncate font-mono text-zinc-200">{attacker.srcIp}</span>
-                      </div>
-                      <span className="font-mono text-white">{attacker.count}</span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-hyper-accent to-amber-300"
-                        style={{ width: `${Math.max((attacker.count / Math.max(topAttackers[0]?.count ?? 1, 1)) * 100, 8)}%` }}
-                      />
-                    </div>
+            <div className="mt-8">
+              <div className="flex flex-col gap-6 xl:flex-row">
+                <div className="flex-1">
+                  <div className="grid grid-cols-8 gap-4 place-items-center">
+                    {infrastructureAssets.map((asset) => {
+                      const ui = getInfrastructureSeverityUi(asset.severity);
+                      const isSelected = String(selectedAssetIp) === String(asset.dstIp);
+
+                      return (
+                        <button
+                          key={asset.dstIp}
+                          type="button"
+                          onClick={() => setSelectedAssetIp(String(asset.dstIp))}
+                          className={`group cursor-pointer outline-none ${isSelected ? "ring-2 ring-white/20 rounded-xl" : ""}`}
+                        >
+                          <div className="mb-2 flex items-center justify-center">
+                            <span className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-sm font-mono text-white">
+                              {Number(asset.count ?? 0).toLocaleString("es-ES")}
+                            </span>
+                          </div>
+                          <div className="relative grid place-items-center">
+                            <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2 py-1 text-xs font-mono text-zinc-100 opacity-0 group-hover:opacity-100 transition-none">
+                              {String(asset.dstIp)}
+                            </div>
+
+                            <div className={`relative h-16 w-16 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)]`}>
+                              <div className={`absolute inset-0 rounded-lg border ${ui.cube} bg-black/30`} />
+                              <div
+                                className={`absolute -top-3 left-2 right-2 h-3 rounded-t-lg border border-white/10 ${ui.top} [transform:skewX(-35deg)]`}
+                              />
+                              <div
+                                className={`absolute top-2 -right-3 bottom-2 w-3 rounded-r-lg border border-white/10 ${ui.side} [transform:skewY(-35deg)]`}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-base font-mono text-zinc-100 select-none">
+                                  {String(asset.dstIp).split(".").slice(-1)[0] ?? "--"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-zinc-500">Sin alertas suficientes para construir un ranking.</p>
-              )}
+                </div>
+
+                <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-black/30 p-5">
+                  {selectedAsset ? (
+                    <div>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Ficha del Activo</p>
+                          <h3 className="mt-2 text-3xl font-semibold text-white font-mono break-all">{selectedAsset.dstIp}</h3>
+                          <p className="mt-1 text-base text-zinc-400">Índice de Compromiso (IoC): {selectedAsset.ui.label}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAssetIp(null)}
+                          className="rounded-full border border-white/10 bg-black/40 px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-zinc-200 hover:border-white/20 hover:text-white"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+
+                      <div className="mt-5">
+                        <div className="flex items-center justify-between text-base text-zinc-400">
+                          <span>IoC máximo</span>
+                          <span className="font-mono text-white">{selectedAsset.threatPercent}%</span>
+                        </div>
+                        <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              selectedAsset.severity === "critical"
+                                ? "bg-rose-500"
+                                : selectedAsset.severity === "high"
+                                  ? "bg-orange-400"
+                                  : selectedAsset.severity === "medium"
+                                    ? "bg-yellow-300"
+                                    : "bg-zinc-500"
+                            }`}
+                            style={{ width: `${selectedAsset.threatPercent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-6">
+                        <h4 className="text-base font-semibold text-white">Vectores de Intrusión Detectados</h4>
+                        {selectedAsset.attackSkills.length ? (
+                          <div className="mt-3 grid grid-cols-1 gap-2">
+                            {selectedAsset.attackSkills.map((skill) => (
+                              <div
+                                key={skill.label}
+                                className="flex items-center justify-between rounded-xl border border-white/10 bg-black/40 px-3 py-2"
+                              >
+                                <span className="text-base text-zinc-200">{skill.label}</span>
+                                <span className="font-mono text-white">{Number(skill.count).toLocaleString("es-ES")}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-base text-zinc-500">Sin ataques (solo tráfico benigno registrado).</p>
+                        )}
+                      </div>
+
+                      <div className="mt-6">
+                        <h4 className="text-base font-semibold text-white">Logs Recientes</h4>
+                        {selectedAsset.recentLogs.length ? (
+                          <div className="mt-3 space-y-2">
+                            {selectedAsset.recentLogs.map((log: any) => {
+                              const confidenceScore = Number(log?.gnn_metadata?.confidence_score ?? 0);
+                              const binaryLabel = Number(log?.gnn_metadata?.label_binary ?? 0);
+                              const priority = getPriorityLabel(confidenceScore, binaryLabel);
+                              return (
+                                <div
+                                  key={String(log?.alert_id ?? log?.timestamp ?? Math.random())}
+                                  className="rounded-xl border border-white/10 bg-black/40 px-3 py-2"
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-base text-zinc-300">
+                                      Log Time: {isClient ? formatIncidentTime(log?.timestamp) : "--:--:--"} · {String(
+                                        log?.gnn_metadata?.label_multiclass ?? "Evento"
+                                      )}
+                                    </span>
+                                    <span className="text-sm font-semibold text-zinc-200">{priority}</span>
+                                  </div>
+                                  <div className="mt-1 text-sm font-mono text-zinc-500">{String(log?.alert_id ?? "")}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-base text-zinc-500">Sin logs disponibles.</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-10">
+                      <p className="text-base text-zinc-400">Selecciona un cubo para ver la ficha del activo.</p>
+                      <p className="mt-2 text-sm text-zinc-600">Panel fijo (sin tooltip).</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </Card>
-        </div>
-      </motion.div>
+          </motion.div>
+        </motion.div>
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6 pb-12">
         <div className="lg:col-span-2 flex min-h-0 flex-col gap-4 self-start">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-medium text-white flex items-center gap-2">Narrativa de Incidentes (Real-Time)</h2>
+            <h2 className="text-2xl font-medium text-white flex items-center gap-2">Narrativa de Incidentes (Real-Time)</h2>
             <Badge color="orange" size="xs">
-              {recentAlerts.length} visibles / {alerts.length} totales
+              {Math.min(MAX_VISIBLE_INCIDENTS, alerts.length)} visibles / {alerts.length} totales
             </Badge>
           </div>
 
-          <p className="text-xs text-zinc-500">
-            Se muestran solo las últimas 4 alertas para que el analista mantenga el foco. El resto queda dentro del scroll interno.
+          <p className="text-base text-zinc-500">
+            Mostrando últimos {MAX_VISIBLE_INCIDENTS} incidentes.
           </p>
 
           <div className="grid max-h-[calc(100vh-18rem)] grid-cols-1 gap-6 overflow-y-auto pr-2">
             {recentAlerts.map((alerta: any, index: number) => (
-              <motion.div key={alerta.alert_id ?? index} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: index * 0.1 }}>
+              <MotionAlertTag
+                key={alerta.alert_id ?? index}
+                {...(isClient
+                  ? {
+                      initial: { opacity: 0, x: -20 },
+                      animate: { opacity: 1, x: 0 },
+                      transition: { duration: 0.4, delay: Math.min(index * 0.03, 0.6) },
+                    }
+                  : {})}
+              >
                 <Card className="bg-hyper-surface border-hyper-border ring-0 h-full flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
                       <Badge color={alerta.gnn_metadata?.label_binary === 1 ? "red" : "green"}>
                         {alerta.gnn_metadata?.label_binary === 1 ? "ATAQUE" : "BENIGNO"}
                       </Badge>
-                      <h3 className="text-md font-medium text-white">{alerta.gnn_metadata?.label_multiclass}</h3>
+                      <h3 className="text-xl font-medium text-white">{alerta.gnn_metadata?.label_multiclass}</h3>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-zinc-500">{formatIncidentTime(alerta.timestamp)}</p>
-                      <p className="text-[10px] text-hyper-accent font-mono">{alerta.alert_id}</p>
+                      <p className="text-base text-zinc-500">Log Time: {isClient ? formatIncidentTime(alerta.timestamp) : "--:--:--"}</p>
+                      <p className="text-base text-hyper-accent font-mono">{alerta.alert_id}</p>
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <div className="bg-black/60 rounded-t-md p-3 font-mono text-xs text-zinc-400 border border-white/5 border-b-0">
+                    <div className="bg-black/60 rounded-t-md p-3 font-mono text-base text-zinc-400 border border-white/5 border-b-0">
                       <span className="text-hyper-accent mr-2">ORIGEN:</span> {alerta.network_data?.src_ip}:{alerta.network_data?.src_port}
                       <span className="mx-2 text-zinc-600">→</span>
                       <span className="text-blue-400 mr-2">DESTINO:</span> {alerta.network_data?.dst_ip}:{alerta.network_data?.dst_port}
                     </div>
                     <div className="bg-hyper-accent/5 border border-hyper-accent/10 rounded-b-md p-4 flex gap-3 items-start">
-                      <span className="text-hyper-accent text-sm mt-0.5">✨</span>
+                      <span className="text-hyper-accent text-lg mt-0.5">✨</span>
                       <div className="flex flex-col gap-2">
-                        <p className="text-zinc-300 text-sm leading-relaxed">
+                        <p className="text-zinc-300 text-lg leading-relaxed">
                           {buildNarrative(alerta).summary}
                         </p>
-                        <p className="text-zinc-500 text-xs italic border-l border-white/10 pl-3">{buildNarrative(alerta).detail}</p>
+                        <p className="text-zinc-500 text-base italic border-l border-white/10 pl-3">{buildNarrative(alerta).detail}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center mt-auto pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <div className="flex items-center gap-2 text-base text-zinc-500">
                       <span>Confianza GNN: {(alerta.gnn_metadata?.confidence_score * 100).toFixed(1)}%</span>
                       <span className="text-zinc-700">•</span>
                       <span>{buildNarrative(alerta).protocolName}</span>
@@ -630,29 +1297,96 @@ export default function Capa1Triaje() {
                     </Badge>
                   </div>
                 </Card>
-              </motion.div>
+              </MotionAlertTag>
             ))}
           </div>
         </div>
 
         <div className="lg:col-span-1 self-start">
           <div className="sticky top-6">
-            <Card className="bg-[#0a0a0a]/80 backdrop-blur-md border border-white/10 ring-0 flex flex-col shadow-2xl overflow-hidden">
-              <div className="flex items-center gap-2 pb-4 border-b border-white/10">
-                <div className="w-2 h-2 rounded-full bg-hyper-accent animate-pulse" />
-                <h3 className="text-white font-medium">SOC Assistant</h3>
-              </div>
-              <div className="py-4 space-y-4 text-sm text-zinc-400">
-                <p>Bienvenido al asistente de investigación. Selecciona una alerta para profundizar en el contexto del RAG.</p>
-                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                  <p className="text-xs font-bold text-hyper-accent uppercase mb-1">Sugerencia:</p>
-                  "¿Qué otros destinos ha visitado la IP {alerts[0]?.network_data?.src_ip} en la última hora?"
+            <div className="flex flex-col gap-6">
+              <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-white font-medium">Estado de Activos Críticos</h3>
+                    <p className="text-base text-zinc-500">Destinos dst_ip con vista 3D</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsTacticalOpen(true)}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-zinc-200 transition-all hover:border-hyper-accent/40 hover:text-white hover:shadow-[0_0_12px_rgba(249,115,22,0.18)]"
+                  >
+                    Expandir Vista Táctica
+                  </button>
                 </div>
-              </div>
-              <div className="pt-4 border-t border-white/10 mt-auto">
-                <input type="text" placeholder="Consultar memoria técnica..." className="w-full bg-black/50 border border-white/10 rounded-md py-2.5 px-3 text-sm text-white outline-none focus:border-hyper-accent" />
-              </div>
-            </Card>
+
+                <div className="mt-4 px-2">
+                  <div className="mx-auto w-full max-w-[520px] overflow-visible py-6">
+                    <div className="grid grid-cols-6 gap-3 place-items-center">
+                      {infrastructureAssets.map((asset) => {
+                        const ui = getInfrastructureSeverityUi(asset.severity);
+
+                        return (
+                          <div key={asset.dstIp} className="group">
+                            <div className="mb-1 flex items-center justify-center">
+                              <span className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-sm font-mono text-white">
+                                {Number(asset.count ?? 0).toLocaleString("es-ES")}
+                              </span>
+                            </div>
+
+                            <div className="relative grid place-items-center">
+                              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2 py-1 text-xs font-mono text-zinc-100 opacity-0 group-hover:opacity-100 transition-none">
+                                {String(asset.dstIp)}
+                              </div>
+
+                              <div className={`relative h-10 w-10 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)]`}>
+                                <div className={`absolute inset-0 rounded-md border ${ui.cube} bg-black/40`} />
+                                <div
+                                  className={`absolute -top-2 left-1 right-1 h-2 rounded-t-md border border-white/10 ${ui.top} [transform:skewX(-35deg)]`}
+                                />
+                                <div
+                                  className={`absolute top-1 -right-2 bottom-1 w-2 rounded-r-md border border-white/10 ${ui.side} [transform:skewY(-35deg)]`}
+                                />
+
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <span className="text-sm font-mono text-zinc-200 select-none">
+                                    {String(asset.dstIp).split(".").slice(-1)[0] ?? "--"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-base text-zinc-500">
+                      <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500/80" />Crítica</span>
+                      <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-400/80" />Alta</span>
+                      <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-300/80" />Media</span>
+                      <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-zinc-500/50" />Baja</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-[#0a0a0a]/80 backdrop-blur-md border border-white/10 ring-0 flex flex-col shadow-2xl overflow-hidden">
+                <div className="flex items-center gap-2 pb-4 border-b border-white/10">
+                  <div className="w-2 h-2 rounded-full bg-hyper-accent animate-pulse" />
+                  <h3 className="text-white font-medium">SOC Assistant</h3>
+                </div>
+                <div className="py-4 space-y-4 text-lg text-zinc-400">
+                  <p>Bienvenido al asistente de investigación. Selecciona una alerta para profundizar en el contexto del RAG.</p>
+                  <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                    <p className="text-base font-bold text-hyper-accent uppercase mb-1">Sugerencia:</p>
+                    "¿Qué otros destinos ha visitado la IP {alerts[0]?.network_data?.src_ip} en la última hora?"
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-white/10 mt-auto">
+                  <input type="text" placeholder="Consultar memoria técnica..." className="w-full bg-black/50 border border-white/10 rounded-md py-2.5 px-3 text-lg text-white outline-none focus:border-hyper-accent" />
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
