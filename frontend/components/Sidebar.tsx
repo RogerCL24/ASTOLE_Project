@@ -57,16 +57,21 @@ export default function Sidebar() {
         const ageMs = Number.isFinite(lastUpdateMs) ? Date.now() - lastUpdateMs : Number.POSITIVE_INFINITY;
         const isFresh = ageMs >= 0 && ageMs <= 30_000;
 
-        if (isFresh) {
-          setStatus('ACTIVO');
+        const engineStatus = String(data?.metrics?.status ?? "UNKNOWN").toUpperCase();
+        if (engineStatus === "STOPPED") {
+          setStatus("INACTIVO");
+          return;
+        }
+        if (engineStatus === "COMPLETED") {
+          setStatus("FINALIZADO");
+          return;
+        }
+        if (engineStatus === "RUNNING") {
+          setStatus(isFresh ? "ACTIVO" : "INACTIVO");
           return;
         }
 
-        const engineStatus = String(data?.metrics?.status ?? "UNKNOWN").toUpperCase();
-        if (engineStatus === "RUNNING") setStatus("ACTIVO");
-        else if (engineStatus === "STOPPED") setStatus("INACTIVO");
-        else if (engineStatus === "COMPLETED") setStatus("FINALIZADO");
-        else setStatus("INACTIVO");
+        setStatus(isFresh ? "ACTIVO" : "INACTIVO");
       } catch (e) {
         setStatus("OFFLINE");
       }

@@ -2,6 +2,8 @@ import pandas as pd
 import time
 import json
 import random
+import os
+import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 import sys
@@ -22,9 +24,30 @@ OUTPUT_METRICS = BASE_DIR / "docs" / "samples" / "system_metrics.json"
 MAX_HISTORY_ITEMS = 1000
 
 
+def _utc_now_z() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def atomic_write_json(path: Path, payload, *, indent: int = 4) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fd, tmp_path = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=indent)
+            f.write("\n")
+
+        os.replace(tmp_path, path)
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except FileNotFoundError:
+            pass
+
+
 def reset_output_files():
     initial_metrics = {
-        "last_update": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "last_update": _utc_now_z(),
         "performance": {
             "windows_processed": 0,
             "total_flows_analyzed": 0,
@@ -37,11 +60,8 @@ def reset_output_files():
         "status": "RUNNING",
     }
 
-    with open(OUTPUT_ALERTS, 'w') as alerts_file:
-        json.dump([], alerts_file, indent=4)
-
-    with open(OUTPUT_METRICS, 'w') as metrics_file:
-        json.dump(initial_metrics, metrics_file, indent=4)
+    atomic_write_json(OUTPUT_ALERTS, [], indent=4)
+    atomic_write_json(OUTPUT_METRICS, initial_metrics, indent=4)
 
 
 def load_simulation_config():
@@ -74,7 +94,7 @@ def normalize_simulation_start_state():
         "status": "RUNNING",
         "action": None,
         "mode": "fast-forward" if str(config.get("speed", 1)).upper() == "MAX" else "normal",
-        "last_updated": datetime.now().isoformat(),
+        "last_updated": _utc_now_z(),
     }
 
     try:
@@ -305,8 +325,7 @@ def trigger_alert(window_id, row):
     alert_history.append(alert)
     alert_history = alert_history[-MAX_HISTORY_ITEMS:]
 
-    with open(OUTPUT_ALERTS, 'w') as f:
-        json.dump(alert_history, f, indent=4)
+    atomic_write_json(OUTPUT_ALERTS, alert_history, indent=4)
 
 def save_system_metrics(
     win_count,
@@ -344,7 +363,7 @@ def save_system_metrics(
         traffic_history = traffic_history[-MAX_HISTORY_ITEMS:]
     
     metrics = {
-        "last_update": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "last_update": _utc_now_z(),
         "performance": {
             "windows_processed": win_count,
             "total_flows_analyzed": total_flows,
@@ -357,8 +376,7 @@ def save_system_metrics(
         "status": status
     }
 
-    with open(METRICS_PATH, 'w') as f:
-        json.dump(metrics, f, indent=4)
+    atomic_write_json(METRICS_PATH, metrics, indent=4)
 
 
 if __name__ == "__main__":
