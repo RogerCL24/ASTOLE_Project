@@ -98,8 +98,7 @@ def normalize_simulation_start_state():
     }
 
     try:
-        with open(SIMULATION_CONFIG_PATH, "w") as config_file:
-            json.dump(reset_config, config_file, indent=2)
+        atomic_write_json(SIMULATION_CONFIG_PATH, reset_config, indent=2)
     except OSError:
         print("⚠️ No se pudo normalizar simulation_config.json al arrancar.")
 
