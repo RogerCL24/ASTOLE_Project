@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Badge, Card } from "@tremor/react";
+import { IntelDrawer, type IntelDrawerContext, type IntelDrawerTopic } from "../components/IntelDrawer";
 import {
   AreaChart,
   Area,
@@ -331,6 +332,68 @@ const normalizeTrafficPoint = (point: any): TrafficPoint => ({
 
 const getProtocolName = (protocol?: number) => PROTOCOL_NAMES[Number(protocol)] ?? `Protocolo ${protocol ?? "N/A"}`;
 
+const PORT_MAP: Record<number, string> = {
+  21: "FTP",
+  22: "SSH",
+  23: "Telnet",
+  25: "SMTP",
+  53: "DNS",
+  80: "HTTP",
+  110: "POP3",
+  111: "RPCBind",
+  135: "RPC",
+  137: "NetBIOS",
+  139: "NetBIOS-SSN",
+  143: "IMAP",
+  161: "SNMP",
+  443: "HTTPS",
+  445: "SMB",
+  514: "Syslog",
+  1433: "MSSQL",
+  3306: "MySQL",
+  3389: "RDP",
+  5432: "PostgreSQL",
+  8080: "HTTP-Proxy",
+  8800: "HTTP-Alt",
+  1723: "PPTP",
+};
+
+const normalizePortNumber = (value: unknown): number | null => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  const port = Math.trunc(parsed);
+  if (port <= 0 || port > 65535) return null;
+  return port;
+};
+
+const getPortServiceName = (port: number) => PORT_MAP[port] ?? null;
+
+const formatPortWithService = (port: number) => {
+  const service = getPortServiceName(port);
+  return service ? `${port} (${service})` : String(port);
+};
+
+const severityRank: Record<InfrastructureSeverity, number> = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+const getAlertSeverity = (alert: any): InfrastructureSeverity => {
+  const confidenceScore = Number(alert?.gnn_metadata?.confidence_score ?? 0);
+  const binaryLabel = Number(alert?.gnn_metadata?.label_binary ?? 0);
+  const priorityLabel = getPriorityLabel(confidenceScore, binaryLabel);
+  return PRIORITY_ORDER[priorityLabel] ?? "low";
+};
+
+const getPortPillUi = (severity: InfrastructureSeverity) => {
+  if (severity === "critical") return "bg-rose-500/20 text-rose-200 border-rose-500/30";
+  if (severity === "high") return "bg-orange-500/20 text-orange-200 border-orange-500/30";
+  if (severity === "medium") return "bg-yellow-400/20 text-yellow-100 border-yellow-300/25";
+  return "bg-zinc-700/30 text-zinc-200 border-white/10";
+};
+
 const getPriorityLabel = (confidenceScore: number, binaryLabel: number) => {
   if (binaryLabel !== 1) return "Baja";
   if (confidenceScore >= 0.97) return "Crítica";
@@ -466,6 +529,9 @@ export default function Capa1Triaje() {
   const [speed, setSpeed] = useState<number | "MAX">(1);
   const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);
+  const [isIntelOpen, setIsIntelOpen] = useState(false);
+  const [intelContext, setIntelContext] = useState<IntelDrawerContext | null>(null);
+  const [intelTopic, setIntelTopic] = useState<IntelDrawerTopic>(null);
   const [isTacticalOpen, setIsTacticalOpen] = useState(false);
   const [selectedAssetIp, setSelectedAssetIp] = useState<string | null>(null);
   const [flashCriticalBorder, setFlashCriticalBorder] = useState(false);
@@ -474,6 +540,18 @@ export default function Capa1Triaje() {
   const [trafficHistory, setTrafficHistory] = useState<TrafficPoint[]>(() =>
     buildSeedTrafficHistory(fallbackData.metrics?.performance)
   );
+
+  const openIntel = (context: IntelDrawerContext, topic: IntelDrawerTopic = null) => {
+    setIntelContext(context);
+    setIntelTopic(topic);
+    setIsIntelOpen(true);
+  };
+
+  const closeIntel = () => {
+    setIsIntelOpen(false);
+    setIntelContext(null);
+    setIntelTopic(null);
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -650,6 +728,53 @@ export default function Capa1Triaje() {
 
     return primary;
   }, [visibleAlerts]);
+
+  const attackerTopDstPortByIp = useMemo(() => {
+    const bySrc = new Map<string, { counts: Record<number, number>; lastSeen: Record<number, number> }>();
+
+    for (const alert of visibleAlerts) {
+      const srcIp = String(alert?.network_data?.src_ip ?? "Desconocida");
+      const isAttack = Number(alert?.gnn_metadata?.label_binary ?? 0) === 1;
+      if (!isAttack) continue;
+
+      const dstPort = normalizePortNumber(alert?.network_data?.dst_port);
+      if (dstPort == null) continue;
+
+      const tsMs = new Date(alert?.timestamp ?? 0).getTime();
+      const current = bySrc.get(srcIp) ?? { counts: {}, lastSeen: {} };
+      current.counts[dstPort] = (current.counts[dstPort] || 0) + 1;
+      if (Number.isFinite(tsMs)) {
+        const prevTs = current.lastSeen[dstPort] ?? 0;
+        current.lastSeen[dstPort] = Math.max(prevTs, tsMs);
+      }
+      bySrc.set(srcIp, current);
+    }
+
+    const primary = new Map<string, { port: number; count: number; lastSeenMs: number | null }>();
+    for (const [srcIp, meta] of bySrc.entries()) {
+      let bestPort: number | null = null;
+      let bestCount = -1;
+      for (const [portRaw, count] of Object.entries(meta.counts)) {
+        const port = Number(portRaw);
+        const countNumber = Number(count);
+        if (countNumber > bestCount) {
+          bestCount = countNumber;
+          bestPort = port;
+        }
+      }
+
+      if (bestPort != null) {
+        const lastSeenMsRaw = meta.lastSeen[bestPort];
+        primary.set(srcIp, {
+          port: bestPort,
+          count: bestCount,
+          lastSeenMs: Number.isFinite(lastSeenMsRaw) ? lastSeenMsRaw : null,
+        });
+      }
+    }
+
+    return primary;
+  }, [visibleAlerts]);
   const recentAlerts = visibleAlerts;
   const infrastructureAssets = buildInfrastructureAssets(alerts, visibleAlerts);
 
@@ -674,6 +799,35 @@ export default function Capa1Triaje() {
     return map;
   }, [alerts]);
 
+  const hasRecentMaxSeverityRingByDstIp = useMemo(() => {
+    if (!isClient) return new Map<string, boolean>();
+
+    const nowMs = Date.now();
+    const windowMs = 2 * 60 * 1000;
+    const map = new Map<string, boolean>();
+
+    for (const [dstIp, list] of alertsByDstIp.entries()) {
+      let hasRecentCritical = false;
+      for (const alert of list) {
+        const tsMs = new Date(alert?.timestamp ?? 0).getTime();
+        if (!Number.isFinite(tsMs)) continue;
+
+        if (nowMs - tsMs > windowMs) {
+          break;
+        }
+
+        const severity = getAlertSeverity(alert);
+        if (severity === "critical") {
+          hasRecentCritical = true;
+          break;
+        }
+      }
+      map.set(String(dstIp), hasRecentCritical);
+    }
+
+    return map;
+  }, [alertsByDstIp, isClient]);
+
   const selectedAsset = useMemo(() => {
     if (!selectedAssetIp) return null;
     const asset = infrastructureAssets.find((entry) => String(entry.dstIp) === String(selectedAssetIp));
@@ -693,6 +847,33 @@ export default function Capa1Triaje() {
       .sort((a, b) => b.count - a.count);
 
     const recentLogs = allForIp.slice(0, 3);
+
+    const portInsightsByPort = new Map<number, { severity: InfrastructureSeverity; hasExploit: boolean }>();
+    for (const alert of allForIp) {
+      const dstPort = normalizePortNumber(alert?.network_data?.dst_port);
+      if (dstPort == null) continue;
+
+      const severity = getAlertSeverity(alert);
+      const label = String(alert?.gnn_metadata?.label_multiclass ?? "");
+      const hasExploit = label.toLowerCase().startsWith("exploit");
+
+      const current = portInsightsByPort.get(dstPort);
+      if (!current) {
+        portInsightsByPort.set(dstPort, { severity, hasExploit });
+        continue;
+      }
+
+      const nextSeverity = severityRank[severity] > severityRank[current.severity] ? severity : current.severity;
+      portInsightsByPort.set(dstPort, { severity: nextSeverity, hasExploit: current.hasExploit || hasExploit });
+    }
+
+    const attackPorts = Array.from(portInsightsByPort.entries())
+      .map(([port, insight]) => ({ port, ...insight }))
+      .sort((a, b) => {
+        const severityDiff = severityRank[b.severity] - severityRank[a.severity];
+        if (severityDiff !== 0) return severityDiff;
+        return a.port - b.port;
+      });
     const threatPercent = getInfrastructureThreatPercent(asset.severity);
     const ui = getInfrastructureSeverityUi(asset.severity);
 
@@ -701,6 +882,7 @@ export default function Capa1Triaje() {
       ui,
       threatPercent,
       attackSkills,
+      attackPorts,
       recentLogs,
     };
   }, [alertsByDstIp, infrastructureAssets, selectedAssetIp]);
@@ -862,9 +1044,11 @@ export default function Capa1Triaje() {
               <h3 className="text-white font-medium mb-1">Firma de Tráfico (Motor Ingestión)</h3>
               <p className="text-base text-zinc-500">Ventana operativa de los últimos 20 minutos</p>
             </div>
-            <Badge color="orange" size="xs">
-              Real-Time Flow
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge color="orange" size="xs">
+                Real-Time Flow
+              </Badge>
+            </div>
           </div>
 
           <div className="h-80 mt-6 w-full min-w-0">
@@ -938,7 +1122,17 @@ export default function Capa1Triaje() {
               <h3 className="text-white font-medium">Composición de Amenazas</h3>
               <p className="text-base text-zinc-500">Basado en la ventana visible</p>
             </div>
-            <Badge color="orange" size="xs">Donut</Badge>
+            <div className="flex items-center gap-2">
+              <Badge color="orange" size="xs">Donut</Badge>
+              <button
+                type="button"
+                onClick={() => openIntel("composition", "distribution")}
+                aria-label="Ayuda contextual"
+                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+              >
+                i
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 h-44 w-full min-w-0 relative">
@@ -1000,54 +1194,165 @@ export default function Capa1Triaje() {
               <h3 className="text-white font-medium">Top Atacantes</h3>
               <p className="text-base text-zinc-500">IPs de origen con más alertas en la ventana actual</p>
             </div>
-            <Badge color="red" size="xs">Top 5</Badge>
+            <div className="flex items-center gap-2">
+              <Badge color="red" size="xs">Top 5</Badge>
+              <button
+                type="button"
+                onClick={() => openIntel("top-attackers")}
+                aria-label="Ayuda contextual"
+                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+              >
+                i
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            {topAttackers.length > 0 ? (
-              topAttackers.map((attacker, index) => (
-                <div key={attacker.srcIp} className="rounded-xl border border-white/5 bg-black/40 px-3 py-2">
-                  <div className="flex items-center justify-between gap-3 text-base">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-hyper-accent/10 text-sm font-semibold text-hyper-accent">
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0 flex items-center gap-2">
-                        <span className="truncate font-mono text-zinc-200">{attacker.srcIp}</span>
-                        {(() => {
-                          const primaryType = attackerPrimaryTypeByIp.get(String(attacker.srcIp));
-                          if (!primaryType) {
+            {isClient ? (
+              topAttackers.length > 0 ? (
+                topAttackers.map((attacker, index) => (
+                  <div key={attacker.srcIp} className="rounded-xl border border-white/5 bg-black/40 px-3 py-2">
+                    <div className="flex items-center justify-between gap-3 text-base">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-hyper-accent/10 text-sm font-semibold text-hyper-accent">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openIntel("top-attackers")}
+                            className="relative truncate font-mono text-zinc-200 group/ip hover:text-white"
+                          >
+                            {attacker.srcIp}
+                            <span className="pointer-events-none absolute -top-14 left-0 z-10 w-[340px] rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/ip:opacity-100 transition-none">
+                              Ranking de sesión #{index + 1}. Total de alertas disparadas en la ventana visible: {attacker.count}.
+                            </span>
+                          </button>
+                          <span className="shrink-0 text-zinc-600">|</span>
+                          {(() => {
+                            const primaryType = attackerPrimaryTypeByIp.get(String(attacker.srcIp));
+                            const portMeta = attackerTopDstPortByIp.get(String(attacker.srcIp));
+                            const topPort = portMeta?.port ?? null;
+                            const portService = topPort != null ? getPortServiceName(topPort) : null;
+                            const portLabel =
+                              topPort != null
+                                ? portService
+                                  ? `Port: ${topPort} (${portService})`
+                                  : `Port: ${topPort}`
+                                : "Port: --";
+                            const isIntrusionRiskPort = topPort != null && [21, 22, 23, 445].includes(topPort);
+                            const lastSeenLabel =
+                              portMeta?.lastSeenMs != null
+                                ? `Último visto: ${new Date(portMeta.lastSeenMs).toLocaleTimeString("es-ES", { hour12: false, timeZone: MADRID_TIME_ZONE })}`
+                                : "Último visto: --:--:--";
+                            const frequencyLabel = portMeta?.count != null ? `Frecuencia: ${portMeta.count}` : "Frecuencia: --";
+                            if (!primaryType) {
+                              return (
+                                <span className="shrink-0 flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openIntel("top-attackers", "attack-label")}
+                                    className="relative inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 group/attack hover:border-white/20"
+                                  >
+                                    [Benigno]
+                                    <span className="pointer-events-none absolute -top-16 left-1/2 z-10 w-[360px] -translate-x-1/2 rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/attack:opacity-100 transition-none">
+                                      Vector principal: no detectado (tráfico benigno). Las etiquetas se usan para correlacionar categorías con la Composición de Amenazas.
+                                    </span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => openIntel("top-attackers", "ports")}
+                                    className="relative inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 group/port hover:border-white/20"
+                                  >
+                                    {portLabel}
+                                    <span className="pointer-events-none absolute -top-20 left-1/2 z-10 w-[380px] -translate-x-1/2 rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/port:opacity-100 transition-none">
+                                      {topPort != null ? (
+                                        portService ? (
+                                          <>Puerto objetivo: {topPort} ({portService}).</>
+                                        ) : (
+                                          <>Puerto objetivo: {topPort}.</>
+                                        )
+                                      ) : (
+                                        <>Puerto objetivo: --.</>
+                                      )}{" "}
+                                      Clasificado por frecuencia en la ventana visible. {frequencyLabel}. {lastSeenLabel}.
+                                    </span>
+                                  </button>
+                                  {isIntrusionRiskPort ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => openIntel("top-attackers", "intrusion-risk")}
+                                      className="inline-flex items-center rounded-full border border-red-500/40 bg-red-600/80 px-2.5 py-1 text-xs font-semibold text-white hover:border-red-400/60"
+                                    >
+                                      [Riesgo de Intrusión]
+                                    </button>
+                                  ) : null}
+                                </span>
+                              );
+                            }
+
+                            const color = colorsByLabel[primaryType] ?? "#f97316";
                             return (
-                              <span className="shrink-0 rounded-full border border-white/10 bg-black/30 px-2 py-0.5 text-xs font-semibold text-zinc-400">
-                                [Benigno]
+                              <span className="shrink-0 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => openIntel("top-attackers", "attack-label")}
+                                  className="relative inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold group/attack hover:border-white/20"
+                                  style={{ color }}
+                                >
+                                  [{primaryType}]
+                                  <span className="pointer-events-none absolute -top-16 left-1/2 z-10 w-[380px] -translate-x-1/2 rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/attack:opacity-100 transition-none">
+                                    Vector principal detectado. Color {color} correlaciona la categoría con el donut “Composición de Amenazas” (no es severidad).
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openIntel("top-attackers", "ports")}
+                                  className="relative inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 group/port hover:border-white/20"
+                                >
+                                  {portLabel}
+                                  <span className="pointer-events-none absolute -top-20 left-1/2 z-10 w-[380px] -translate-x-1/2 rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/port:opacity-100 transition-none">
+                                    {topPort != null ? (
+                                      portService ? (
+                                        <>Puerto objetivo: {topPort} ({portService}).</>
+                                      ) : (
+                                        <>Puerto objetivo: {topPort}.</>
+                                      )
+                                    ) : (
+                                      <>Puerto objetivo: --.</>
+                                    )}{" "}
+                                    Clasificado por frecuencia en la ventana visible. {frequencyLabel}. {lastSeenLabel}.
+                                  </span>
+                                </button>
+                                {isIntrusionRiskPort ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openIntel("top-attackers", "intrusion-risk")}
+                                    className="inline-flex items-center rounded-full border border-red-500/40 bg-red-600/80 px-2.5 py-1 text-xs font-semibold text-white hover:border-red-400/60"
+                                  >
+                                    [Riesgo de Intrusión]
+                                  </button>
+                                ) : null}
                               </span>
                             );
-                          }
-
-                          const color = colorsByLabel[primaryType] ?? "#f97316";
-                          return (
-                            <span
-                              className="shrink-0 rounded-full border border-white/10 bg-black/30 px-2 py-0.5 text-xs font-semibold"
-                              style={{ color }}
-                            >
-                              [{primaryType}]
-                            </span>
-                          );
-                        })()}
+                          })()}
+                        </div>
                       </div>
+                      <span className="font-mono text-white">{attacker.count}</span>
                     </div>
-                    <span className="font-mono text-white">{attacker.count}</span>
+                    <div className="mt-1.5 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-hyper-accent to-amber-300"
+                        style={{ width: `${Math.max((attacker.count / Math.max(topAttackers[0]?.count ?? 1, 1)) * 100, 8)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="mt-1.5 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-hyper-accent to-amber-300"
-                      style={{ width: `${Math.max((attacker.count / Math.max(topAttackers[0]?.count ?? 1, 1)) * 100, 8)}%` }}
-                    />
-                  </div>
-                </div>
-              ))
+                ))
+              ) : (
+                <p className="text-lg text-zinc-500">Sin alertas suficientes para construir un ranking.</p>
+              )
             ) : (
-              <p className="text-lg text-zinc-500">Sin alertas suficientes para construir un ranking.</p>
+              <p className="text-lg text-zinc-500">Cargando ranking...</p>
             )}
           </div>
         </Card>
@@ -1089,6 +1394,7 @@ export default function Capa1Triaje() {
                     {infrastructureAssets.map((asset) => {
                       const ui = getInfrastructureSeverityUi(asset.severity);
                       const isSelected = String(selectedAssetIp) === String(asset.dstIp);
+                      const hasRecentRing = hasRecentMaxSeverityRingByDstIp.get(String(asset.dstIp)) ?? false;
 
                       return (
                         <button
@@ -1107,7 +1413,11 @@ export default function Capa1Triaje() {
                               {String(asset.dstIp)}
                             </div>
 
-                            <div className={`relative h-16 w-16 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)]`}>
+                            <div
+                              className={`relative h-16 w-16 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)] ${
+                                hasRecentRing ? "ring-2 ring-red-500/80 shadow-[0_0_16px_rgba(239,68,68,0.4)] rounded-lg" : ""
+                              }`}
+                            >
                               <div className={`absolute inset-0 rounded-lg border ${ui.cube} bg-black/30`} />
                               <div
                                 className={`absolute -top-3 left-2 right-2 h-3 rounded-t-lg border border-white/10 ${ui.top} [transform:skewX(-35deg)]`}
@@ -1135,7 +1445,13 @@ export default function Capa1Triaje() {
                         <div>
                           <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Ficha del Activo</p>
                           <h3 className="mt-2 text-3xl font-semibold text-white font-mono break-all">{selectedAsset.dstIp}</h3>
-                          <p className="mt-1 text-base text-zinc-400">Índice de Compromiso (IoC): {selectedAsset.ui.label}</p>
+                          <button
+                            type="button"
+                            onClick={() => openIntel("assets", "ioc")}
+                            className="mt-1 text-left text-base text-zinc-400 hover:text-zinc-200"
+                          >
+                            Índice de Compromiso (IoC): {selectedAsset.ui.label}
+                          </button>
                         </div>
                         <button
                           type="button"
@@ -1187,6 +1503,28 @@ export default function Capa1Triaje() {
                       </div>
 
                       <div className="mt-6">
+                        <h4 className="text-base font-semibold text-white">Puertos Bajo Ataque</h4>
+                        {selectedAsset.attackPorts.length ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedAsset.attackPorts.map((entry: { port: number; severity: InfrastructureSeverity; hasExploit: boolean }) => (
+                              <button
+                                key={entry.port}
+                                type="button"
+                                onClick={() => openIntel("assets", "ports")}
+                                className={`rounded-full border px-3 py-1 text-sm font-semibold ${getPortPillUi(entry.severity)} ${
+                                  entry.hasExploit ? "ring-2 ring-red-500" : ""
+                                }`}
+                              >
+                                {formatPortWithService(entry.port)}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-base text-zinc-500">Sin puertos detectados en las alertas de este activo.</p>
+                        )}
+                      </div>
+
+                      <div className="mt-6">
                         <h4 className="text-base font-semibold text-white">Logs Recientes</h4>
                         {selectedAsset.recentLogs.length ? (
                           <div className="mt-3 space-y-2">
@@ -1229,6 +1567,8 @@ export default function Capa1Triaje() {
           </motion.div>
         </motion.div>
       ) : null}
+
+      <IntelDrawer open={isIntelOpen} context={intelContext} topic={intelTopic} onClose={closeIntel} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6 pb-12">
         <div className="lg:col-span-2 flex min-h-0 flex-col gap-4 self-start">
@@ -1311,13 +1651,23 @@ export default function Capa1Triaje() {
                     <h3 className="text-white font-medium">Estado de Activos Críticos</h3>
                     <p className="text-base text-zinc-500">Destinos dst_ip con vista 3D</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsTacticalOpen(true)}
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-zinc-200 transition-all hover:border-hyper-accent/40 hover:text-white hover:shadow-[0_0_12px_rgba(249,115,22,0.18)]"
-                  >
-                    Expandir Vista Táctica
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsTacticalOpen(true)}
+                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-zinc-200 transition-all hover:border-hyper-accent/40 hover:text-white hover:shadow-[0_0_12px_rgba(249,115,22,0.18)]"
+                    >
+                      Expandir Vista Táctica
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openIntel("assets")}
+                      aria-label="Ayuda contextual"
+                      className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+                    >
+                      i
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 px-2">
@@ -1325,6 +1675,7 @@ export default function Capa1Triaje() {
                     <div className="grid grid-cols-6 gap-3 place-items-center">
                       {infrastructureAssets.map((asset) => {
                         const ui = getInfrastructureSeverityUi(asset.severity);
+                        const hasRecentRing = hasRecentMaxSeverityRingByDstIp.get(String(asset.dstIp)) ?? false;
 
                         return (
                           <div key={asset.dstIp} className="group">
@@ -1339,7 +1690,11 @@ export default function Capa1Triaje() {
                                 {String(asset.dstIp)}
                               </div>
 
-                              <div className={`relative h-10 w-10 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)]`}>
+                              <div
+                                className={`relative h-10 w-10 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)] ${
+                                  hasRecentRing ? "ring-2 ring-red-500/80 shadow-[0_0_14px_rgba(239,68,68,0.35)] rounded-md" : ""
+                                }`}
+                              >
                                 <div className={`absolute inset-0 rounded-md border ${ui.cube} bg-black/40`} />
                                 <div
                                   className={`absolute -top-2 left-1 right-1 h-2 rounded-t-md border border-white/10 ${ui.top} [transform:skewX(-35deg)]`}
