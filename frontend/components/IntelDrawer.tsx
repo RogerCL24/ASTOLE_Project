@@ -3,12 +3,13 @@ import {
   AlertCircle,
   BadgeInfo,
   CircleDot,
+  Info,
   Network,
   ShieldAlert,
   Target,
 } from "lucide-react";
 
-export type IntelDrawerContext = "top-attackers" | "assets" | "composition";
+export type IntelDrawerContext = "top-attackers" | "assets" | "composition" | "incidents";
 export type IntelDrawerTopic =
   | "attack-label"
   | "ports"
@@ -63,6 +64,8 @@ export function IntelDrawer({ open, context, topic = null, onClose }: IntelDrawe
         ? "Activos Críticos"
         : context === "composition"
           ? "Composición"
+          : context === "incidents"
+            ? "Narrativa de Incidentes"
           : "Intel";
 
   return (
@@ -96,7 +99,7 @@ export function IntelDrawer({ open, context, topic = null, onClose }: IntelDrawe
             <>
               <SectionTitle icon={<Target className="h-4 w-4 text-orange-200" />} title="Cómo leer el ranking" />
               <Callout tone="zinc">
-                <span className="font-semibold text-white">IP</span> = origen con más alertas en la ventana visible.
+                <span className="font-semibold text-white">IP</span> = origen con más alertas en el intervalo actual.
                 Útil para priorizar triage sin perder el foco.
               </Callout>
 
@@ -147,8 +150,64 @@ export function IntelDrawer({ open, context, topic = null, onClose }: IntelDrawe
             <>
               <SectionTitle icon={<BadgeInfo className="h-4 w-4 text-orange-200" />} title="Qué representa el donut" />
               <Callout tone={topic === "distribution" ? "orange" : "zinc"}>
-                Distribución de <span className="font-semibold text-white">etiquetas multiclass</span> (ventana visible).
+                Distribución de <span className="font-semibold text-white">etiquetas multiclass</span> (intervalo actual).
                 Los colores solo sirven para correlación visual con etiquetas (no severidad).
+              </Callout>
+            </>
+          ) : null}
+
+          {context === "incidents" ? (
+            <>
+              <SectionTitle icon={<Info className="h-4 w-4 text-zinc-200" />} title="Cómo leer el feed" />
+              <Callout tone="zinc">
+                Cada card resume un incidente detectado. El objetivo es poder escanear rápido: 
+                <span className="font-semibold text-white">cuándo</span> (Data Time), 
+                <span className="font-semibold text-white">qué</span> (vector/etiqueta) y 
+                <span className="font-semibold text-white">a quién</span> (origen→destino).
+              </Callout>
+              <SectionTitle icon={<Info className="h-4 w-4 text-zinc-200" />} title="Acción: Investigar" />
+              <Callout tone="zinc">
+                El botón <span className="font-semibold text-white">Investigar con IA</span> abre la Sala de Investigación (Capa 2)
+                y transfiere los datos clave del incidente para comenzar el triage.
+              </Callout>
+            </>
+          ) : null}
+
+          {context ? (
+            <>
+              <SectionTitle icon={<Info className="h-4 w-4 text-zinc-200" />} title="Guía de Prioridades" />
+              <Callout tone="zinc">
+                <div className="space-y-3">
+                  <p className="text-sm leading-relaxed text-zinc-200">
+                    La franja vertical en la izquierda de cada incidente resume la prioridad operativa.
+                  </p>
+                  <div className="space-y-2 text-sm text-zinc-200">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-1.5 rounded-full bg-red-500" />
+                      <span>
+                        <span className="font-semibold text-white">Crítica</span>: atender ahora.
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-1.5 rounded-full bg-orange-500" />
+                      <span>
+                        <span className="font-semibold text-white">Alta</span>: triage inmediato.
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-1.5 rounded-full bg-zinc-500" />
+                      <span>
+                        <span className="font-semibold text-white">Media</span>: revisar contexto.
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-1.5 rounded-full bg-zinc-700" />
+                      <span>
+                        <span className="font-semibold text-white">Baja</span>: monitoreo.
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </Callout>
             </>
           ) : null}

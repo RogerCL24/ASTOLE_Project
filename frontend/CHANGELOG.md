@@ -61,3 +61,19 @@
 ### Fixed
 - **Timezone**: Visualización consistente en `Europe/Madrid` para tiempos mostrados en Triaje/Telemetría.
 - **Donut colors**: Paleta consistente con el UI y sin colores repetidos.
+
+## [0.6.0-ui] - 2026-04-06
+
+### Added
+- **Sala de Investigación (Capa 2)**: Nueva consola 2 columnas (Evidencia + Chat RAG) con estética consistente (glass/terminal).
+- **Entrada sin caso**: Estado inicial con selector y “Últimas 5 alertas críticas” clicables desde `/api/stats`.
+- **Pivotaje ORIGEN/DESTINO**: Lista de alertas relacionadas scrolleable para pivotar por sesión sin romper el layout.
+- **Intel Drawer (Incidentes)**: Ayuda contextual para interpretar el feed y el CTA “Investigar con IA”.
+
+### Changed
+- **Navegación de investigación**: El CTA del feed abre `/investigacion` pasando `id`, `src_ip`, `attack_type`, `dst_port`, `timestamp` por query.
+- **Legibilidad en narrativa**: Refinos de tipografía/contraste y scroll interno más “humano”.
+
+### Fixed
+- **Severidad al pivotar**: El vector/severidad se extrae correctamente desde el esquema real de alertas (`gnn_metadata.label_multiclase`, `gnn_metadata.binary_attack`) evitando el fallback “Actividad”.
+- **App Router searchParams**: Ajuste para evitar errores de APIs dinámicas (unwrap seguro de `searchParams`).
