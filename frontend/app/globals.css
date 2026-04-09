@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@source "../node_modules/@tremor/react";
+
+:root {
+  /* Paleta inspirada en Hypergraph / Deep Tech */
+  --color-hyper-bg: #030303;       /* Fondo principal (casi negro puro) */
+  --color-hyper-surface: #0a0a0a;  /* Fondo de las tarjetas */
+  --color-hyper-border: #1f1f22;   /* Bordes muy sutiles */
+  --color-hyper-accent: #D18400;   /* El color "vivo" */
+  --color-hyper-alert: #ff4108;
+}
+
+body {
+  background-color: var(--color-hyper-bg);
+  color: #ededed;
+}
+
+/* Customización para los gráficos de Tremor/Recharts */
+.custom-chart text {
+  fill: #f5f5ec !important; 
+  font-size: 12px !important;
+  font-weight: 500;
+}
+
+.custom-chart .tremor-legend-text {
+  color: #f5f5ec !important;
+}
