@@ -23,6 +23,7 @@ type IntelDrawerProps = {
   open: boolean;
   context: IntelDrawerContext | null;
   topic?: IntelDrawerTopic;
+  originCountryBreakdown?: Array<{ country: string; flag: string; percent: number }>;
   onClose: () => void;
 };
 
@@ -54,7 +55,7 @@ const Callout = ({
   return <div className={`rounded-xl border px-3 py-2 text-sm leading-snug ${toneClass}`}>{children}</div>;
 };
 
-export function IntelDrawer({ open, context, topic = null, onClose }: IntelDrawerProps) {
+export function IntelDrawer({ open, context, topic = null, originCountryBreakdown = [], onClose }: IntelDrawerProps) {
   if (!open) return null;
 
   const header =
@@ -165,6 +166,29 @@ export function IntelDrawer({ open, context, topic = null, onClose }: IntelDrawe
                 <span className="font-semibold text-white">qué</span> (vector/etiqueta) y 
                 <span className="font-semibold text-white">a quién</span> (origen→destino).
               </Callout>
+
+              {originCountryBreakdown.length ? (
+                <>
+                  <SectionTitle icon={<Network className="h-4 w-4 text-zinc-200" />} title="Tráfico por origen" />
+                  <Callout tone="zinc">
+                    <div className="flex flex-wrap gap-2">
+                      {originCountryBreakdown.map((entry) => (
+                        <span
+                          key={entry.country}
+                          className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200"
+                        >
+                          <span className="text-sm">{entry.flag}</span>
+                          {entry.percent}%
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-zinc-500">
+                      Basado en IP Intel del backend (DB1/PX2). Si falta información, se muestra como Unknown.
+                    </p>
+                  </Callout>
+                </>
+              ) : null}
+
               <SectionTitle icon={<Info className="h-4 w-4 text-zinc-200" />} title="Acción: Investigar" />
               <Callout tone="zinc">
                 El botón <span className="font-semibold text-white">Investigar con IA</span> abre la Sala de Investigación (Capa 2)

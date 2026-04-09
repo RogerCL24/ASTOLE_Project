@@ -5,6 +5,8 @@ import { Card } from "@tremor/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Barcode, Bot, Shield, Target } from "lucide-react";
+import { IPProfilePopover, type IPIntelPayload } from "../../components/IPProfilePopover";
+import { formatPortWithService, normalizePortNumber } from "../../lib/netIntel";
 
 type ChatMessage = {
   role: "assistant" | "user";
@@ -119,6 +121,10 @@ export default function InvestigacionConsole({
     const fromAlert = String(selectedAlert?.network_data?.src_ip ?? "").trim();
     return (fromUrl || fromAlert || "--").trim() || "--";
   }, [selectedAlert, srcIp]);
+
+  const effectiveSrcIntel = useMemo(() => {
+    return (selectedAlert?.ip_intel?.src as IPIntelPayload | undefined) ?? null;
+  }, [selectedAlert]);
 
   const effectiveAttackType = useMemo(() => {
     const fromUrl = String(attackType ?? "").trim();
@@ -326,6 +332,8 @@ export default function InvestigacionConsole({
                         const ip = String(a?.network_data?.src_ip ?? "--");
                         const at = getAlertAttackLabel(a);
                         const port = String(a?.network_data?.dst_port ?? "--");
+                        const portNumber = normalizePortNumber(port);
+                        const portLabel = portNumber != null ? formatPortWithService(portNumber) : "--";
                         const ts = String(a?.timestamp ?? "");
                         const href = `/investigacion?${new URLSearchParams({
                           id,
@@ -348,7 +356,7 @@ export default function InvestigacionConsole({
                               </span>
                             </div>
                             <p className="mt-1 text-sm text-zinc-200">
-                              {ip} · {at} · dst_port {port}
+                              {ip} · {at} · dst_port {portLabel}
                             </p>
                             <p className="mt-1 text-xs text-zinc-400">{formatMadridDateTime(ts)}</p>
                           </Link>
@@ -381,7 +389,14 @@ export default function InvestigacionConsole({
                       <Target className="h-4 w-4 text-hyper-accent" />
                       <p className="text-sm uppercase tracking-[0.2em] text-zinc-400">Objetivo</p>
                     </div>
-                    <p className="mt-2 text-base font-mono text-white">{effectiveSrcIp}</p>
+                    <div className="mt-2">
+                      <IPProfilePopover
+                        ip={effectiveSrcIp}
+                        intel={effectiveSrcIntel}
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 hover:border-white/20"
+                        textClassName="font-mono text-[15px] text-zinc-100"
+                      />
+                    </div>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
@@ -476,6 +491,8 @@ export default function InvestigacionConsole({
                       const ip = String(a?.network_data?.src_ip ?? "--");
                       const at = getAlertAttackLabel(a);
                       const port = String(a?.network_data?.dst_port ?? "--");
+                      const portNumber = normalizePortNumber(port);
+                      const portLabel = portNumber != null ? formatPortWithService(portNumber) : "--";
                       const ts = String(a?.timestamp ?? "");
                       const href = `/investigacion?${new URLSearchParams({
                         id,
@@ -496,7 +513,7 @@ export default function InvestigacionConsole({
                             <p className="text-xs text-zinc-400">{formatMadridDateTime(ts)}</p>
                           </div>
                           <p className="mt-1 text-sm text-zinc-200">
-                            {ip} → {String(a?.network_data?.dst_ip ?? "--")} · {at} · dst_port {port}
+                            {ip} → {String(a?.network_data?.dst_ip ?? "--")} · {at} · dst_port {portLabel}
                           </p>
                         </Link>
                       );

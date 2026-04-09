@@ -5,6 +5,13 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Badge, Card } from "@tremor/react";
 import { IntelDrawer, type IntelDrawerContext, type IntelDrawerTopic } from "../components/IntelDrawer";
+import { IPProfilePopover, type IPIntelPayload } from "../components/IPProfilePopover";
+import {
+  formatPortWithService,
+  getIPMetadata,
+  getPortServiceName,
+  normalizePortNumber,
+} from "../lib/netIntel";
 import {
   AreaChart,
   Area,
@@ -379,47 +386,6 @@ const normalizeTrafficPoint = (point: any): TrafficPoint => ({
 
 const getProtocolName = (protocol?: number) => PROTOCOL_NAMES[Number(protocol)] ?? `Protocolo ${protocol ?? "N/A"}`;
 
-const PORT_MAP: Record<number, string> = {
-  21: "FTP",
-  22: "SSH",
-  23: "Telnet",
-  25: "SMTP",
-  53: "DNS",
-  80: "HTTP",
-  110: "POP3",
-  111: "RPCBind",
-  135: "RPC",
-  137: "NetBIOS",
-  139: "NetBIOS-SSN",
-  143: "IMAP",
-  161: "SNMP",
-  443: "HTTPS",
-  445: "SMB",
-  514: "Syslog",
-  1433: "MSSQL",
-  3306: "MySQL",
-  3389: "RDP",
-  5432: "PostgreSQL",
-  8080: "HTTP-Proxy",
-  8800: "HTTP-Alt",
-  1723: "PPTP",
-};
-
-const normalizePortNumber = (value: unknown): number | null => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  const port = Math.trunc(parsed);
-  if (port <= 0 || port > 65535) return null;
-  return port;
-};
-
-const getPortServiceName = (port: number) => PORT_MAP[port] ?? null;
-
-const formatPortWithService = (port: number) => {
-  const service = getPortServiceName(port);
-  return service ? `${port} (${service})` : String(port);
-};
-
 const severityRank: Record<InfrastructureSeverity, number> = {
   critical: 4,
   high: 3,
@@ -429,7 +395,7 @@ const severityRank: Record<InfrastructureSeverity, number> = {
 
 const getAlertSeverity = (alert: any): InfrastructureSeverity => {
   const confidenceScore = Number(alert?.gnn_metadata?.confidence_score ?? 0);
-  const binaryLabel = Number(alert?.gnn_metadata?.label_binary ?? 0);
+  const binaryLabel = Number(alert?.gnn_metadata?.label_binary ?? alert?.gnn_metadata?.binary_attack ?? 0);
   const priorityLabel = getPriorityLabel(confidenceScore, binaryLabel);
   return PRIORITY_ORDER[priorityLabel] ?? "low";
 };
@@ -747,6 +713,103 @@ export default function Capa1Triaje() {
 
   const totalAlertEvents = dynamicDistribution.reduce((acc, item) => acc + item.value, 0);
   const topAttackers = buildTopAttackers(visibleAlerts);
+
+  const toFlagEmoji = (countryCode: string) => {
+    const code = String(countryCode ?? "").trim().toUpperCase();
+    if (code === "ZZ") return "🌐";
+    if (code.length !== 2) return "🌐";
+    const A = 0x1f1e6;
+    const first = code.charCodeAt(0) - 65;
+    const second = code.charCodeAt(1) - 65;
+    if (first < 0 || first > 25 || second < 0 || second > 25) return "🌐";
+    return String.fromCodePoint(A + first, A + second);
+  };
+
+  const srcIntelByIp = useMemo(() => {
+    const map = new Map<string, IPIntelPayload>();
+    for (const alert of visibleAlerts) {
+      const srcIp = String(alert?.network_data?.src_ip ?? "").trim();
+      if (!srcIp) continue;
+      const intel = alert?.ip_intel?.src as IPIntelPayload | undefined;
+      if (intel && typeof intel === "object") {
+        map.set(srcIp, intel);
+      }
+    }
+    return map;
+  }, [visibleAlerts]);
+
+  const dstIntelByIp = useMemo(() => {
+    const map = new Map<string, IPIntelPayload>();
+    for (const alert of visibleAlerts) {
+      const dstIp = String(alert?.network_data?.dst_ip ?? "").trim();
+      if (!dstIp) continue;
+      const intel = alert?.ip_intel?.dst as IPIntelPayload | undefined;
+      if (intel && typeof intel === "object") {
+        map.set(dstIp, intel);
+      }
+    }
+    return map;
+  }, [visibleAlerts]);
+
+  const originCountryBreakdown = useMemo(() => {
+    const total = visibleAlerts.length;
+    if (!total) return [] as Array<{ country: string; flag: string; percent: number }>;
+
+    const byCountry = new Map<string, { country: string; flag: string; count: number }>();
+    for (const alert of visibleAlerts) {
+      const srcIp = String(alert?.network_data?.src_ip ?? "").trim();
+      const intel = (alert?.ip_intel?.src as IPIntelPayload | undefined) ?? undefined;
+      const fallbackMeta = !intel && srcIp ? getIPMetadata(srcIp) : null;
+      const codeRaw = String(intel?.country ?? fallbackMeta?.country ?? "zz").trim().toLowerCase();
+      const code = codeRaw && codeRaw !== "zz" && codeRaw.length === 2 ? codeRaw.toUpperCase() : "ZZ";
+      const current = byCountry.get(code) ?? { country: code, flag: toFlagEmoji(code), count: 0 };
+      current.count += 1;
+      byCountry.set(code, current);
+    }
+
+    const sorted = Array.from(byCountry.values()).sort((a, b) => b.count - a.count);
+    const top = sorted.slice(0, 3).map((entry) => ({
+      country: entry.country,
+      flag: entry.flag,
+      percent: Math.round((entry.count / total) * 100),
+    }));
+
+    const restCount = sorted.slice(3).reduce((acc, entry) => acc + entry.count, 0);
+    if (restCount > 0) {
+      top.push({ country: "OT", flag: "🌐", percent: Math.round((restCount / total) * 100) });
+    }
+
+    return top;
+  }, [visibleAlerts]);
+
+  const topAttackerCountries = useMemo(() => {
+    const total = visibleAlerts.length;
+    if (!total) return [] as Array<{ code: string; name: string; percent: number }>;
+
+    const byCode = new Map<string, { code: string; name: string; count: number }>();
+    for (const alert of visibleAlerts) {
+      const srcIp = String(alert?.network_data?.src_ip ?? "").trim();
+      const intel = alert?.ip_intel?.src as IPIntelPayload | undefined;
+      const fallbackMeta = !intel && srcIp ? getIPMetadata(srcIp) : null;
+      const codeRaw = String(intel?.country ?? fallbackMeta?.country ?? "zz").trim().toLowerCase();
+      const code = codeRaw && codeRaw !== "zz" && codeRaw.length === 2 ? codeRaw : "zz";
+      const name = String(intel?.country_name ?? fallbackMeta?.countryName ?? "Unknown").trim() || "Unknown";
+      const current = byCode.get(code) ?? { code, name, count: 0 };
+      current.count += 1;
+      // Keep the first non-empty name we see.
+      if (current.name === "Unknown" && name !== "Unknown") current.name = name;
+      byCode.set(code, current);
+    }
+
+    return Array.from(byCode.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((entry) => ({
+        code: entry.code,
+        name: entry.name,
+        percent: Math.round((entry.count / total) * 100),
+      }));
+  }, [visibleAlerts]);
   const attackerPrimaryTypeByIp = useMemo(() => {
     const bySrc = new Map<string, Record<string, number>>();
 
@@ -1235,6 +1298,38 @@ export default function Capa1Triaje() {
               </div>
             ))}
           </div>
+
+          <div className="mt-5 pt-4 border-t border-white/5">
+            <p className="text-base text-zinc-500 uppercase tracking-wider mb-3">Top 5 Países Atacantes</p>
+            <div className="space-y-2">
+              {isClient ? (
+                topAttackerCountries.length ? (
+                  topAttackerCountries.map((entry) => {
+                    const code = entry.code;
+                    const src = code !== "zz" ? `/flags/${code}_32.png` : "/globe.svg";
+                    const alt = code !== "zz" ? code.toUpperCase() : "Unknown";
+
+                    return (
+                      <div
+                        key={code}
+                        className="flex items-center justify-between rounded-xl border border-white/5 bg-black/40 px-3 py-2"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <img src={src} alt={alt} width={32} height={32} className="h-8 w-8 rounded-sm" />
+                          <span className="min-w-0 truncate text-[15px] text-zinc-100">{entry.name}</span>
+                        </div>
+                        <span className="font-mono text-[15px] text-white">{entry.percent}%</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-base text-zinc-500">Sin datos suficientes en la ventana actual.</p>
+                )
+              ) : (
+                <div className="h-20 w-full rounded-xl border border-white/5 bg-black/30" />
+              )}
+            </div>
+          </div>
         </Card>
 
         <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0 h-full">
@@ -1267,13 +1362,12 @@ export default function Capa1Triaje() {
                           {index + 1}
                         </span>
                         <div className="min-w-0 flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openIntel("top-attackers")}
-                            className="truncate font-mono text-zinc-200 hover:text-white"
-                          >
-                            {attacker.srcIp}
-                          </button>
+                          <IPProfilePopover
+                            ip={attacker.srcIp}
+                            intel={srcIntelByIp.get(attacker.srcIp) ?? null}
+                            className="min-w-0 inline-flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
+                            textClassName="min-w-0 truncate font-mono text-[15px] text-zinc-100 hover:text-white"
+                          />
                           <span className="shrink-0 text-zinc-600">|</span>
                           {(() => {
                             const primaryType = attackerPrimaryTypeByIp.get(String(attacker.srcIp));
@@ -1460,7 +1554,14 @@ export default function Capa1Triaje() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Ficha del Activo</p>
-                          <h3 className="mt-2 text-3xl font-semibold text-white font-mono break-all">{selectedAsset.dstIp}</h3>
+                          <div className="mt-2">
+                            <IPProfilePopover
+                              ip={selectedAsset.dstIp}
+                              intel={dstIntelByIp.get(String(selectedAsset.dstIp)) ?? null}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 hover:border-white/20"
+                              textClassName="text-3xl font-semibold text-white font-mono break-all"
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={() => openIntel("assets", "ioc")}
@@ -1584,7 +1685,13 @@ export default function Capa1Triaje() {
         </motion.div>
       ) : null}
 
-      <IntelDrawer open={isIntelOpen} context={intelContext} topic={intelTopic} onClose={closeIntel} />
+      <IntelDrawer
+        open={isIntelOpen}
+        context={intelContext}
+        topic={intelTopic}
+        originCountryBreakdown={originCountryBreakdown}
+        onClose={closeIntel}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6 pb-12">
         <div className="lg:col-span-2 flex min-h-0 flex-col gap-4 self-start">
@@ -1652,7 +1759,9 @@ export default function Capa1Triaje() {
                 <Card className="relative bg-hyper-surface border-hyper-border ring-0 h-full flex flex-col overflow-hidden">
                   <div className={`absolute left-0 top-0 h-full w-1.5 ${stripeClass}`} />
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-medium text-white">{alerta.gnn_metadata?.label_multiclass}</h3>
+                    <h3 className="text-xl font-medium text-white">
+                      {String(alerta.gnn_metadata?.label_multiclass ?? alerta.gnn_metadata?.label_multiclase ?? "")}
+                    </h3>
                     <div className="text-right">
                       <p className="text-base font-medium text-zinc-300">Data Time: {isClient ? formatIncidentTime(alerta.timestamp) : "--:--:--"}</p>
                       <p className="text-base font-semibold text-hyper-accent font-mono" title={fullId}>
@@ -1663,9 +1772,17 @@ export default function Capa1Triaje() {
 
                   <div className="mb-4">
                     <div className="bg-black/60 rounded-t-md p-3 font-mono text-lg text-zinc-400 border border-white/5 border-b-0">
-                      <span className="text-hyper-accent mr-2">ORIGEN:</span> {alerta.network_data?.src_ip}:{alerta.network_data?.src_port}
+                      <span className="text-hyper-accent mr-2">ORIGEN:</span> {alerta.network_data?.src_ip}:
+                      {(() => {
+                        const port = normalizePortNumber(alerta.network_data?.src_port);
+                        return port != null ? formatPortWithService(port) : String(alerta.network_data?.src_port ?? "--");
+                      })()}
                       <span className="mx-2 text-zinc-600">→</span>
-                      <span className="text-blue-400 mr-2">DESTINO:</span> {alerta.network_data?.dst_ip}:{alerta.network_data?.dst_port}
+                      <span className="text-blue-400 mr-2">DESTINO:</span> {alerta.network_data?.dst_ip}:
+                      {(() => {
+                        const port = normalizePortNumber(alerta.network_data?.dst_port);
+                        return port != null ? formatPortWithService(port) : String(alerta.network_data?.dst_port ?? "--");
+                      })()}
                     </div>
                     <div className="bg-hyper-accent/5 border border-hyper-accent/10 rounded-b-md p-4 flex gap-3 items-start">
                       <span className="text-hyper-accent text-lg mt-0.5">✨</span>
@@ -1784,7 +1901,7 @@ export default function Capa1Triaje() {
                 </div>
               </Card>
 
-              <Card className="bg-[#0a0a0a]/80 backdrop-blur-md border border-white/10 ring-0 flex flex-col shadow-2xl overflow-hidden">
+              <Card className="bg-zinc-900/80 backdrop-blur-md border border-white/10 ring-0 flex flex-col shadow-2xl overflow-hidden">
                 <div className="flex items-center gap-2 pb-4 border-b border-white/10">
                   <div className="w-2 h-2 rounded-full bg-hyper-accent animate-pulse" />
                   <h3 className="text-white font-medium">SOC Assistant</h3>
