@@ -1,13 +1,14 @@
-"""ASTOLE — Router Agent.
+"""Router node for ASTOLE LangGraph.
 
-Reads the GNN label from input and routes to the specialized skill.
-Fast path (rule-based): 0 cost, ~0ms latency.
-LLM fallback: only for unexpected labels (<5% of cases).
+Design goals:
+- Keep routing deterministic and cheap for known labels (rule path).
+- Preserve robustness for unseen labels (LLM fallback path).
+- Classify processing depth early (`fast`, `standard`, `deep`) so downstream
+  skills can adapt token budget and RAG depth.
 
-Also determines the confidence tier:
-  - fast:     confidence > 0.90 → shorter prompts, less RAG
-  - standard: confidence 0.70-0.90 → full analysis
-  - deep:     confidence < 0.70 → deep analysis + extended RAG
+The router is intentionally conservative:
+- benign traffic short-circuits to a minimal skill (`benign_guard`);
+- unknown labels never block the pipeline and degrade to `generic`.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from src.agents.core.config import (
     ROUTER_MODEL,
     ROUTER_TEMPERATURE,
 )
+from src.agents.core.helpers import get_binary_attack, get_multiclass_label
 from src.agents.prompts import load_prompt
 
 logger = logging.getLogger(__name__)
@@ -32,6 +34,7 @@ _ROUTER_SYSTEM_PROMPT = load_prompt("router")
 
 # GNN label → skill node name mapping in the LangGraph graph
 SKILL_MAP: Dict[str, str] = {
+    "Benign": "benign_guard",
     "DoS": "dos_fuzzers",
     "Fuzzers": "dos_fuzzers",
     "Exploits": "exploits_backdoor",
@@ -66,14 +69,23 @@ async def router_node(state: Dict[str, Any]) -> Dict[str, Any]:
     3. Otherwise → LLM fallback to classify
     4. Determines the confidence tier
     """
+    # The input contract may be canonical or legacy; helper functions normalize
+    # both forms so routing logic remains stable.
     gnn = state["input"]["gnn_metadata"]
-    label = gnn.get("label_multiclass", "")
+    label = get_multiclass_label(gnn)
     confidence = gnn.get("confidence_score", 0.5)
+    binary_attack = get_binary_attack(gnn)
 
     # Confidence tier
     state["confidence_tier"] = _determine_confidence_tier(confidence)
 
     # Fast path — direct rule (95%+ of cases)
+    # Canonical benign flows are explicitly short-circuited to a low-cost skill.
+    if binary_attack == 0 or label == "Benign":
+        state["skill_activated"] = "benign_guard"
+        logger.info("Router: benign flow -> benign_guard (tier=%s)", state["confidence_tier"])
+        return state
+
     if label in SKILL_MAP:
         state["skill_activated"] = SKILL_MAP[label]
         logger.info(
@@ -86,8 +98,8 @@ async def router_node(state: Dict[str, Any]) -> Dict[str, Any]:
     logger.warning("Router: label '%s' not in SKILL_MAP, using LLM fallback", label)
     try:
         user_msg = (
-            f"Alert with label_binary={gnn.get('label_binary')}, "
-            f"label_multiclass={label}, confidence={confidence}. "
+            f"Alert with binary_attack={binary_attack}, "
+            f"label_multiclase={label}, confidence={confidence}. "
             f"Network: protocol={state['input']['network_data'].get('protocol')}, "
             f"dst_port={state['input']['network_data'].get('dst_port')}."
         )

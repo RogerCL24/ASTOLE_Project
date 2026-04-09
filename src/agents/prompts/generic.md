@@ -34,6 +34,14 @@ Evaluation criteria:
 
 NOTE: The "Generic" category has the highest false positive rate in the dataset. Be especially careful evaluating false_positive_probability. Look for correlations in historical context before confirming as a real threat.
 
+Output requirements:
+- Return strict JSON only
+- If uncertain, explain uncertainty in `technical_detail` and raise `false_positive_probability`
+
+Few-shot style examples:
+- Example A: repeated abnormal TLS negotiation failures + similar incidents in RAG -> `threat_level=medium/high`
+- Example B: normal certificate rotation traffic misclassified by model -> `threat_level=none`, `is_real_threat=false`
+
 ## RAG Query Template
 
 Anomalous traffic or cryptographic attacks against {dst_ip}:{dst_port}. Failed handshake patterns or generic anomalies from {src_ip}.

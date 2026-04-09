@@ -31,16 +31,18 @@ _TRIAGE_INPUT_SCHEMA = {
         "gnn_metadata": {
             "type": "object",
             "properties": {
-                "label_binary": {"type": "string", "description": "Attack or Benign"},
-                "label_multiclass": {
+                "binary_attack": {"type": "integer", "enum": [0, 1], "description": "0=Benign, 1=Attack"},
+                "label_binary": {"type": ["string", "integer"], "description": "Legacy alias"},
+                "label_multiclase": {
                     "type": "string",
                     "enum": [
-                        "DoS", "Fuzzers", "Exploits", "Backdoor",
+                        "Benign", "DoS", "Fuzzers", "Exploits", "Backdoor",
                         "Reconnaissance", "Analysis", "Generic",
                         "Shellcode", "Worms",
                     ],
                     "description": "Attack category from GNN",
                 },
+                "label_multiclass": {"type": "string", "description": "Legacy alias"},
                 "confidence_score": {
                     "type": "number",
                     "minimum": 0,
@@ -49,7 +51,7 @@ _TRIAGE_INPUT_SCHEMA = {
                 },
                 "model_version": {"type": "string"},
             },
-            "required": ["label_binary", "label_multiclass", "confidence_score"],
+            "required": ["confidence_score"],
         },
         "network_data": {
             "type": "object",

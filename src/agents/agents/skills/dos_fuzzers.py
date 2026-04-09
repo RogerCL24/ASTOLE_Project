@@ -1,4 +1,10 @@
-"""ASTOLE — Skill node: DoS / Fuzzers."""
+"""DoS/Fuzzers specialized skill entrypoint.
+
+This thin node delegates heavy lifting to `run_skill` while preserving a clear
+domain boundary in the graph. Grouping DoS and Fuzzers is intentional because
+both often share traffic-shape indicators (high volume, asymmetric flow, burst
+patterns) and benefit from similar contextual retrieval strategies.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +18,7 @@ _RAG_QUERY = load_rag_query("dos_fuzzers")
 
 
 async def dos_fuzzers_skill(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Specialized skill for DoS and Fuzzers."""
+    """Execute DoS/Fuzzers analysis with dedicated prompt and RAG query."""
     return await run_skill(
         state=state,
         skill_name="dos_fuzzers",

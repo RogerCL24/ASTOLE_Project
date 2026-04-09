@@ -1,10 +1,10 @@
-"""ASTOLE — Abstract base skill for all specialized agents.
+"""Shared skill execution runtime.
 
-Provides common logic:
-- RAG query with specialized query
-- LLM call with skill prompt
-- JSON output parsing to SkillAssessment
-- Token/cost accumulation in state
+Every specialized skill delegates to this module to guarantee:
+- consistent prompt framing and response schema;
+- deterministic fallback behavior when model output is invalid;
+- centralized token/model accounting for observability and cost tracking;
+- homogeneous RAG access pattern before summarization.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from typing import Any, Dict
 from litellm import acompletion
 
 from src.agents.core.config import SKILL_MAX_TOKENS, SKILL_MODEL, SKILL_TEMPERATURE
+from src.agents.core.helpers import get_multiclass_label
 from src.agents.tools.rag_tool import rag_retrieve_with_count
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ async def run_skill(
         src_ip=net.get("src_ip", "unknown"),
         dst_ip=net.get("dst_ip", "unknown"),
         dst_port=net.get("dst_port", 0),
-        label=gnn.get("label_multiclass", "Unknown"),
+        label=get_multiclass_label(gnn),
     )
 
     # Adjust RAG depth per tier
@@ -120,7 +121,7 @@ async def run_skill(
 
     user_msg = f"""## Network Alert
 - ID: {input_data.get('alert_id')}
-- GNN Classification: {gnn.get('label_multiclass')} (confidence: {gnn.get('confidence_score', 0):.2f})
+- GNN Classification: {get_multiclass_label(gnn)} (confidence: {gnn.get('confidence_score', 0):.2f})
 - {network_summary}
 - {window_context}
 
@@ -137,7 +138,8 @@ Respond EXCLUSIVELY with valid JSON following this schema:
 {_RESPONSE_SCHEMA}"""
 
     # 4. Call the LLM
-    max_tokens = {"fast": 512, "standard": 1024, "deep": 1536}.get(tier, SKILL_MAX_TOKENS)
+    # Keep default profile under the target average token budget (<800 tokens).
+    max_tokens = {"fast": 384, "standard": 768, "deep": 960}.get(tier, SKILL_MAX_TOKENS)
 
     try:
         response = await acompletion(
@@ -190,7 +192,7 @@ Respond EXCLUSIVELY with valid JSON following this schema:
 def _fallback_assessment(gnn: Dict[str, Any], skill_name: str) -> Dict[str, Any]:
     """Fallback assessment when the LLM fails."""
     return {
-        "threat_type": gnn.get("label_multiclass", "Unknown"),
+        "threat_type": get_multiclass_label(gnn),
         "threat_subtype": "Analysis unavailable",
         "threat_level": "medium",
         "confidence_adjusted": gnn.get("confidence_score", 0.5),

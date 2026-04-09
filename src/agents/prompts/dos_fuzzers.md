@@ -36,6 +36,14 @@ For false positives, evaluate:
 - Is the duration consistent with an attack or with legitimate bulk transfer?
 - Are the TCP flags consistent with a normal handshake or with an attack?
 
+Output requirements:
+- Return strict JSON only (no markdown, no prose wrappers)
+- Keep `technical_detail` under 120 words unless confidence tier is deep
+
+Few-shot style examples:
+- Example A: SYN-only traffic, high pps, same destination, repeated windows -> `threat_level=critical`, `is_real_threat=true`
+- Example B: Short burst during legitimate deployment window, no recurrence in RAG -> `threat_level=low`, `is_real_threat=false`
+
 ## RAG Query Template
 
 Historical DoS or Fuzzers attacks from IP {src_ip} towards {dst_ip}:{dst_port} in the last 60 seconds. Flows with high packets-per-second ratio.

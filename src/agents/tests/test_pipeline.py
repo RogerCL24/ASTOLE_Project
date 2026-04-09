@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 from typing import Any, Dict
 
 import pytest
@@ -57,8 +58,8 @@ def _make_alert(
         "timestamp": "2026-03-02T22:15:00Z",
         "window_id": "WIN-2026-0302-2215",
         "gnn_metadata": {
-            "label_binary": "Attack",
-            "label_multiclass": label,
+            "binary_attack": 0 if label == "Benign" else 1,
+            "label_multiclase": label,
             "confidence_score": confidence,
             "model_version": "gnn-v3.1-test",
         },
@@ -93,6 +94,7 @@ def _make_alert(
 
 # Sample alerts for each attack category
 SAMPLE_ALERTS: Dict[str, Dict[str, Any]] = {
+    "Benign": _make_alert("AST-TEST-BEN", "Benign", 0.98, dst_port=53, in_bytes=32),
     "DoS": _make_alert("AST-TEST-DOS", "DoS", 0.94, duration_ms=2.1, in_bytes=64),
     "Fuzzers": _make_alert("AST-TEST-FUZ", "Fuzzers", 0.88, dst_port=8080, in_bytes=4096),
     "Exploits": _make_alert("AST-TEST-EXP", "Exploits", 0.91, dst_port=445, out_bytes=2048),
@@ -115,7 +117,7 @@ class TestSchemas:
     def test_input_alert_valid(self):
         alert = InputAlert(**SAMPLE_ALERTS["DoS"])
         assert alert.alert_id == "AST-TEST-DOS"
-        assert alert.gnn_metadata.label_multiclass == AttackCategory.DOS
+        assert alert.gnn_metadata.label_multiclase == AttackCategory.DOS
 
     def test_input_alert_invalid_timestamp(self):
         data = SAMPLE_ALERTS["DoS"].copy()
@@ -141,7 +143,7 @@ class TestSchemas:
     def test_all_attack_categories_valid(self):
         for label in SAMPLE_ALERTS:
             alert = InputAlert(**SAMPLE_ALERTS[label])
-            assert alert.gnn_metadata.label_multiclass.value == label
+            assert alert.gnn_metadata.label_multiclase.value == label
 
 
 # ---------------------------------------------------------------------------
@@ -168,6 +170,25 @@ class TestRouter:
                 f"Label '{label}' should route to '{expected_skill}', "
                 f"but routed to '{result['skill_activated']}'"
             )
+
+    @pytest.mark.asyncio
+    async def test_router_200_synthetic_alerts(self):
+        """Stress router logic with 200 synthetic alerts."""
+        labels = list(SKILL_MAP.keys())
+        for i in range(200):
+            label = random.choice(labels)
+            confidence = random.uniform(0.55, 0.99)
+            state = {
+                "input": _make_alert(f"SYNTH-{i:03d}", label, confidence=confidence),
+                "skill_activated": "",
+                "confidence_tier": "",
+                "tokens_used": {},
+                "models_used": [],
+                "errors": [],
+            }
+            result = await router_node(state)
+            assert result["skill_activated"] == SKILL_MAP[label]
+            assert result["confidence_tier"] in {"fast", "standard", "deep"}
 
     @pytest.mark.asyncio
     async def test_confidence_tier_fast(self):
@@ -209,20 +230,18 @@ class TestRouter:
         assert result["confidence_tier"] == "deep"
 
     @pytest.mark.asyncio
-    async def test_unknown_label_uses_generic_fallback(self):
-        """Si faltan API keys, el fallback debe usar 'generic'."""
+    async def test_benign_routes_to_benign_guard(self):
+        """Benign flows should bypass expensive skill inference."""
         state = {
-            "input": _make_alert("TEST", "Benign"),
+            "input": _make_alert("TEST-BENIGN", "Benign"),
             "skill_activated": "",
             "confidence_tier": "",
             "tokens_used": {},
             "models_used": [],
             "errors": [],
         }
-        # "Benign" is not in SKILL_MAP → triggers LLM fallback
-        # Sin API keys → fallback a "generic"
         result = await router_node(state)
-        assert result["skill_activated"] != ""  # Algo debe haberse asignado
+        assert result["skill_activated"] == "benign_guard"
 
 
 # ---------------------------------------------------------------------------

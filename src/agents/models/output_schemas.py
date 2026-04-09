@@ -71,8 +71,9 @@ class TokenUsage(BaseModel):
 class Narrative(BaseModel):
     """Hierarchical narrative for the dashboard."""
 
-    executive_summary: str = Field(..., description="Executive summary (1-2 sentences)")
-    technical_detail: str = Field(..., description="Technical detail with RAG context")
+    executive: str = Field(..., description="Executive summary (1-2 sentences)")
+    tactical: str = Field(..., description="Technical/tactical detail with RAG context")
+    impact: str = Field(..., description="Business/operational impact statement")
     recommended_actions: List[str] = Field(default_factory=list)
     iocs: List[IOC] = Field(default_factory=list)
 

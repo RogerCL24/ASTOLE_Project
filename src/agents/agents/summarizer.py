@@ -1,12 +1,13 @@
-"""ASTOLE — Summarizer Agent.
+"""Final summarization node for triage output.
 
-Takes a skill assessment + original input and produces:
-1. Hierarchical narrative (executive → technical → actions)
-2. Extracted IOCs
-3. Investigation hints for the Chat RAG
-4. Final severity and escalation decision
+Responsibilities:
+- transform technical skill output into hierarchical narrative for different
+  audiences (`executive`, `tactical`, `impact`);
+- apply deterministic escalation heuristics as guardrails;
+- build final `TriageOutput` payload expected by the dashboard contract.
 
-This is the last node before returning TriageOutput to the Dashboard.
+Even if the summarizer LLM fails, this node must still return a valid payload
+through deterministic fallback generation.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from typing import Any, Dict, List
 from litellm import acompletion
 
 from src.agents.core.config import SUMMARIZER_MAX_TOKENS, SUMMARIZER_MODEL, SUMMARIZER_TEMPERATURE
+from src.agents.core.helpers import get_multiclass_label
 from src.agents.prompts import load_prompt
 
 logger = logging.getLogger(__name__)
@@ -40,8 +42,9 @@ _USER_TEMPLATE = """## Skill Assessment
 ## Instructions
 Generate the report with this JSON schema:
 {{
-  "executive_summary": "string (1-2 sentences)",
-  "technical_detail": "string (technical paragraph)",
+  "executive": "string (1-2 sentences)",
+  "tactical": "string (technical paragraph)",
+  "impact": "string (business/operational impact)",
   "recommended_actions": ["action 1", "action 2", ...],
   "suggested_queries": ["RAG query 1", "query 2", ...],
   "severity": "critical|high|medium|low|info",
@@ -103,7 +106,7 @@ async def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         assessment_json=json.dumps(assessment, ensure_ascii=False, indent=2),
         alert_id=input_data.get("alert_id", "N/A"),
         timestamp=input_data.get("timestamp", "N/A"),
-        label=gnn.get("label_multiclass", "Unknown"),
+        label=get_multiclass_label(gnn),
         confidence=gnn.get("confidence_score", 0.0),
         src_ip=net.get("src_ip", "?"),
         src_port=net.get("src_port", 0),
@@ -155,7 +158,7 @@ async def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     attack_flows = window.get("attack_flows", 1)
 
     # NUEVO
-    raw_label = gnn.get("label_multiclass", "Unknown")
+    raw_label = get_multiclass_label(gnn)
     label = raw_label.value if hasattr(raw_label, 'value') else str(raw_label)
     
     if "." in label:
@@ -200,8 +203,9 @@ async def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "false_positive_probability": assessment.get("false_positive_probability", 0.1),
         },
         "narrative": {
-            "executive_summary": summary.get("executive_summary", "Analysis unavailable."),
-            "technical_detail": summary.get("technical_detail", assessment.get("technical_detail", "")),
+            "executive": summary.get("executive", "Analysis unavailable."),
+            "tactical": summary.get("tactical", assessment.get("technical_detail", "")),
+            "impact": summary.get("impact", "Impact could not be estimated automatically."),
             "recommended_actions": summary.get("recommended_actions", assessment.get("recommended_actions", [])),
             "iocs": iocs,
         },
@@ -229,13 +233,14 @@ async def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def _fallback_summary(assessment: Dict[str, Any], input_data: Dict[str, Any]) -> Dict[str, Any]:
     """Fallback summary when the summarizer LLM fails."""
-    label = input_data.get("gnn_metadata", {}).get("label_multiclass", "Unknown")
+    label = get_multiclass_label(input_data.get("gnn_metadata", {}))
     src_ip = input_data.get("network_data", {}).get("src_ip", "?")
     dst_ip = input_data.get("network_data", {}).get("dst_ip", "?")
     return {
-        "executive_summary": f"{label} attack detected from {src_ip} towards {dst_ip}. "
-                             f"Threat level: {assessment.get('threat_level', 'medium')}.",
-        "technical_detail": assessment.get("technical_detail", "Technical detail unavailable."),
+        "executive": f"{label} activity detected from {src_ip} towards {dst_ip}. "
+                     f"Threat level: {assessment.get('threat_level', 'medium')}.",
+        "tactical": assessment.get("technical_detail", "Technical detail unavailable."),
+        "impact": "Potential effect on service availability and incident-response workload.",
         "recommended_actions": assessment.get("recommended_actions", ["Manual review required"]),
         "suggested_queries": [
             f"What other destinations has {src_ip} recently contacted?",

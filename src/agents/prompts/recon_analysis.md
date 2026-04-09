@@ -39,6 +39,14 @@ For Analysis (web attacks), evaluate:
 - Does the connection pattern suggest automated tools (Nikto, SQLMap)?
 - Are there indicators of successful attack or just failed attempts?
 
+Output requirements:
+- Return strict JSON only
+- Keep indicators actionable and SOC-friendly
+
+Few-shot style examples:
+- Example A: wide fan-out scan + repeat subnet probing + exploit follow-up in RAG -> `threat_level=high`
+- Example B: monitoring probe from known scanner IP with allowlisted behavior -> `threat_level=none`
+
 ## RAG Query Template
 
 Scanning or probes from {src_ip} towards multiple ports or services. Web attacks or analysis against {dst_ip}:{dst_port} in recent window.

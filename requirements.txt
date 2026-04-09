@@ -1,11 +1,19 @@
 pandas          # Procesamiento de datos (Ingeniero 1)
 scikit-learn    # Normalización (Ingeniero 1)
 langchain       # Orquestación de agentes (Ingeniero 2)
+langgraph       # Workflow graph runtime
 langchain-community 
 chromadb        # Base de datos vectorial (Ingeniero 3)
-pysqlite3-binary # Necesario para ChromaDB en algunos Linux
+pysqlite3-binary; platform_system != "Windows" # Necesario para ChromaDB en Linux
 streamlit       # Interfaz de usuario (Ingeniero 4)
 python-dotenv   # Gestión de APIs
 requests        # Llamadas a APIs externas
+httpx           # Cliente HTTP async para RAG
 sentence-transformers  # Embeddings de texto
 torch  # PyTorch runtime (install appropriate wheel for your platform if needed)
+fastapi         # API de triage y RAG externo
+uvicorn         # Servidor ASGI
+litellm         # Proxy unificado de modelos
+langsmith       # Trazabilidad y observabilidad
+pytest          # Tests
+pytest-asyncio  # Tests async

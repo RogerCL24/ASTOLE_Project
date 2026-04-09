@@ -1,4 +1,9 @@
-"""ASTOLE — Skill node: Reconnaissance / Analysis."""
+"""Recon/Analysis specialized skill entrypoint.
+
+This node covers pre-exploitation behaviors such as probing, scanning and
+application reconnaissance. It is tuned to reduce false positives from
+legitimate monitoring traffic by relying on contextual and temporal cues.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +17,7 @@ _RAG_QUERY = load_rag_query("recon_analysis")
 
 
 async def recon_analysis_skill(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Specialized skill for Reconnaissance and Analysis."""
+    """Execute Recon/Analysis assessment path."""
     return await run_skill(
         state=state,
         skill_name="recon_analysis",

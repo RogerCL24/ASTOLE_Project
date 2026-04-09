@@ -33,7 +33,7 @@ ROUTER_MAX_TOKENS: int = 50
 # Skills — in-depth analysis of each attack type
 SKILL_MODEL: str = os.getenv("SKILL_MODEL", "claude-3-5-haiku-20241022")
 SKILL_TEMPERATURE: float = 0.1
-SKILL_MAX_TOKENS: int = 1024
+SKILL_MAX_TOKENS: int = 768
 
 # Summarizer — hierarchical summary of the assessment
 SUMMARIZER_MODEL: str = os.getenv("SUMMARIZER_MODEL", "gpt-4o-mini")
@@ -54,6 +54,7 @@ CONFIDENCE_DEEP_THRESHOLD: float = float(os.getenv("CONFIDENCE_DEEP", "0.70"))
 RAG_API_URL: str = os.getenv("RAG_API_URL", "http://localhost:8001")
 RAG_TOP_K: int = int(os.getenv("RAG_TOP_K", "5"))
 RAG_TIMEOUT_S: int = int(os.getenv("RAG_TIMEOUT_S", "5"))
+RAG_RETRIES: int = int(os.getenv("RAG_RETRIES", "2"))
 
 # ---------------------------------------------------------------------------
 # Cache (Redis)
@@ -71,15 +72,30 @@ API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
 API_PORT: int = int(os.getenv("API_PORT", "8000"))
 API_WORKERS: int = int(os.getenv("API_WORKERS", "1"))
 
+# ---------------------------------------------------------------------------
+# LangSmith / tracing
+# ---------------------------------------------------------------------------
+
+LANGSMITH_TRACING: bool = os.getenv("LANGSMITH_TRACING", "false").lower() == "true"
+LANGSMITH_API_KEY: str = os.getenv("LANGSMITH_API_KEY", "")
+LANGSMITH_ENDPOINT: str = os.getenv("LANGSMITH_ENDPOINT", "https://api.smith.langchain.com")
+LANGSMITH_PROJECT: str = os.getenv("LANGSMITH_PROJECT", "astole-triage")
+
 
 # ---------------------------------------------------------------------------
 # LiteLLM setup
 # ---------------------------------------------------------------------------
 
 def setup_litellm() -> None:
-    """Configure LiteLLM with the available API keys."""
+    """Configure LiteLLM and tracing environment."""
     import litellm
 
     litellm.openai_key = OPENAI_API_KEY
     litellm.anthropic_key = ANTHROPIC_API_KEY
     litellm.set_verbose = os.getenv("LITELLM_VERBOSE", "false").lower() == "true"
+
+    if LANGSMITH_TRACING:
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        os.environ["LANGCHAIN_API_KEY"] = LANGSMITH_API_KEY
+        os.environ["LANGCHAIN_ENDPOINT"] = LANGSMITH_ENDPOINT
+        os.environ["LANGCHAIN_PROJECT"] = LANGSMITH_PROJECT

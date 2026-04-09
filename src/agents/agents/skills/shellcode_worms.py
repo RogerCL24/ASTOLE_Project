@@ -1,4 +1,9 @@
-"""ASTOLE — Skill node: Shellcode / Worms."""
+"""Shellcode/Worms specialized skill entrypoint.
+
+This node addresses low-frequency but high-impact classes where containment
+speed matters. The paired taxonomy helps correlate exploit delivery traces
+with possible propagation behavior in nearby windows.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +17,7 @@ _RAG_QUERY = load_rag_query("shellcode_worms")
 
 
 async def shellcode_worms_skill(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Specialized skill for Shellcode and Worms."""
+    """Execute Shellcode/Worms assessment path."""
     return await run_skill(
         state=state,
         skill_name="shellcode_worms",

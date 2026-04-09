@@ -41,6 +41,14 @@ For Shellcode:
 - NOP sleds (~0x90 repeated) generate payloads of specific sizes
 - Short connection (shellcode delivery) + immediate long connection (reverse shell) = classic pattern
 
+Output requirements:
+- Return strict JSON only
+- Prioritize containment actions for worm-like behavior
+
+Few-shot style examples:
+- Example A: one source rapidly touching many peers on 445 with repeat hits -> `threat_level=critical`, `should_escalate` expected downstream
+- Example B: isolated binary transfer with no propagation evidence -> `threat_level=low`
+
 ## RAG Query Template
 
 Shellcode or worm propagation from {src_ip}. Burst connections to multiple destinations or suspicious payloads towards {dst_ip}:{dst_port}.

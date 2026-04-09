@@ -1,4 +1,9 @@
-"""ASTOLE — Skill node: Generic."""
+"""Generic specialized skill entrypoint.
+
+The generic class captures residual malicious patterns that do not strongly
+match other families. This node emphasizes calibrated uncertainty handling and
+structured recommendations for analyst follow-up.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +17,7 @@ _RAG_QUERY = load_rag_query("generic")
 
 
 async def generic_skill(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Specialized skill for Generic (cryptographic and unclassified) attacks."""
+    """Execute Generic threat analysis path."""
     return await run_skill(
         state=state,
         skill_name="generic",

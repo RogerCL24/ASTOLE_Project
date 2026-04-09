@@ -12,12 +12,13 @@ from typing import List
 
 import httpx
 
-from src.agents.core.config import RAG_API_URL, RAG_TIMEOUT_S, RAG_TOP_K
+from src.agents.core.config import RAG_API_URL, RAG_RETRIES, RAG_TIMEOUT_S, RAG_TOP_K
 
 logger = logging.getLogger(__name__)
 
-# When True, rag_retrieve returns mock data (offline development)
-_USE_MOCK = os.getenv("RAG_USE_MOCK", "true").lower() == "true"
+# When True, rag_retrieve returns mock data (offline development).
+# Default is false to favor real integration in production-like environments.
+_USE_MOCK = os.getenv("RAG_USE_MOCK", "false").lower() == "true"
 
 
 async def rag_retrieve(query: str, top_k: int | None = None) -> str:
@@ -65,21 +66,25 @@ async def rag_retrieve_with_count(query: str, top_k: int | None = None) -> tuple
         count = text.count("---") + 1 if "---" in text else (1 if text and "No historical context" not in text else 0)
         return text, count
 
-    try:
-        async with httpx.AsyncClient(timeout=RAG_TIMEOUT_S) as client:
-            resp = await client.post(
-                f"{RAG_API_URL}/query",
-                json={"query": query, "top_k": k},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            snippets: List[str] = data.get("snippets", [])
-            if not snippets:
-                return "No historical context available.", 0
-            return "\n---\n".join(snippets), len(snippets)
-    except Exception as e:
-        logger.error("Error querying RAG: %s", e)
-        return "Context unavailable.", 0
+    last_error: Exception | None = None
+    for _ in range(RAG_RETRIES + 1):
+        try:
+            async with httpx.AsyncClient(timeout=RAG_TIMEOUT_S) as client:
+                resp = await client.post(
+                    f"{RAG_API_URL}/query",
+                    json={"query": query, "top_k": k},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                snippets: List[str] = data.get("snippets", [])
+                if not snippets:
+                    return "No historical context available.", 0
+                return "\n---\n".join(snippets), len(snippets)
+        except Exception as e:
+            last_error = e
+            continue
+    logger.error("Error querying RAG after retries: %s", last_error)
+    return "Context unavailable.", 0
 
 
 def _mock_retrieve(query: str, top_k: int) -> str:

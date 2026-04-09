@@ -71,7 +71,7 @@ async def triage(alert: InputAlert) -> Dict[str, Any]:
     # Check cache
     cache_key_args = (
         alert.network_data.src_ip,
-        alert.gnn_metadata.label_multiclass.value,
+        alert.gnn_metadata.label_multiclase.value,
         alert.window_id,
     )
     cached = get_cached_result(*cache_key_args)
@@ -81,7 +81,8 @@ async def triage(alert: InputAlert) -> Dict[str, Any]:
 
     # Build initial state
     initial_state: Dict[str, Any] = {
-        "input": alert.model_dump(),
+        # Dump using canonical contract aliases (v1.1) for trace consistency.
+        "input": alert.model_dump(mode="json", by_alias=True),
         "skill_activated": "",
         "confidence_tier": "standard",
         "rag_context": "",
