@@ -77,3 +77,14 @@
 ### Fixed
 - **Severidad al pivotar**: El vector/severidad se extrae correctamente desde el esquema real de alertas (`gnn_metadata.label_multiclase`, `gnn_metadata.binary_attack`) evitando el fallback “Actividad”.
 - **App Router searchParams**: Ajuste para evitar errores de APIs dinámicas (unwrap seguro de `searchParams`).
+
+## [0.7.0-ui] - 2026-04-09
+
+### Added
+- **Dossier Técnico (IP Popover)**: Popover de perfil de IP con bandera, país real, ISP/ASN, tipo de uso y aviso si la IP es nodo de privacidad (Proxy/VPN/TOR/WEB).
+- **Top 5 Países Atacantes**: Nuevo bloque bajo el donut de Composición de Amenazas con banderas + porcentaje por país (preferencia por datos `ip_intel` cuando están presentes en la alerta).
+
+### Changed
+- **Flags 32px**: Migración de assets de banderas a convención `*_32.png` y aumento de tamaños de render para legibilidad.
+- **UI Surface**: Ajuste del token de superficie (`--color-hyper-surface`) para mejorar contraste en cards “glass”.
+- **Intel Drawer (copy)**: Texto alineado para indicar que el breakdown de países se alimenta desde enriquecimiento backend cuando está disponible.
