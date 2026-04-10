@@ -88,3 +88,21 @@
 - **Flags 32px**: Migración de assets de banderas a convención `*_32.png` y aumento de tamaños de render para legibilidad.
 - **UI Surface**: Ajuste del token de superficie (`--color-hyper-surface`) para mejorar contraste en cards “glass”.
 - **Intel Drawer (copy)**: Texto alineado para indicar que el breakdown de países se alimenta desde enriquecimiento backend cuando está disponible.
+
+## [0.8.0-ui] - 2026-04-10
+
+### Added
+- **Capa visual ambiental**: Fondo dinámico global (`GridDistortion`) + overlay de ruido (`Noise`) para estética y profundidad sin bloquear interacciones.
+- **UI primitives**: Nuevos componentes en `frontend/components/ui/` para encapsular efectos (tilt, spotlight, etc.).
+
+### Changed
+- **Layout Capa 1**: Rebalanceo de columnas entre “Narrativa de Incidentes (Real-Time)” y “Estado de Activos Críticos” para mejor lectura.
+- **Composición de Amenazas**: Donut y tipografía escalados para mejor legibilidad.
+- **Top Atacantes**: Tipografía y espaciado de pills escalados (sin romper single-line).
+- **Intel Drawer**: Panel lateral más ancho para que el contenido no quede apretado.
+
+### Fixed
+- **Fondo dinámico**: Tracking de ratón a nivel `window` y canvas sin captura de eventos para que el fondo responda aunque haya cards encima.
+- **Top Atacantes**: IP completa sin salto de línea, separador sin solaparse y badge `[Riesgo de Intrusión]` sin recortes.
+- **Top 5 Países Atacantes**: Nombres largos sin truncado (wrap permitido).
+- **Activos Críticos**: Click más fiable al interactuar con tiles.

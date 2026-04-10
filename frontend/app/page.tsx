@@ -6,6 +6,9 @@ import { motion } from "framer-motion";
 import { Badge, Card } from "@tremor/react";
 import { IntelDrawer, type IntelDrawerContext, type IntelDrawerTopic } from "../components/IntelDrawer";
 import { IPProfilePopover, type IPIntelPayload } from "../components/IPProfilePopover";
+import SpotlightCard from "../components/ui/SpotlightCard";
+import Magnetic from "../components/ui/Magnetic";
+import TiltedCard from "../components/ui/TiltedCard";
 import {
   formatPortWithService,
   getIPMetadata,
@@ -1049,7 +1052,7 @@ export default function Capa1Triaje() {
   const totalThreats = alerts.filter(Boolean).length;
 
   return (
-    <div className="min-h-screen p-8 lg:p-12 font-sans relative z-10 flex flex-col gap-8 bg-black">
+    <div className="min-h-screen p-8 lg:p-12 font-sans relative z-10 flex flex-col gap-8 bg-transparent">
       <div
         className={`pointer-events-none fixed inset-0 z-[60] border-2 border-red-500/40 transition-opacity duration-500 ${
           flashCriticalBorder ? "opacity-100" : "opacity-0"
@@ -1075,11 +1078,11 @@ export default function Capa1Triaje() {
               </span>
               Última actualización: {isClient ? formatUtcTime(data.metrics?.last_update) : "--:--:--"}
             </p>
-            <p className="text-zinc-500 font-mono">
+            <p className="text-zinc-400 font-mono">
               Flujo en Tiempo Real: <span className="text-white">{currentTime || "--:--:--"}</span> ·
               <span className="text-hyper-accent"> {speedLabel}</span>
             </p>
-            <p className="text-zinc-500 font-mono">
+            <p className="text-zinc-400 font-mono">
               Ciclos de Análisis: <span className="text-white">{analysisCycles.toLocaleString("es-ES")}</span> ·
               <span className="text-hyper-accent"> Amenazas Totales: {totalThreats.toLocaleString("es-ES")}</span>
             </p>
@@ -1127,16 +1130,16 @@ export default function Capa1Triaje() {
       </HeaderTag>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
-        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
-          <p className="text-base text-zinc-500 uppercase tracking-wider mb-1">Alertas</p>
+          <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 ring-0 min-w-0">
+          <p className="text-base text-zinc-400 uppercase tracking-wider mb-1">Alertas</p>
           <p className="text-3xl font-mono text-white">{totalAlertsValue.toLocaleString("es-ES")}</p>
-          <p className="text-sm text-zinc-500">Eventos detectados por el motor de respuesta</p>
+          <p className="text-sm text-zinc-400">Eventos detectados por el motor de respuesta</p>
         </Card>
 
-        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
-          <p className="text-base text-zinc-500 uppercase tracking-wider mb-1">Reducción de Ruido</p>
+          <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 ring-0 min-w-0">
+          <p className="text-base text-zinc-400 uppercase tracking-wider mb-1">Reducción de Ruido</p>
           <p className="text-3xl font-mono text-white">{Number(metrics.compression_rate_percent ?? 0).toFixed(2)}%</p>
-          <p className="text-sm text-zinc-500">Ruido eliminado frente al tráfico bruto</p>
+          <p className="text-sm text-zinc-400">Ruido eliminado frente al tráfico bruto</p>
         </Card>
       </div>
 
@@ -1148,13 +1151,13 @@ export default function Capa1Triaje() {
               transition: { duration: 0.6, delay: 0.2 },
             }
           : {})}
-        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+        className="grid grid-cols-1 gap-6 lg:grid-cols-2"
       >
-        <Card className="bg-hyper-surface border-hyper-border ring-0 lg:col-span-3 min-w-0">
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 lg:col-span-2 min-w-0">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-white font-medium mb-1">Firma de Tráfico (Motor Ingestión)</h3>
-              <p className="text-base text-zinc-500">Ventana operativa de los últimos 20 minutos</p>
+              <p className="text-base text-zinc-400">Ventana operativa de los últimos 20 minutos</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge color="orange" size="xs">
@@ -1228,11 +1231,11 @@ export default function Capa1Triaje() {
           </div>
         </Card>
 
-        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0 h-full">
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 min-w-0 h-full">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-white font-medium">Composición de Amenazas</h3>
-              <p className="text-base text-zinc-500">Basado en el intervalo actual</p>
+              <h3 className="text-white font-medium text-xl">Composición de Amenazas</h3>
+              <p className="text-lg text-zinc-400">Basado en el intervalo actual</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge color="orange" size="xs">Donut</Badge>
@@ -1247,7 +1250,7 @@ export default function Capa1Triaje() {
             </div>
           </div>
 
-          <div className="mt-4 h-44 w-full min-w-0 relative">
+          <div className="mt-4 h-60 w-full min-w-0 relative">
             {isClient ? (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
@@ -1255,8 +1258,8 @@ export default function Capa1Triaje() {
                     data={dynamicDistribution}
                     cx="50%"
                     cy="50%"
-                    innerRadius={52}
-                    outerRadius={74}
+                    innerRadius={68}
+                    outerRadius={98}
                     paddingAngle={6}
                     dataKey="value"
                     stroke="none"
@@ -1282,14 +1285,14 @@ export default function Capa1Triaje() {
             )}
 
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-mono text-white">{totalAlertEvents}</span>
-              <span className="text-sm text-zinc-500 uppercase tracking-widest mt-1">Eventos</span>
+              <span className="text-4xl font-mono text-white">{totalAlertEvents}</span>
+              <span className="text-sm text-zinc-400 uppercase tracking-widest mt-1">Eventos</span>
             </div>
           </div>
 
           <div className="mt-4 flex flex-col gap-2 px-2">
             {dynamicDistribution.slice(0, 6).map((item) => (
-              <div key={item.name} className="flex items-center justify-between text-base">
+              <div key={item.name} className="flex items-center justify-between text-xl">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-zinc-400 truncate">{item.name}</span>
@@ -1300,7 +1303,7 @@ export default function Capa1Triaje() {
           </div>
 
           <div className="mt-5 pt-4 border-t border-white/5">
-            <p className="text-base text-zinc-500 uppercase tracking-wider mb-3">Top 5 Países Atacantes</p>
+            <p className="text-base text-zinc-400 uppercase tracking-wider mb-3">Top 5 Países Atacantes</p>
             <div className="space-y-2">
               {isClient ? (
                 topAttackerCountries.length ? (
@@ -1312,18 +1315,22 @@ export default function Capa1Triaje() {
                     return (
                       <div
                         key={code}
-                        className="flex items-center justify-between rounded-xl border border-white/5 bg-black/40 px-3 py-2"
+                        className="flex w-full items-start gap-3 rounded-xl border border-white/5 bg-black/40 px-3 py-2"
                       >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <img src={src} alt={alt} width={32} height={32} className="h-8 w-8 rounded-sm" />
-                          <span className="min-w-0 truncate text-[15px] text-zinc-100">{entry.name}</span>
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <img src={src} alt={alt} width={32} height={32} className="h-8 w-8 shrink-0 rounded-sm" />
+                          <div className="flex-1 w-full">
+                            <span className="block whitespace-normal break-words text-[15px] leading-snug text-zinc-100" title={entry.name}>
+                              {entry.name}
+                            </span>
+                          </div>
                         </div>
-                        <span className="font-mono text-[15px] text-white">{entry.percent}%</span>
+                        <span className="shrink-0 font-mono text-[15px] text-white">{entry.percent}%</span>
                       </div>
                     );
                   })
                 ) : (
-                  <p className="text-base text-zinc-500">Sin datos suficientes en la ventana actual.</p>
+                  <p className="text-base text-zinc-400">Sin datos suficientes en la ventana actual.</p>
                 )
               ) : (
                 <div className="h-20 w-full rounded-xl border border-white/5 bg-black/30" />
@@ -1332,11 +1339,11 @@ export default function Capa1Triaje() {
           </div>
         </Card>
 
-        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0 h-full">
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 min-w-0 h-full">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-white font-medium">Top Atacantes</h3>
-              <p className="text-base text-zinc-500">IPs de origen con más alertas en la ventana actual</p>
+              <h3 className="text-white font-medium text-xl">Top Atacantes</h3>
+              <p className="text-lg text-zinc-400">IPs de origen con más alertas en la ventana actual</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge color="red" size="xs">Top 5</Badge>
@@ -1356,19 +1363,19 @@ export default function Capa1Triaje() {
               topAttackers.length > 0 ? (
                 topAttackers.map((attacker, index) => (
                   <div key={attacker.srcIp} className="rounded-xl border border-white/5 bg-black/40 px-3 py-2">
-                    <div className="flex items-center justify-between gap-3 text-base">
-                      <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center justify-between gap-3 text-xl">
+                    <div className="flex flex-1 items-center gap-2 min-w-0">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-hyper-accent/10 text-sm font-semibold text-hyper-accent">
                           {index + 1}
                         </span>
-                        <div className="min-w-0 flex items-center gap-2">
+                        <div className="min-w-0 flex-1 flex items-center gap-3 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                           <IPProfilePopover
                             ip={attacker.srcIp}
                             intel={srcIntelByIp.get(attacker.srcIp) ?? null}
-                            className="min-w-0 inline-flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
-                            textClassName="min-w-0 truncate font-mono text-[15px] text-zinc-100 hover:text-white"
+                            className="shrink-0 inline-flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
+                            textClassName="font-mono text-lg text-zinc-100 hover:text-white whitespace-nowrap"
                           />
-                          <span className="shrink-0 text-zinc-600">|</span>
+                          <span className="shrink-0 inline-block h-4 w-px bg-white/10" aria-hidden />
                           {(() => {
                             const primaryType = attackerPrimaryTypeByIp.get(String(attacker.srcIp));
                             const portMeta = attackerTopDstPortByIp.get(String(attacker.srcIp));
@@ -1392,14 +1399,14 @@ export default function Capa1Triaje() {
                                   <button
                                     type="button"
                                     onClick={() => openIntel("top-attackers", "attack-label")}
-                                    className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 hover:border-white/20"
+                                    className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3.5 py-2 text-base font-semibold text-zinc-200 hover:border-white/20"
                                   >
                                     [Benigno]
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => openIntel("top-attackers", "ports")}
-                                    className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 hover:border-white/20"
+                                    className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3.5 py-2 text-base font-semibold text-zinc-200 hover:border-white/20"
                                   >
                                     {portLabel}
                                   </button>
@@ -1407,7 +1414,7 @@ export default function Capa1Triaje() {
                                     <button
                                       type="button"
                                       onClick={() => openIntel("top-attackers", "intrusion-risk")}
-                                      className="inline-flex items-center rounded-full border border-red-500/40 bg-red-600/80 px-2.5 py-1 text-xs font-semibold text-white hover:border-red-400/60"
+                                      className="shrink-0 inline-flex items-center whitespace-nowrap rounded-full border border-red-500/40 bg-red-600/80 px-4 py-2 text-base font-semibold text-white hover:border-red-400/60"
                                     >
                                       [Riesgo de Intrusión]
                                     </button>
@@ -1422,7 +1429,7 @@ export default function Capa1Triaje() {
                                 <button
                                   type="button"
                                   onClick={() => openIntel("top-attackers", "attack-label")}
-                                  className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold hover:border-white/20"
+                                  className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3.5 py-2 text-base font-semibold hover:border-white/20"
                                   style={{ color }}
                                 >
                                   [{primaryType}]
@@ -1430,7 +1437,7 @@ export default function Capa1Triaje() {
                                 <button
                                   type="button"
                                   onClick={() => openIntel("top-attackers", "ports")}
-                                  className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 hover:border-white/20"
+                                  className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3.5 py-2 text-base font-semibold text-zinc-200 hover:border-white/20"
                                 >
                                   {portLabel}
                                 </button>
@@ -1438,7 +1445,7 @@ export default function Capa1Triaje() {
                                   <button
                                     type="button"
                                     onClick={() => openIntel("top-attackers", "intrusion-risk")}
-                                    className="inline-flex items-center rounded-full border border-red-500/40 bg-red-600/80 px-2.5 py-1 text-xs font-semibold text-white hover:border-red-400/60"
+                                    className="shrink-0 inline-flex items-center whitespace-nowrap rounded-full border border-red-500/40 bg-red-600/80 px-4 py-2 text-base font-semibold text-white hover:border-red-400/60"
                                   >
                                     [Riesgo de Intrusión]
                                   </button>
@@ -1459,10 +1466,10 @@ export default function Capa1Triaje() {
                   </div>
                 ))
               ) : (
-                <p className="text-lg text-zinc-500">Sin alertas suficientes para construir un ranking.</p>
+                <p className="text-lg text-zinc-400">Sin alertas suficientes para construir un ranking.</p>
               )
             ) : (
-              <p className="text-lg text-zinc-500">Cargando ranking...</p>
+              <p className="text-lg text-zinc-400">Cargando ranking...</p>
             )}
           </div>
         </Card>
@@ -1548,12 +1555,15 @@ export default function Capa1Triaje() {
                   </div>
                 </div>
 
-                <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-black/30 p-5">
+        				<SpotlightCard
+        					spotlightColor="rgba(209, 132, 0, 0.15)"
+                  className="w-full max-w-xl border border-white/10 bg-zinc-950/10 backdrop-blur-md p-5"
+        				>
                   {selectedAsset ? (
                     <div>
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Ficha del Activo</p>
+                          <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Ficha del Activo</p>
                           <div className="mt-2">
                             <IPProfilePopover
                               ip={selectedAsset.dstIp}
@@ -1615,7 +1625,7 @@ export default function Capa1Triaje() {
                             ))}
                           </div>
                         ) : (
-                          <p className="mt-2 text-base text-zinc-500">Sin ataques (solo tráfico benigno registrado).</p>
+                          <p className="mt-2 text-base text-zinc-400">Sin ataques (solo tráfico benigno registrado).</p>
                         )}
                       </div>
 
@@ -1637,7 +1647,7 @@ export default function Capa1Triaje() {
                             ))}
                           </div>
                         ) : (
-                          <p className="mt-2 text-base text-zinc-500">Sin puertos detectados en las alertas de este activo.</p>
+                          <p className="mt-2 text-base text-zinc-400">Sin puertos detectados en las alertas de este activo.</p>
                         )}
                       </div>
 
@@ -1662,23 +1672,23 @@ export default function Capa1Triaje() {
                                     </span>
                                     <span className="text-sm font-semibold text-zinc-200">{priority}</span>
                                   </div>
-                                  <div className="mt-1 text-sm font-mono text-zinc-500">{String(log?.alert_id ?? "")}</div>
+                                  <div className="mt-1 text-sm font-mono text-zinc-400">{String(log?.alert_id ?? "")}</div>
                                 </div>
                               );
                             })}
                           </div>
                         ) : (
-                          <p className="mt-2 text-base text-zinc-500">Sin logs disponibles.</p>
+                          <p className="mt-2 text-base text-zinc-400">Sin logs disponibles.</p>
                         )}
                       </div>
                     </div>
                   ) : (
                     <div className="text-center py-10">
                       <p className="text-base text-zinc-400">Selecciona un cubo para ver la ficha del activo.</p>
-                      <p className="mt-2 text-sm text-zinc-600">Panel fijo (sin tooltip).</p>
+                      <p className="mt-2 text-sm text-zinc-400">Panel fijo (sin tooltip).</p>
                     </div>
                   )}
-                </div>
+				</SpotlightCard>
               </div>
             </div>
           </motion.div>
@@ -1693,14 +1703,14 @@ export default function Capa1Triaje() {
         onClose={closeIntel}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6 pb-12">
-        <div className="lg:col-span-2 flex min-h-0 flex-col gap-4 self-start">
+      <div className="grid grid-cols-1 items-start gap-6 pb-12 lg:grid-cols-[1.2fr_1.3fr]">
+        <div className="flex min-h-0 flex-col gap-4 self-start">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-2xl font-medium text-white flex items-center gap-2">Narrativa de Incidentes (Real-Time)</h2>
             <InfoDot onClick={() => openIntel("incidents")} label="Ayuda contextual: Narrativa de Incidentes" />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-base text-zinc-500">
+          <div className="flex flex-wrap items-center gap-3 text-base text-zinc-400">
             <span>Mostrando últimos {incidentFeedLimit} incidentes.</span>
             <div className="inline-flex overflow-hidden rounded-full border border-white/10 bg-black/30">
               {([20, 50, 100] as const).map((limit) => {
@@ -1756,7 +1766,8 @@ export default function Capa1Triaje() {
                     }
                   : {})}
               >
-                <Card className="relative bg-hyper-surface border-hyper-border ring-0 h-full flex flex-col overflow-hidden">
+				<SpotlightCard spotlightColor="rgba(209, 132, 0, 0.15)" className="h-full">
+          <Card className="relative h-full flex flex-col overflow-hidden rounded-2xl bg-zinc-950/10 backdrop-blur-md border border-white/10 ring-0">
                   <div className={`absolute left-0 top-0 h-full w-1.5 ${stripeClass}`} />
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-xl font-medium text-white">
@@ -1771,13 +1782,13 @@ export default function Capa1Triaje() {
                   </div>
 
                   <div className="mb-4">
-                    <div className="bg-black/60 rounded-t-md p-3 font-mono text-lg text-zinc-400 border border-white/5 border-b-0">
+                    <div className="bg-black/40 rounded-t-md p-3 font-mono text-lg text-zinc-400 border border-white/5 border-b-0">
                       <span className="text-hyper-accent mr-2">ORIGEN:</span> {alerta.network_data?.src_ip}:
                       {(() => {
                         const port = normalizePortNumber(alerta.network_data?.src_port);
                         return port != null ? formatPortWithService(port) : String(alerta.network_data?.src_port ?? "--");
                       })()}
-                      <span className="mx-2 text-zinc-600">→</span>
+                      <span className="mx-2 text-zinc-400">→</span>
                       <span className="text-blue-400 mr-2">DESTINO:</span> {alerta.network_data?.dst_ip}:
                       {(() => {
                         const port = normalizePortNumber(alerta.network_data?.dst_port);
@@ -1796,42 +1807,45 @@ export default function Capa1Triaje() {
                   </div>
 
                   <div className="flex justify-between items-center mt-auto pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-2 text-base text-zinc-500">
+                    <div className="flex items-center gap-2 text-base text-zinc-400">
                       <span>Confianza GNN: {(alerta.gnn_metadata?.confidence_score * 100).toFixed(1)}%</span>
                       <span className="text-zinc-700">•</span>
                       <span>{narrative.protocolName}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Link
-                        href={investigationHref}
-                        className="rounded-xl border border-hyper-accent/25 bg-hyper-accent/10 px-4 py-2 text-sm font-semibold text-white transition-all ring-1 ring-hyper-accent/20 hover:border-hyper-accent/40 hover:bg-hyper-accent/15 hover:ring-hyper-accent/40"
-                        aria-label="Investigar incidente con IA"
-                      >
-                        Investigar con IA 🤖
-                      </Link>
+                      <Magnetic>
+                        <Link
+                          href={investigationHref}
+                          className="rounded-xl border border-hyper-accent/25 bg-hyper-accent/10 px-4 py-2 text-sm font-semibold text-white transition-all ring-1 ring-hyper-accent/20 hover:border-hyper-accent/40 hover:bg-hyper-accent/15 hover:ring-hyper-accent/40"
+                          aria-label="Investigar incidente con IA"
+                        >
+                          Investigar con IA 🤖
+                        </Link>
+                      </Magnetic>
                     </div>
                   </div>
-                </Card>
+					</Card>
+				</SpotlightCard>
               </MotionAlertTag>
               );
             })}
           </div>
         </div>
 
-        <div className="lg:col-span-1 self-start">
+        <div className="self-start">
           <div className="sticky top-6">
             <div className="flex flex-col gap-6">
-              <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
+                <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 min-w-0">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-white font-medium">Estado de Activos Críticos</h3>
-                    <p className="text-base text-zinc-500">Destinos dst_ip con vista 3D</p>
+                    <h3 className="text-white font-medium text-xl">Estado de Activos Críticos</h3>
+                    <p className="text-lg text-zinc-400">Destinos dst_ip con vista 3D</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setIsTacticalOpen(true)}
-                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-zinc-200 transition-all hover:border-hyper-accent/40 hover:text-white hover:shadow-[0_0_12px_rgba(249,115,22,0.18)]"
+                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-base font-semibold uppercase tracking-[0.2em] text-zinc-200 transition-all hover:border-hyper-accent/40 hover:text-white hover:shadow-[0_0_12px_rgba(249,115,22,0.18)]"
                     >
                       Expandir Vista Táctica
                     </button>
@@ -1847,74 +1861,89 @@ export default function Capa1Triaje() {
                 </div>
 
                 <div className="mt-4 px-2">
-                  <div className="mx-auto w-full max-w-[520px] overflow-visible py-6">
-                    <div className="grid grid-cols-6 gap-3 place-items-center">
+                  <div className="w-full overflow-visible py-8">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 place-items-stretch">
                       {infrastructureAssets.map((asset) => {
                         const ui = getInfrastructureSeverityUi(asset.severity);
                         const hasRecentRing = hasRecentMaxSeverityRingByDstIp.get(String(asset.dstIp)) ?? false;
+                        const blinkClass = hasRecentRing || asset.severity === "critical" ? "animate-pulse" : "";
 
                         return (
-                          <div key={asset.dstIp} className="group">
-                            <div className="mb-1 flex items-center justify-center">
-                              <span className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-sm font-mono text-white">
-                                {Number(asset.count ?? 0).toLocaleString("es-ES")}
-                              </span>
-                            </div>
+                  <TiltedCard
+                    key={asset.dstIp}
+                    className="group cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    title={String(asset.dstIp)}
+                    onClick={() => {
+                      setSelectedAssetIp(String(asset.dstIp));
+                      setIsTacticalOpen(true);
+                    }}
+                    onKeyDown={(evt) => {
+                      if (evt.key !== "Enter" && evt.key !== " ") return;
+                      evt.preventDefault();
+                      setSelectedAssetIp(String(asset.dstIp));
+                      setIsTacticalOpen(true);
+                    }}
+                  >
+                    <div
+                      className={`relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-white/5 bg-black/40 p-4 text-left backdrop-blur-md transition-colors hover:bg-black/45 ${
+                        hasRecentRing ? "ring-1 ring-rose-500/35" : ""
+                      }`}
+                    >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Activo</p>
+                    <p className="mt-1 text-base font-semibold text-white font-mono whitespace-nowrap">
+                      {String(asset.dstIp)}
+                    </p>
+                  </div>
 
-                            <div className="relative grid place-items-center">
-                              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2 py-1 text-xs font-mono text-zinc-100 opacity-0 group-hover:opacity-100 transition-none">
-                                {String(asset.dstIp)}
-                              </div>
+                  <div className="shrink-0 grid place-items-center">
+                    <div
+                      className={`relative h-12 w-12 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)] ${
+                        hasRecentRing
+                        ? "ring-2 ring-red-500/80 shadow-[0_0_14px_rgba(239,68,68,0.35)] rounded-md"
+                        : ""
+                      } ${blinkClass}`}
+                    >
+                      <div className={`absolute inset-0 rounded-md border ${ui.cube} bg-black/40`} />
+                      <div
+                        className={`absolute -top-2 left-1 right-1 h-2 rounded-t-md border border-white/10 ${ui.top} [transform:skewX(-35deg)]`}
+                      />
+                      <div
+                        className={`absolute top-1 -right-2 bottom-1 w-2 rounded-r-md border border-white/10 ${ui.side} [transform:skewY(-35deg)]`}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-base font-mono text-zinc-200 select-none">
+                          {String(asset.dstIp).split(".").slice(-1)[0] ?? "--"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                              <div
-                                className={`relative h-10 w-10 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)] ${
-                                  hasRecentRing ? "ring-2 ring-red-500/80 shadow-[0_0_14px_rgba(239,68,68,0.35)] rounded-md" : ""
-                                }`}
-                              >
-                                <div className={`absolute inset-0 rounded-md border ${ui.cube} bg-black/40`} />
-                                <div
-                                  className={`absolute -top-2 left-1 right-1 h-2 rounded-t-md border border-white/10 ${ui.top} [transform:skewX(-35deg)]`}
-                                />
-                                <div
-                                  className={`absolute top-1 -right-2 bottom-1 w-2 rounded-r-md border border-white/10 ${ui.side} [transform:skewY(-35deg)]`}
-                                />
-
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <span className="text-sm font-mono text-zinc-200 select-none">
-                                    {String(asset.dstIp).split(".").slice(-1)[0] ?? "--"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+              <div className="flex items-end justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base text-zinc-400">{ui.label}</span>
+                </div>
+							<span className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-base font-mono text-white">
+									{Number(asset.count ?? 0).toLocaleString("es-ES")}
+								</span>
+							</div>
+                    </div>
+                  </TiltedCard>
                         );
                       })}
                     </div>
 
-                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-base text-zinc-500">
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-lg text-zinc-400">
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500/80" />Crítica</span>
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-400/80" />Alta</span>
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-300/80" />Media</span>
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-zinc-500/50" />Baja</span>
                     </div>
                   </div>
-                </div>
-              </Card>
-
-              <Card className="bg-zinc-900/80 backdrop-blur-md border border-white/10 ring-0 flex flex-col shadow-2xl overflow-hidden">
-                <div className="flex items-center gap-2 pb-4 border-b border-white/10">
-                  <div className="w-2 h-2 rounded-full bg-hyper-accent animate-pulse" />
-                  <h3 className="text-white font-medium">SOC Assistant</h3>
-                </div>
-                <div className="py-4 space-y-4 text-lg text-zinc-400">
-                  <p>Bienvenido al asistente de investigación. Selecciona una alerta para profundizar en el contexto del RAG.</p>
-                  <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                    <p className="text-base font-bold text-hyper-accent uppercase mb-1">Sugerencia:</p>
-                    "¿Qué otros destinos ha visitado la IP {alerts[0]?.network_data?.src_ip} en la última hora?"
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-white/10 mt-auto">
-                  <input type="text" placeholder="Consultar memoria técnica..." className="w-full bg-black/50 border border-white/10 rounded-md py-2.5 px-3 text-lg text-white outline-none focus:border-hyper-accent" />
                 </div>
               </Card>
             </div>

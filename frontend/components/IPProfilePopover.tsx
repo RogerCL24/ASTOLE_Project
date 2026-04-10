@@ -70,8 +70,8 @@ export function IPProfilePopover({ ip, intel, className, textClassName }: IPProf
           aria-label={`Perfil de IP ${ip}`}
         >
           <img src={flagSrc} alt={flagAlt} width={32} height={32} className="h-8 w-8 rounded-sm" />
-          <span className={textClassName ?? "font-mono text-[15px] text-zinc-100 hover:text-white"}>{ip}</span>
-          <Info className="h-4 w-4 text-zinc-500" />
+          <span className={textClassName ?? "font-mono font-medium text-[15px] text-zinc-100 hover:text-white"}>{ip}</span>
+          <Info className="h-4 w-4 text-zinc-400" />
         </button>
       </Popover.Trigger>
 
@@ -83,7 +83,7 @@ export function IPProfilePopover({ ip, intel, className, textClassName }: IPProf
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Dossier Técnico</p>
+              <p className="text-xs uppercase tracking-[0.25em] text-zinc-400">Dossier Técnico</p>
 
               <div className="mt-3 flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-black/30">
@@ -91,10 +91,10 @@ export function IPProfilePopover({ ip, intel, className, textClassName }: IPProf
                 </div>
 
                 <div className="min-w-0">
-                  <p className="text-base font-semibold text-white truncate">
-                    {countryName} <span className="text-zinc-500">({countryCode !== "zz" ? countryCode.toUpperCase() : "--"})</span>
+                  <p className="text-base font-semibold text-white whitespace-normal break-words leading-snug" title={countryName}>
+                    {countryName} <span className="text-zinc-400">({countryCode !== "zz" ? countryCode.toUpperCase() : "--"})</span>
                   </p>
-                  <p className="mt-0.5 font-mono text-[15px] text-zinc-100 break-all">{ip}</p>
+                  <p className="mt-0.5 font-mono font-medium text-[15px] text-zinc-100 break-all">{ip}</p>
                 </div>
               </div>
             </div>
@@ -108,12 +108,12 @@ export function IPProfilePopover({ ip, intel, className, textClassName }: IPProf
             ) : null}
 
             <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">ASN / Organización</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">ASN / Organización</p>
               <p className="mt-1 text-sm text-zinc-200">{isp}</p>
             </div>
 
             <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Tipo de Conexión</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Tipo de Conexión</p>
               <div className="mt-2">
                 <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${badgeUi}`}>{usageType}</span>
               </div>

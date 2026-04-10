@@ -74,13 +74,13 @@ export function IntelDrawer({ open, context, topic = null, originCountryBreakdow
       <button type="button" aria-label="Cerrar panel" onClick={onClose} className="absolute inset-0 bg-black/55" />
 
       <aside
-        className="absolute right-0 top-0 h-full w-full max-w-lg border-l border-white/10 bg-hyper-surface/95 backdrop-blur-md p-6 text-zinc-200 shadow-2xl"
+        className="absolute right-0 top-0 h-full w-full max-w-xl lg:max-w-2xl border-l border-white/10 bg-hyper-surface/95 backdrop-blur-md p-6 text-zinc-200 shadow-2xl"
         role="dialog"
         aria-modal="true"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Intel-Drawer</p>
+            <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Intel-Drawer</p>
             <h3 className="mt-2 text-2xl font-semibold text-white">{header} — Ayuda Contextual</h3>
             <p className="mt-1 text-sm text-zinc-400">
               Explicación ampliada (más legible) para interpretar métricas y etiquetas.
@@ -182,7 +182,7 @@ export function IntelDrawer({ open, context, topic = null, originCountryBreakdow
                         </span>
                       ))}
                     </div>
-                    <p className="mt-2 text-xs text-zinc-500">
+                    <p className="mt-2 text-xs text-zinc-400">
                       Basado en IP Intel del backend (DB1/PX2). Si falta información, se muestra como Unknown.
                     </p>
                   </Callout>

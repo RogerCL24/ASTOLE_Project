@@ -7,6 +7,9 @@ import Link from "next/link";
 import { Barcode, Bot, Shield, Target } from "lucide-react";
 import { IPProfilePopover, type IPIntelPayload } from "../../components/IPProfilePopover";
 import { formatPortWithService, normalizePortNumber } from "../../lib/netIntel";
+import DecryptedText from "../../components/ui/DecryptedText";
+import SpotlightCard from "../../components/ui/SpotlightCard";
+import Magnetic from "../../components/ui/Magnetic";
 
 type ChatMessage = {
   role: "assistant" | "user";
@@ -297,9 +300,19 @@ export default function InvestigacionConsole({
               <div className="relative">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Evidencia</p>
+                  <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Evidencia</p>
                   <h2 className="mt-2 text-xl font-semibold text-white">
-                    {hasSelectedCase ? "Expediente de Caso" : "Seleccione un Caso para Investigar"}
+                    {hasSelectedCase ? (
+                      <DecryptedText
+                        text="Expediente de Caso"
+                        animateOn="view"
+                        revealDuration={0.8}
+                        sequential
+                        characters={'0101X?#&."'}
+                      />
+                    ) : (
+                      "Seleccione un Caso para Investigar"
+                    )}
                   </h2>
                 </div>
                 {hasSelectedCase ? (
@@ -350,7 +363,7 @@ export default function InvestigacionConsole({
                             className="block rounded-xl border border-white/10 bg-black/40 px-3 py-2 transition-all hover:border-hyper-accent/30 hover:bg-black/50"
                           >
                             <div className="flex items-center justify-between gap-3">
-                              <p className="text-sm font-mono text-white break-all">{id}</p>
+                              <p className="text-sm font-mono font-medium text-white break-all">{id}</p>
                               <span className="rounded-full border border-rose-500/30 bg-rose-500/15 px-2.5 py-1 text-xs font-semibold text-rose-100">
                                 Crítica
                               </span>
@@ -364,11 +377,11 @@ export default function InvestigacionConsole({
                         })}
 
                         {alertsStatus === "ready" && criticalSuggestions.length === 0 ? (
-                          <p className="text-sm text-zinc-500">Sin alertas críticas recientes en este intervalo.</p>
+                          <p className="text-sm text-zinc-400">Sin alertas críticas recientes en este intervalo.</p>
                         ) : null}
 
                         {alertsStatus === "error" ? (
-                          <p className="text-xs text-zinc-500">No se pudo leer /api/stats. Mostrando sugerencias demo.</p>
+                          <p className="text-xs text-zinc-400">No se pudo leer /api/stats. Mostrando sugerencias demo.</p>
                         ) : null}
                       </div>
                     </div>
@@ -381,7 +394,7 @@ export default function InvestigacionConsole({
                       <Barcode className="h-4 w-4 text-zinc-200" />
                       <p className="text-sm uppercase tracking-[0.2em] text-zinc-400">ID del Caso</p>
                     </div>
-                    <p className="mt-2 text-base font-mono text-white break-all">{caseId}</p>
+                    <p className="mt-2 text-base font-mono font-medium text-white break-all">{caseId}</p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
@@ -394,7 +407,7 @@ export default function InvestigacionConsole({
                         ip={effectiveSrcIp}
                         intel={effectiveSrcIntel}
                         className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 hover:border-white/20"
-                        textClassName="font-mono text-[15px] text-zinc-100"
+                        textClassName="font-mono font-medium text-[15px] text-zinc-100"
                       />
                     </div>
                   </div>
@@ -409,7 +422,7 @@ export default function InvestigacionConsole({
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
                     <p className="text-sm uppercase tracking-[0.2em] text-zinc-400">Detección Original</p>
-                    <p className="mt-2 text-base font-mono text-white">{formatMadridDateTime(detectionTime)}</p>
+                    <p className="mt-2 text-base font-mono font-medium text-white">{formatMadridDateTime(detectionTime)}</p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
@@ -422,12 +435,12 @@ export default function InvestigacionConsole({
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm text-zinc-300">Frecuencia de ataque</p>
                         <p className="text-sm font-semibold text-white">
-                          {networkContext.frequencyLabel} <span className="text-zinc-500">({networkContext.frequencyCount})</span>
+                          {networkContext.frequencyLabel} <span className="text-zinc-400">({networkContext.frequencyCount})</span>
                         </p>
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm text-zinc-300">Destino (incidente actual)</p>
-                        <p className="text-sm font-mono text-white">{selectedDstIp}</p>
+                        <p className="text-sm font-mono font-medium text-white">{selectedDstIp}</p>
                       </div>
                     </div>
                   </div>
@@ -442,7 +455,7 @@ export default function InvestigacionConsole({
                 <div className="relative">
                   <div>
                     <div>
-                      <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Pivotar Investigación</p>
+                      <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Pivotar Investigación</p>
                       <h3 className="mt-2 text-lg font-semibold text-white">Alertas Relacionadas</h3>
                       <p className="mt-1 text-sm text-zinc-300">Reutiliza el contexto de sesión para pivotar sin perder ritmo.</p>
                     </div>
@@ -509,7 +522,7 @@ export default function InvestigacionConsole({
                           className="block rounded-xl border border-white/10 bg-black/30 px-3 py-2 transition-all hover:border-hyper-accent/30 hover:bg-black/40"
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-mono text-white break-all">{id}</p>
+                            <p className="text-sm font-mono font-medium text-white break-all">{id}</p>
                             <p className="text-xs text-zinc-400">{formatMadridDateTime(ts)}</p>
                           </div>
                           <p className="mt-1 text-sm text-zinc-200">
@@ -531,11 +544,15 @@ export default function InvestigacionConsole({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut", delay: 0.06 }}
         >
-          <Card className="relative overflow-hidden border-hyper-border ring-0 min-h-[calc(100vh-14rem)] flex flex-col bg-zinc-950/50 backdrop-blur-md">
-            <div aria-hidden className={dotMeshOverlayClass} />
-            <div className="relative flex min-h-[calc(100vh-14rem)] flex-col">
+          <SpotlightCard
+            spotlightColor="rgba(209, 132, 0, 0.15)"
+            className="min-h-[calc(100vh-14rem)]"
+          >
+            <Card className="relative overflow-hidden border-hyper-border ring-0 min-h-[calc(100vh-14rem)] flex flex-col bg-zinc-900/40 backdrop-blur-xl">
+              <div aria-hidden className={dotMeshOverlayClass} />
+              <div className="relative flex min-h-[calc(100vh-14rem)] flex-col">
             <div className="border-b border-white/10 px-5 py-4">
-              <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Chat RAG</p>
+              <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Chat RAG</p>
               <h2 className="mt-2 text-xl font-semibold text-white">Asistente de Investigación (Capa 2)</h2>
               <p className="mt-1 text-sm text-zinc-400">Base de interfaz lista; backend RAG en desarrollo.</p>
             </div>
@@ -544,13 +561,14 @@ export default function InvestigacionConsole({
               <div className="space-y-3">
                 {messages.map((msg, idx) => {
                   const isUser = msg.role === "user";
+                  const isWelcome = !isUser && idx === 0;
                   return (
                     <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                       <div
                         className={`max-w-[min(740px,92%)] rounded-2xl border px-4 py-3 text-base leading-relaxed ${
                           isUser
                             ? "border-hyper-accent/25 bg-hyper-accent/10 text-white"
-                            : "border-white/10 bg-black/30 text-zinc-100 font-mono"
+                            : "border-white/10 bg-black/30 text-zinc-100 font-mono font-medium"
                         }`}
                       >
                         {!isUser ? (
@@ -559,7 +577,17 @@ export default function InvestigacionConsole({
                             <span className="text-xs uppercase tracking-[0.2em] text-zinc-400">Sistema</span>
                           </div>
                         ) : null}
-                        {msg.content}
+                        {isWelcome ? (
+                          <DecryptedText
+                            text={msg.content}
+                            animateOn="view"
+                            revealDuration={0.8}
+                            sequential
+                            characters={'0101X?#&."'}
+                          />
+                        ) : (
+                          msg.content
+                        )}
                       </div>
                     </div>
                   );
@@ -575,7 +603,7 @@ export default function InvestigacionConsole({
                   onChange={(e) => setDraft(e.target.value)}
                   rows={2}
                   placeholder="Escribe tu pregunta de investigación..."
-                  className="min-h-[52px] flex-1 resize-none rounded-xl border border-hyper-accent/25 bg-black/50 px-4 py-3 text-base text-zinc-100 outline-none placeholder:text-zinc-600 ring-1 ring-hyper-accent/15 focus:border-hyper-accent/55 focus:ring-hyper-accent/35"
+                  className="min-h-[52px] flex-1 resize-none rounded-xl border border-hyper-accent/25 bg-black/50 px-4 py-3 text-base text-zinc-100 outline-none placeholder:text-zinc-400 ring-1 ring-hyper-accent/15 focus:border-hyper-accent/55 focus:ring-hyper-accent/35"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -583,18 +611,21 @@ export default function InvestigacionConsole({
                     }
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={onSend}
-                  className="rounded-xl border border-hyper-accent/35 bg-hyper-accent/20 px-5 py-3 text-sm font-semibold text-white transition-all ring-1 ring-hyper-accent/25 hover:bg-hyper-accent/30 hover:ring-hyper-accent/45"
-                >
-                  Enviar
-                </button>
+                <Magnetic>
+                  <button
+                    type="button"
+                    onClick={onSend}
+                    className="rounded-xl border border-hyper-accent/35 bg-hyper-accent/20 px-5 py-3 text-sm font-semibold text-white transition-all ring-1 ring-hyper-accent/25 hover:bg-hyper-accent/30 hover:ring-hyper-accent/45"
+                  >
+                    Enviar
+                  </button>
+                </Magnetic>
               </div>
-              <p className="mt-2 text-xs text-zinc-500">Enter para enviar · Shift+Enter para salto de línea</p>
+              <p className="mt-2 text-xs text-zinc-400">Enter para enviar · Shift+Enter para salto de línea</p>
             </div>
-            </div>
-          </Card>
+              </div>
+            </Card>
+          </SpotlightCard>
         </motion.div>
       </div>
     </div>
