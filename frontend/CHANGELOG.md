@@ -106,3 +106,13 @@
 - **Top Atacantes**: IP completa sin salto de línea, separador sin solaparse y badge `[Riesgo de Intrusión]` sin recortes.
 - **Top 5 Países Atacantes**: Nombres largos sin truncado (wrap permitido).
 - **Activos Críticos**: Click más fiable al interactuar con tiles.
+
+## [0.8.1-ui] - 2026-04-16
+
+### Changed
+- **Gráfica de Tráfico (streaming)**: Buffer de 200 muestras + selector 5m/20m/60m y modo Freeze/Live (pausa el render sin perder datos).
+- **Animación de la gráfica**: Transiciones más cortas y suaves (300ms, `ease-in-out`) para evitar “saltos” visuales.
+- **Escala tipográfica global**: Controles/badges/CTAs y tooltips aumentados para legibilidad.
+- **Ejes de la gráfica**: Ticks X/Y a 15px y peso medio para mejor lectura.
+- **KPIs de cabecera**: Títulos/descripciones más grandes y mayor espaciado interno.
+- **Sidebar**: Navegación en `text-lg`, indicadores e iconos escalados; layout alineado con ancho final (`w-72`).

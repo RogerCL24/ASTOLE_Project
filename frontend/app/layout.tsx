@@ -42,8 +42,8 @@ export default function RootLayout({
         <SmoothScroll>
           <div className="relative z-10 flex min-h-screen bg-transparent text-zinc-100">
             <Sidebar />
-            <main className="flex-1 ml-64 relative min-h-screen">
-              <div className="fixed inset-0 ml-64 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-hyper-accent/10 via-transparent to-transparent pointer-events-none z-0"></div>
+            <main className="flex-1 ml-72 relative min-h-screen">
+              <div className="fixed inset-0 ml-72 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-hyper-accent/10 via-transparent to-transparent pointer-events-none z-0"></div>
               {children}
             </main>
           </div>

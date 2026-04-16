@@ -84,6 +84,7 @@ const buildUniqueColorsByLabel = (labels: string[]) => {
 };
 const POLL_INTERVAL_MS = 1000;
 const TRAFFIC_WINDOW_SIZE = 20;
+const TRAFFIC_BUFFER_SIZE = 200;
 const MAX_VISIBLE_INCIDENTS = 50;
 const SPEED_STORAGE_KEY = "astole.simulation.speed";
 const SPEED_EVENT_NAME = "astole:speed";
@@ -101,7 +102,7 @@ const InfoDot = ({ onClick, label }: { onClick: () => void; label: string }) => 
     type="button"
     onClick={onClick}
     aria-label={label}
-    className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+    className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-base font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
   >
     i
   </button>
@@ -438,21 +439,21 @@ const buildNarrative = (alert: any) => {
 };
 
 const mergeTrafficHistory = (previousHistory: TrafficPoint[], incomingHistory: TrafficPoint[]) => {
-  if (!incomingHistory.length) {
-    return previousHistory.slice(-TRAFFIC_WINDOW_SIZE);
-  }
+  const prev = previousHistory.slice(-TRAFFIC_BUFFER_SIZE);
+  if (!incomingHistory.length) return prev;
 
-  if (!previousHistory.length) {
-    return incomingHistory.slice(-TRAFFIC_WINDOW_SIZE);
-  }
+  // Stable streaming: append only the newest sample to avoid re-ordering/jumps.
+  const newest = incomingHistory[incomingHistory.length - 1];
+  const last = prev[prev.length - 1];
 
-  const byLabel = new Map(previousHistory.map((point) => [point.tiempo, point]));
-  const merged = incomingHistory.slice(-TRAFFIC_WINDOW_SIZE).map((point) => {
-    const previousPoint = byLabel.get(point.tiempo);
-    return previousPoint ? { ...previousPoint, ...point } : point;
-  });
+  const isSameAsLast =
+    !!last &&
+    String(last.tiempo) === String(newest.tiempo) &&
+    Number(last["Tráfico Normal"] ?? 0) === Number(newest["Tráfico Normal"] ?? 0) &&
+    Number(last["Tráfico Anómalo"] ?? 0) === Number(newest["Tráfico Anómalo"] ?? 0);
 
-  return merged.slice(-TRAFFIC_WINDOW_SIZE);
+  if (isSameAsLast) return prev;
+  return [...prev, newest].slice(-TRAFFIC_BUFFER_SIZE);
 };
 
 const buildTopAttackers = (alerts: any[]): Array<{ srcIp: string; count: number }> => {
@@ -557,6 +558,16 @@ export default function Capa1Triaje() {
   const [trafficHistory, setTrafficHistory] = useState<TrafficPoint[]>(() =>
     buildSeedTrafficHistory(fallbackData.metrics?.performance)
   );
+  const [trafficChartHistory, setTrafficChartHistory] = useState<TrafficPoint[]>(() =>
+    buildSeedTrafficHistory(fallbackData.metrics?.performance)
+  );
+  const [viewWindow, setViewWindow] = useState<5 | 20 | 60>(TRAFFIC_WINDOW_SIZE);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    setTrafficChartHistory(trafficHistory);
+  }, [trafficHistory, isPaused]);
 
   const openIntel = (context: IntelDrawerContext, topic: IntelDrawerTopic = null) => {
     setIntelContext(context);
@@ -1036,7 +1047,12 @@ export default function Capa1Triaje() {
     previousCriticalAssets.current = nextSet;
   }, [isClient, criticalAssetsKey]);
 
-  const displayTrafficHistory = trafficHistory.map((point, index, array) => ({
+  const trafficWindowHistory = useMemo(
+    () => trafficChartHistory.slice(-viewWindow),
+    [trafficChartHistory, viewWindow]
+  );
+
+  const displayTrafficHistory = trafficWindowHistory.map((point, index, array) => ({
     ...point,
     tiempo: index === array.length - 1 ? "Ahora" : `-${array.length - 1 - index}m`,
   }));
@@ -1129,17 +1145,17 @@ export default function Capa1Triaje() {
         </details>
       </HeaderTag>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
-          <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 ring-0 min-w-0">
-          <p className="text-base text-zinc-400 uppercase tracking-wider mb-1">Alertas</p>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-2">
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 ring-0 min-w-0">
+          <p className="text-lg text-zinc-300 uppercase tracking-wider mb-2">Alertas</p>
           <p className="text-3xl font-mono text-white">{totalAlertsValue.toLocaleString("es-ES")}</p>
-          <p className="text-sm text-zinc-400">Eventos detectados por el motor de respuesta</p>
+          <p className="mt-2 text-base text-zinc-400">Eventos detectados por el motor de respuesta</p>
         </Card>
 
-          <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 ring-0 min-w-0">
-          <p className="text-base text-zinc-400 uppercase tracking-wider mb-1">Reducción de Ruido</p>
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 ring-0 min-w-0">
+          <p className="text-lg text-zinc-300 uppercase tracking-wider mb-2">Reducción de Ruido</p>
           <p className="text-3xl font-mono text-white">{Number(metrics.compression_rate_percent ?? 0).toFixed(2)}%</p>
-          <p className="text-sm text-zinc-400">Ruido eliminado frente al tráfico bruto</p>
+          <p className="mt-2 text-base text-zinc-400">Ruido eliminado frente al tráfico bruto</p>
         </Card>
       </div>
 
@@ -1160,7 +1176,41 @@ export default function Capa1Triaje() {
               <p className="text-base text-zinc-400">Ventana operativa de los últimos 20 minutos</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge color="orange" size="xs">
+              <div className="flex items-center gap-1">
+                {([5, 20, 60] as const).map((minutes) => {
+                  const isActive = viewWindow === minutes;
+                  return (
+                    <button
+                      key={minutes}
+                      type="button"
+                      onClick={() => setViewWindow(minutes)}
+                      aria-pressed={isActive}
+                      aria-label={`Ver últimos ${minutes} minutos`}
+                      className={`text-base font-semibold border border-white/10 bg-zinc-900/50 px-3 py-2 rounded-lg ${
+                        isActive
+                          ? "text-white border-white/20"
+                          : "text-zinc-300 hover:text-white hover:border-white/20"
+                      }`}
+                    >
+                      {minutes}m
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPaused((value) => !value)}
+                aria-pressed={isPaused}
+                aria-label={isPaused ? "Reanudar streaming" : "Congelar streaming"}
+                className={`text-base font-semibold border border-white/10 bg-zinc-900/50 px-3 py-2 rounded-lg ${
+                  isPaused ? "text-white border-white/20" : "text-zinc-300 hover:text-white hover:border-white/20"
+                }`}
+              >
+                {isPaused ? "Live" : "Freeze"}
+              </button>
+
+              <Badge color="orange" size="xs" className="text-base px-2.5 py-1.5">
                 Real-Time Flow
               </Badge>
             </div>
@@ -1183,18 +1233,18 @@ export default function Capa1Triaje() {
                   <XAxis
                     dataKey="tiempo"
                     stroke="#3f3f46"
-                    fontSize={13}
+                    fontSize={15}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: "#e4e4e7", fontSize: 13 }}
+                    tick={{ fill: "#e4e4e7", fontSize: 15, fontWeight: 500 }}
                   />
                   <YAxis
                     stroke="#3f3f46"
-                    fontSize={13}
+                    fontSize={15}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v) => `${v}`}
-                    tick={{ fill: "#f59e0b", fontSize: 13 }}
+                    tick={{ fill: "#f59e0b", fontSize: 15, fontWeight: 500 }}
                   />
                   <Tooltip
                     contentStyle={{
@@ -1212,7 +1262,9 @@ export default function Capa1Triaje() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorNormal)"
-                    animationDuration={1500}
+                    isAnimationActive
+                    animationDuration={300}
+                    animationEasing="ease-in-out"
                   />
                   <Area
                     type="monotone"
@@ -1221,7 +1273,9 @@ export default function Capa1Triaje() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorAnomalo)"
-                    animationDuration={1500}
+                    isAnimationActive
+                    animationDuration={300}
+                    animationEasing="ease-in-out"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -1238,12 +1292,12 @@ export default function Capa1Triaje() {
               <p className="text-lg text-zinc-400">Basado en el intervalo actual</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge color="orange" size="xs">Donut</Badge>
+              <Badge color="orange" size="xs" className="text-base px-2.5 py-1.5">Donut</Badge>
               <button
                 type="button"
                 onClick={() => openIntel("composition", "distribution")}
                 aria-label="Ayuda contextual"
-                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-base font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
               >
                 i
               </button>
@@ -1346,12 +1400,12 @@ export default function Capa1Triaje() {
               <p className="text-lg text-zinc-400">IPs de origen con más alertas en la ventana actual</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge color="red" size="xs">Top 5</Badge>
+              <Badge color="red" size="xs" className="text-base px-2.5 py-1.5">Top 5</Badge>
               <button
                 type="button"
                 onClick={() => openIntel("top-attackers")}
                 aria-label="Ayuda contextual"
-                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-base font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
               >
                 i
               </button>
@@ -1526,7 +1580,7 @@ export default function Capa1Triaje() {
                             </span>
                           </div>
                           <div className="relative grid place-items-center">
-                            <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2 py-1 text-xs font-mono text-zinc-100 opacity-0 group-hover:opacity-100 transition-none">
+                            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-black/90 px-3 py-2 text-base font-mono text-zinc-100 opacity-0 group-hover:opacity-100 transition-none">
                               {String(asset.dstIp)}
                             </div>
 
@@ -1720,7 +1774,7 @@ export default function Capa1Triaje() {
                     key={limit}
                     type="button"
                     onClick={() => setIncidentFeedLimit(limit)}
-                    className={`px-3 py-1 text-xs font-semibold transition-colors ${
+                    className={`px-4 py-2 text-base font-semibold transition-colors ${
                       isActive ? "bg-white/10 text-white" : "text-zinc-300 hover:bg-white/5 hover:text-white"
                     }`}
                     aria-pressed={isActive}
@@ -1853,7 +1907,7 @@ export default function Capa1Triaje() {
                       type="button"
                       onClick={() => openIntel("assets")}
                       aria-label="Ayuda contextual"
-                      className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+                      className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-base font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
                     >
                       i
                     </button>
