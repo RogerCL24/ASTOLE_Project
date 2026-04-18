@@ -320,7 +320,7 @@ export default function TelemetriaPage() {
             </div>
           </div>
           <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-4 text-right">
-            <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-500">Última actualización</Text>
+            <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-400">Última actualización</Text>
             <p className="mt-1 font-mono text-sm text-white">{lastUpdate}</p>
           </div>
         </header>
@@ -348,27 +348,27 @@ export default function TelemetriaPage() {
             <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
               <Text className="text-zinc-400">Total Alertas</Text>
               <Metric className="mt-3 text-white">{formatNumber(totalAlerts)}</Metric>
-              <Text className="mt-2 text-xs text-zinc-500">Acumuladas por el motor.</Text>
+              <Text className="mt-2 text-xs text-zinc-400">Acumuladas por el motor.</Text>
             </div>
             <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
               <Text className="text-zinc-400">Alertas/Minuto</Text>
               <Metric className="mt-3 text-white">{alertsPerMinute > 0 ? alertsPerMinute.toFixed(2) : "--"}</Metric>
-              <Text className="mt-2 text-xs text-zinc-500">Estimado desde timestamps.</Text>
+              <Text className="mt-2 text-xs text-zinc-400">Estimado desde timestamps.</Text>
             </div>
             <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
               <Text className="text-zinc-400">Reducción de Ruido</Text>
               <Metric className="mt-3 text-white">{compressionRate.toFixed(2)}%</Metric>
-              <Text className="mt-2 text-xs text-zinc-500">Compresión reportada por el motor.</Text>
+              <Text className="mt-2 text-xs text-zinc-400">Compresión reportada por el motor.</Text>
             </div>
             <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
               <Text className="text-zinc-400">Latencia Media</Text>
               <Metric className="mt-3 text-white">{avgLatency.toFixed(2)} ms</Metric>
-              <Text className="mt-2 text-xs text-zinc-500">Promedio en la ventana visible.</Text>
+              <Text className="mt-2 text-xs text-zinc-400">Promedio en la ventana visible.</Text>
             </div>
             <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
               <Text className="text-zinc-400">Volumen Procesado</Text>
               <Metric className="mt-3 text-white">{formatNumber(dataVolume)}</Metric>
-              <Text className="mt-2 text-xs text-zinc-500">Suma de tráfico normal + anómalo.</Text>
+              <Text className="mt-2 text-xs text-zinc-400">Suma de tráfico normal + anómalo.</Text>
             </div>
           </div>
         </Card>
@@ -472,7 +472,7 @@ export default function TelemetriaPage() {
 
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-2xl font-mono text-white">{formatNumber(protocolTotal)}</span>
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest mt-1">Eventos</span>
+                <span className="text-[9px] text-zinc-400 uppercase tracking-widest mt-1">Eventos</span>
               </div>
             </div>
 
@@ -508,7 +508,7 @@ export default function TelemetriaPage() {
             </div>
 
             <div className="mt-6">
-              <Text className="text-xs uppercase tracking-[0.25em] text-zinc-500">Top costes por tipo</Text>
+              <Text className="text-xs uppercase tracking-[0.25em] text-zinc-400">Top costes por tipo</Text>
               <BarList
                 data={tokenCostItems}
                 className="mt-3"

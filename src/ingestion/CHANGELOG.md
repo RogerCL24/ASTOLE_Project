@@ -84,3 +84,18 @@
 
 ### Fixed
 - **`last_update` en UTC real**: El simulador ahora genera timestamps con `timezone.utc` cuando emite sufijo `Z`, evitando desfases horarios en el dashboard.
+
+## [2026-04-09] - Enriquecimiento IP Intel (Parquet + lookup en memoria)
+
+### Added
+- **Pipeline CSV → Parquet**: Script `scripts/optimize_ip_data.py` para convertir IP2Location/IP2Proxy LITE a Parquet en `data/ip_intel/` (optimizado para búsquedas rápidas por rangos).
+- **Servicio ultra-rápido**: `src/services/ip_intel_service.py` carga los Parquet en memoria y resuelve IPs con búsqueda binaria sobre rangos `ip_from/ip_to`.
+- **Enriquecimiento en alertas**: `src/ingestion/stream_simulator.py` añade `alert.ip_intel = { src, dst }` cuando el servicio está disponible.
+
+### Changed
+- **Dependencias**: Añadido soporte para Parquet (`pyarrow`) para habilitar lectura/escritura de datasets optimizados.
+
+### Notes
+- El enriquecimiento es *fail-open*: si faltan Parquet o `pyarrow`, el simulador continúa sin `ip_intel`.
+- `IP_INTEL_DATA_DIR` permite redirigir el directorio de datos (por defecto `data/ip_intel`).
+

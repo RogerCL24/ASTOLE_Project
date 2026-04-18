@@ -1,6 +1,7 @@
 # Datos y Datasets 
 data/
 *.csv
+*.CSV
 *.parquet
 *.json
 !docs/samples/mock_stream.json
@@ -22,6 +23,7 @@ src/memory/chromadb_data/
 .chroma/
 *.db
 *.sqlite
+*.png
 
 # Entornos Virtuales de Python
 venv/
@@ -30,6 +32,10 @@ env/
 bin/
 lib/
 share/
+
+# Frontend utilities (keep tracked)
+!frontend/lib/
+!frontend/lib/**
 
 # Cache de Python
 __pycache__/

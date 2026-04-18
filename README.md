@@ -92,6 +92,10 @@ Debido a políticas de seguridad y tamaño de archivos, los siguientes elementos
 - **Contenido:** Descarga el dataset **NF-UNSW-NB15-v3** desde el enlace compartido en el grupo y colócalo aquí. 
 - **Nota:** El Ingeniero 1 (Data) notificará si se requiere una versión específica (.csv o .parquet).
 
+### IP Intel (Geo/ASN/Proxy)
+- **Qué hacer:** Descarga los CSVs Lite (desde el Drive del equipo) y genera los Parquet para enriquecer IPs en el dashboard.
+- **Guía:** Ver `docs/IP_INTEL_SETUP.md`.
+
 ### Archivo `.env`
 - **Qué hacer:** Crea un archivo llamado `.env` en la raíz del proyecto.
 - **Contenido:** Define las variables de entorno necesarias para los agentes y APIs:
