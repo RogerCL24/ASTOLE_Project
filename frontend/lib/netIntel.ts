@@ -134,6 +134,7 @@ const COUNTRY_NAME: Record<string, string> = {
   ES: "España",
   US: "Estados Unidos",
   CN: "China",
+  KP: "Corea del Norte",
   AU: "Australia",
   GB: "Reino Unido",
   DE: "Alemania",
@@ -177,6 +178,23 @@ export const getIPMetadata = (ip: string): IPMetadata => {
       isp: "Unknown ASN",
       type: "Unknown",
       countryName: COUNTRY_NAME.ZZ,
+    };
+  }
+
+  const [a, b] = raw
+    .split(".")
+    .slice(0, 2)
+    .map((part) => Number(part));
+
+  // UNSW-NB15 includes DPRK-like ranges (e.g., 175.45.x.x). This is a heuristic override
+  // to avoid misleading defaults when IP Intel is not available.
+  if (a === 175 && b === 45) {
+    return {
+      country: "KP",
+      flag: "🇰🇵",
+      isp: "Unknown ASN",
+      type: "Business",
+      countryName: COUNTRY_NAME.KP,
     };
   }
 

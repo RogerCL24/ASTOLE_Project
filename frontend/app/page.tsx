@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Badge, Card } from "@tremor/react";
-import { IntelDrawer, type IntelDrawerContext, type IntelDrawerTopic } from "../components/IntelDrawer";
+import { IntelDrawer, type IntelDrawerContext, type IntelDrawerTopic } from "@/components/IntelDrawer";
 import { IPProfilePopover, type IPIntelPayload } from "../components/IPProfilePopover";
 import SpotlightCard from "../components/ui/SpotlightCard";
 import Magnetic from "../components/ui/Magnetic";
@@ -886,20 +886,25 @@ export default function Capa1Triaje() {
 
   const topAttackerCountries = useMemo(() => {
     const total = visibleAlerts.length;
-    if (!total) return [] as Array<{ code: string; name: string; percent: number }>;
+    if (!total) {
+      return [] as Array<{ code: string; name: string; percent: number; source: "ip_intel" | "heuristic" | "unknown" }>;
+    }
 
-    const byCode = new Map<string, { code: string; name: string; count: number }>();
+    const byCode = new Map<string, { code: string; name: string; count: number; source: "ip_intel" | "heuristic" | "unknown" }>();
     for (const alert of visibleAlerts) {
       const srcIp = String(alert?.network_data?.src_ip ?? "").trim();
       const intel = alert?.ip_intel?.src as IPIntelPayload | undefined;
       const fallbackMeta = !intel && srcIp ? getIPMetadata(srcIp) : null;
+      const source: "ip_intel" | "heuristic" | "unknown" = intel ? "ip_intel" : fallbackMeta ? "heuristic" : "unknown";
       const codeRaw = String(intel?.country ?? fallbackMeta?.country ?? "zz").trim().toLowerCase();
       const code = codeRaw && codeRaw !== "zz" && codeRaw.length === 2 ? codeRaw : "zz";
       const name = String(intel?.country_name ?? fallbackMeta?.countryName ?? "Unknown").trim() || "Unknown";
-      const current = byCode.get(code) ?? { code, name, count: 0 };
+      const current = byCode.get(code) ?? { code, name, count: 0, source };
       current.count += 1;
       // Keep the first non-empty name we see.
       if (current.name === "Unknown" && name !== "Unknown") current.name = name;
+      if (current.source !== "ip_intel" && source === "ip_intel") current.source = "ip_intel";
+      if (current.source === "unknown" && source !== "unknown") current.source = source;
       byCode.set(code, current);
     }
 
@@ -910,6 +915,7 @@ export default function Capa1Triaje() {
         code: entry.code,
         name: entry.name,
         percent: Math.round((entry.count / total) * 100),
+        source: entry.source,
       }));
   }, [visibleAlerts]);
   const attackerPrimaryTypeByIp = useMemo(() => {
@@ -1531,6 +1537,8 @@ export default function Capa1Triaje() {
                     const code = entry.code;
                     const src = code !== "zz" ? `/flags/${code}_32.png` : "/globe.svg";
                     const alt = code !== "zz" ? code.toUpperCase() : "Unknown";
+                    const sourceLabel =
+                      entry.source === "ip_intel" ? "IP Intel" : entry.source === "heuristic" ? "Heurística" : "Unknown";
 
                     return (
                       <div
@@ -1551,6 +1559,9 @@ export default function Capa1Triaje() {
                           <div className="flex-1 w-full">
                             <span className="block whitespace-normal break-words text-[15px] leading-snug text-zinc-100" title={entry.name}>
                               {entry.name}
+                            </span>
+                            <span className="mt-0.5 block text-sm uppercase tracking-[0.2em] text-zinc-400">
+                              Fuente: {sourceLabel}
                             </span>
                           </div>
                         </div>
