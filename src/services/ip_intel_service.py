@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import warnings
 from dataclasses import dataclass
 from ipaddress import IPv4Address
 from pathlib import Path
@@ -162,7 +163,11 @@ class IPIntelService:
             return None
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
-            raise ValueError(f"Missing columns in {parquet_path}: {missing}")
+            warnings.warn(
+                f"IPIntelService: missing columns in {parquet_path}: {missing}. Disabling this dataset (fail-open).",
+                RuntimeWarning,
+            )
+            return None
 
         df = df[required_cols].copy()
         df["ip_from"] = pd.to_numeric(df["ip_from"], errors="coerce").astype("Int64")

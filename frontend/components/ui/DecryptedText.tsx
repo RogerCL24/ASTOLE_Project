@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type DecryptedTextAnimateOn = "view" | "mount" | "hover";
 
@@ -46,7 +46,7 @@ export default function DecryptedText({
 		return chars.length ? chars : "0101X?#&.".split("");
 	}, [characters]);
 
-	const runAnimation = () => {
+	const runAnimation = useCallback(() => {
 		if (hasAnimatedRef.current) return;
 		hasAnimatedRef.current = true;
 
@@ -90,7 +90,7 @@ export default function DecryptedText({
 		};
 
 		rafRef.current = window.requestAnimationFrame(renderFrame);
-	};
+	}, [alphabet, revealDuration, sequential, value]);
 
 	useEffect(() => {
 		setDisplay(value);
@@ -138,7 +138,7 @@ export default function DecryptedText({
 			observer.observe(el);
 			return () => observer.disconnect();
 		}
-	}, [animateOn]);
+	}, [animateOn, runAnimation]);
 
 	return (
 		<span ref={wrapperRef} className={className}>

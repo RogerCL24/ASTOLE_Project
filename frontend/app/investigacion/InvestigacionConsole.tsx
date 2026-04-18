@@ -66,6 +66,7 @@ export default function InvestigacionConsole({
   caseId,
   srcIp,
   attackType,
+  dstPort,
   timestamp,
 }: {
   caseId: string;
@@ -162,6 +163,14 @@ export default function InvestigacionConsole({
     const dst = selectedAlert?.network_data?.dst_ip;
     return dst ? String(dst) : "--";
   }, [selectedAlert]);
+
+  const selectedDstPortLabel = useMemo(() => {
+    const fromUrl = dstPort && dstPort !== "--" ? String(dstPort) : "";
+    const fromAlert = String(selectedAlert?.network_data?.dst_port ?? "").trim();
+    const raw = (fromUrl || fromAlert || "--").trim() || "--";
+    const portNumber = normalizePortNumber(raw);
+    return portNumber != null ? formatPortWithService(portNumber) : "--";
+  }, [dstPort, selectedAlert]);
 
   const detectionTime = useMemo(() => {
     if (timestamp && timestamp !== "--") return timestamp;
@@ -441,6 +450,10 @@ export default function InvestigacionConsole({
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm text-zinc-300">Destino (incidente actual)</p>
                         <p className="text-sm font-mono font-medium text-white">{selectedDstIp}</p>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm text-zinc-300">Puerto destino (incidente actual)</p>
+                        <p className="text-sm font-mono font-medium text-white">{selectedDstPortLabel}</p>
                       </div>
                     </div>
                   </div>

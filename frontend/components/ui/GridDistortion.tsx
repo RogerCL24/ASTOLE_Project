@@ -56,7 +56,6 @@ export default function GridDistortion({
 	const rafRef = useRef<number | null>(null);
 	const mouseTargetRef = useRef<{ nx: number; ny: number; inside: boolean }>({ nx: 0.5, ny: 0.5, inside: false });
 	const mouseRef = useRef<{ nx: number; ny: number; inside: boolean }>({ nx: 0.5, ny: 0.5, inside: false });
-	const lastLogRef = useRef<number>(0);
 
 	const baseLine = useMemo(
 		() =>
@@ -96,15 +95,6 @@ export default function GridDistortion({
 			const ny = clamp01(rawNy);
 			const inside = evt.clientX >= 0 && evt.clientY >= 0 && evt.clientX <= w && evt.clientY <= h;
 			mouseTargetRef.current = { nx, ny, inside };
-
-			// Debug (dev-only): confirm mouse movement is detected.
-			if (process.env.NODE_ENV !== "production") {
-				const now = (typeof performance !== "undefined" && performance.now ? performance.now() : Date.now());
-				if (now - lastLogRef.current > 250) {
-					lastLogRef.current = now;
-					console.log("Mouse moving:", evt.clientX, evt.clientY);
-				}
-			}
 		};
 
 		const onLeave = () => {

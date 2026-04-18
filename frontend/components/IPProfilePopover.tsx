@@ -69,7 +69,16 @@ export function IPProfilePopover({ ip, intel, className, textClassName }: IPProf
           }
           aria-label={`Perfil de IP ${ip}`}
         >
-          <img src={flagSrc} alt={flagAlt} width={32} height={32} className="h-8 w-8 rounded-sm" />
+          <img
+            src={flagSrc}
+            alt={flagAlt}
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-sm"
+            onError={(e) => {
+              e.currentTarget.src = "/globe.svg";
+            }}
+          />
           <span className={textClassName ?? "font-mono font-medium text-[15px] text-zinc-100 hover:text-white"}>{ip}</span>
           <Info className="h-4 w-4 text-zinc-400" />
         </button>
@@ -87,7 +96,16 @@ export function IPProfilePopover({ ip, intel, className, textClassName }: IPProf
 
               <div className="mt-3 flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-black/30">
-                  <img src={flagSrc} alt={flagAlt} width={32} height={32} className="h-8 w-8 rounded-sm" />
+                  <img
+                    src={flagSrc}
+                    alt={flagAlt}
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 rounded-sm"
+                    onError={(e) => {
+                      e.currentTarget.src = "/globe.svg";
+                    }}
+                  />
                 </div>
 
                 <div className="min-w-0">

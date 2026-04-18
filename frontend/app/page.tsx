@@ -513,17 +513,34 @@ const mergeTrafficHistory = (previousHistory: TrafficPoint[], incomingHistory: T
   const prev = previousHistory.slice(-TRAFFIC_BUFFER_SIZE);
   if (!incomingHistory.length) return prev;
 
-  // Stable streaming: append only the newest sample to avoid re-ordering/jumps.
+  if (!prev.length) return incomingHistory.slice(-TRAFFIC_BUFFER_SIZE);
+
+  // Merge all points newer than the last seen sample.
+  // This avoids dropping intermediate samples when the backend produces multiple points between polls.
+  const lastPrevTiempo = String(prev[prev.length - 1]?.tiempo ?? "");
+  const overlapIndex = incomingHistory
+    .map((point) => String(point?.tiempo ?? ""))
+    .lastIndexOf(lastPrevTiempo);
+
+  if (overlapIndex >= 0) {
+    const merged = [...prev.slice(0, -1), incomingHistory[overlapIndex], ...incomingHistory.slice(overlapIndex + 1)];
+    return merged.slice(-TRAFFIC_BUFFER_SIZE);
+  }
+
+  // Fallback: if we can't find overlap (e.g., backend restarted / format changed), keep streaming stable.
   const newest = incomingHistory[incomingHistory.length - 1];
   const last = prev[prev.length - 1];
+  const newestTiempo = String(newest?.tiempo ?? "");
+  const lastTiempo = String(last?.tiempo ?? "");
 
   const isSameAsLast =
     !!last &&
-    String(last.tiempo) === String(newest.tiempo) &&
+    newestTiempo === lastTiempo &&
     Number(last["Tráfico Normal"] ?? 0) === Number(newest["Tráfico Normal"] ?? 0) &&
     Number(last["Tráfico Anómalo"] ?? 0) === Number(newest["Tráfico Anómalo"] ?? 0);
 
   if (isSameAsLast) return prev;
+  if (newestTiempo && newestTiempo === lastTiempo) return [...prev.slice(0, -1), newest].slice(-TRAFFIC_BUFFER_SIZE);
   return [...prev, newest].slice(-TRAFFIC_BUFFER_SIZE);
 };
 
@@ -1521,7 +1538,16 @@ export default function Capa1Triaje() {
                         className="flex w-full items-start gap-3 rounded-xl border border-white/5 bg-black/40 px-3 py-2"
                       >
                         <div className="flex min-w-0 flex-1 items-start gap-3">
-                          <img src={src} alt={alt} width={32} height={32} className="h-8 w-8 shrink-0 rounded-sm" />
+                          <img
+                            src={src}
+                            alt={alt}
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 shrink-0 rounded-sm"
+                            onError={(e) => {
+                              e.currentTarget.src = "/globe.svg";
+                            }}
+                          />
                           <div className="flex-1 w-full">
                             <span className="block whitespace-normal break-words text-[15px] leading-snug text-zinc-100" title={entry.name}>
                               {entry.name}
