@@ -89,6 +89,77 @@ const MAX_VISIBLE_INCIDENTS = 50;
 const SPEED_STORAGE_KEY = "astole.simulation.speed";
 const SPEED_EVENT_NAME = "astole:speed";
 
+type TrafficTooltipPayload = {
+  minute?: number;
+  [key: string]: any;
+};
+
+const TrafficCustomTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+
+  const entry = payload[0]?.payload as TrafficTooltipPayload | undefined;
+  const minute = Number(entry?.minute ?? 0);
+  const minutesAgo = Math.max(0, Math.round(Math.abs(minute)));
+  const relativeLabel = minute === 0 ? "0 min" : `-${minutesAgo} min`;
+
+  const absoluteTime = new Date(Date.now() - minutesAgo * 60_000);
+  const absoluteLabel = absoluteTime.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  const normalValue = payload.find((p: any) => p?.dataKey === "Tráfico Normal")?.value;
+  const anomalousValue = payload.find((p: any) => p?.dataKey === "Tráfico Anómalo")?.value;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/90 px-4 py-3">
+      <div className="text-lg font-semibold text-white">{relativeLabel}</div>
+      <div className="mt-1 text-sm text-zinc-400">Hora absoluta: {absoluteLabel}</div>
+
+      <div className="mt-3 grid gap-1 text-sm">
+        <div className="flex items-center justify-between gap-6 text-zinc-200">
+          <span>Tráfico Normal</span>
+          <span className="font-mono text-white">{Number(normalValue ?? 0).toLocaleString("es-ES")}</span>
+        </div>
+        <div className="flex items-center justify-between gap-6 text-zinc-200">
+          <span>Tráfico Anómalo</span>
+          <span className="font-mono text-white">{Number(anomalousValue ?? 0).toLocaleString("es-ES")}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TrafficXAxisTick = ({ x, y, payload, highlightedTickValue }: any) => {
+  const value = Number(payload?.value);
+  const isHighlighted = Number.isFinite(value) && highlightedTickValue != null && value === highlightedTickValue;
+  const label = Number.isFinite(value) ? String(value) : "";
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={16}
+        textAnchor="middle"
+        fill="#e4e4e7"
+        fontSize={15}
+        fontWeight={isHighlighted ? 700 : 500}
+        opacity={isHighlighted ? 1 : 0.55}
+      >
+        {label}
+      </text>
+    </g>
+  );
+};
+
+const getTrafficTickStep = (windowMinutes: number) => {
+  if (windowMinutes <= 5) return 1;
+  if (windowMinutes <= 20) return 5;
+  return 15;
+};
+
 const PROTOCOL_NAMES: Record<number, string> = {
   1: "ICMP",
   6: "TCP",
@@ -1052,10 +1123,58 @@ export default function Capa1Triaje() {
     [trafficChartHistory, viewWindow]
   );
 
-  const displayTrafficHistory = trafficWindowHistory.map((point, index, array) => ({
-    ...point,
-    tiempo: index === array.length - 1 ? "Ahora" : `-${array.length - 1 - index}m`,
-  }));
+  const displayTrafficHistory = useMemo(() => {
+    if (!trafficWindowHistory.length) {
+      return [
+        { minute: -viewWindow, "Tráfico Normal": 0, "Tráfico Anómalo": 0 },
+        { minute: 0, "Tráfico Normal": 0, "Tráfico Anómalo": 0 },
+      ];
+    }
+
+    const base = trafficWindowHistory.map((point, index, array) => {
+      const minutesAgo = array.length - 1 - index;
+      const minute = -minutesAgo;
+      return {
+        ...point,
+        minute,
+      };
+    });
+
+    // Ensure the axis domain never collapses and the chart visually spans up to -viewWindow.
+    const first = base[0];
+    const boundaryPoint = { ...first, minute: -viewWindow };
+    return [boundaryPoint, ...base];
+  }, [trafficWindowHistory, viewWindow]);
+
+  const trafficXTicks = useMemo(() => {
+    const step = getTrafficTickStep(viewWindow);
+    const ticks = new Set<number>();
+
+    ticks.add(0);
+    ticks.add(-viewWindow);
+
+    for (let v = -step; v >= -viewWindow; v -= step) {
+      ticks.add(v);
+    }
+
+    return Array.from(ticks).sort((a, b) => a - b);
+  }, [viewWindow]);
+
+  const [trafficHoverMinute, setTrafficHoverMinute] = useState<number | null>(null);
+  const highlightedTrafficTick = useMemo(() => {
+    if (trafficHoverMinute == null || !trafficXTicks.length) return null;
+
+    let best = trafficXTicks[0];
+    let bestDist = Math.abs(best - trafficHoverMinute);
+    for (const tick of trafficXTicks) {
+      const dist = Math.abs(tick - trafficHoverMinute);
+      if (dist < bestDist) {
+        best = tick;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }, [trafficHoverMinute, trafficXTicks]);
 
   const totalAlertsValueRaw = metrics.total_alerts_triggered;
   const totalAlertsValue = Number.isFinite(Number(totalAlertsValueRaw))
@@ -1219,7 +1338,16 @@ export default function Capa1Triaje() {
           <div className="h-80 mt-6 w-full min-w-0">
             {isClient ? (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                <AreaChart data={displayTrafficHistory}>
+                <AreaChart
+                  data={displayTrafficHistory}
+                  onMouseMove={(state: any) => {
+                    if (!state?.isTooltipActive || !state?.activePayload?.length) return;
+                    const minute = Number(state.activePayload[0]?.payload?.minute);
+                    if (!Number.isFinite(minute)) return;
+                    setTrafficHoverMinute(minute);
+                  }}
+                  onMouseLeave={() => setTrafficHoverMinute(null)}
+                >
                   <defs>
                     <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
@@ -1231,12 +1359,18 @@ export default function Capa1Triaje() {
                     </linearGradient>
                   </defs>
                   <XAxis
-                    dataKey="tiempo"
+                    dataKey="minute"
+                    type="number"
+                    domain={[-viewWindow, 0]}
+                    ticks={trafficXTicks}
+                    interval="preserveStartEnd"
                     stroke="#3f3f46"
                     fontSize={15}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: "#e4e4e7", fontSize: 15, fontWeight: 500 }}
+                    tick={(props: any) => (
+                      <TrafficXAxisTick {...props} highlightedTickValue={highlightedTrafficTick} />
+                    )}
                   />
                   <YAxis
                     stroke="#3f3f46"
@@ -1247,13 +1381,8 @@ export default function Capa1Triaje() {
                     tick={{ fill: "#f59e0b", fontSize: 15, fontWeight: 500 }}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#09090b",
-                      borderColor: "#27272a",
-                      borderRadius: "8px",
-                      fontSize: "15px",
-                    }}
-                    itemStyle={{ color: "#fff" }}
+                    cursor={{ stroke: "rgba(255,255,255,0.08)" }}
+                    content={<TrafficCustomTooltip />}
                   />
                   <Area
                     type="monotone"
@@ -1262,6 +1391,16 @@ export default function Capa1Triaje() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorNormal)"
+                    dot={false}
+                    activeDot={{
+                      r: 6,
+                      fill: "#09090b",
+                      stroke: "#D18400",
+                      strokeWidth: 2,
+                      style: {
+                        filter: "drop-shadow(0 0 6px rgba(209, 132, 0, 0.55))",
+                      },
+                    }}
                     isAnimationActive
                     animationDuration={300}
                     animationEasing="ease-in-out"
@@ -1273,6 +1412,16 @@ export default function Capa1Triaje() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorAnomalo)"
+                    dot={false}
+                    activeDot={{
+                      r: 6,
+                      fill: "#09090b",
+                      stroke: "#D18400",
+                      strokeWidth: 2,
+                      style: {
+                        filter: "drop-shadow(0 0 6px rgba(209, 132, 0, 0.55))",
+                      },
+                    }}
                     isAnimationActive
                     animationDuration={300}
                     animationEasing="ease-in-out"

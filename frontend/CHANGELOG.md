@@ -116,3 +116,15 @@
 - **Ejes de la gráfica**: Ticks X/Y a 15px y peso medio para mejor lectura.
 - **KPIs de cabecera**: Títulos/descripciones más grandes y mayor espaciado interno.
 - **Sidebar**: Navegación en `text-lg`, indicadores e iconos escalados; layout alineado con ancho final (`w-72`).
+
+## [0.8.2-ui] - 2026-04-18
+
+### Changed
+- **Gráfica de Tráfico (X Axis)**: Ticks dinámicos según ventana (5m=1m, 20m=5m, 60m=15m) + extremos preservados (0 y `-viewWindow`).
+- **Hitos e Interactividad**: Tick más cercano al cursor se resalta (opacidad 1 + bold) durante el hover.
+- **Tooltip de alta precisión**: Tiempo relativo destacado + hora absoluta calculada desde la hora del sistema.
+- **Active Dot (destello)**: Punto activo con stroke `#D18400` + glow sutil.
+- **Stability**: El dominio del eje X no colapsa aunque no haya datos al inicio.
+
+### Added
+- **Guía de datos IP Intel**: Pasos para generar Parquet a partir de CSV (`scripts/optimize_ip_data.py`) para habilitar enriquecimiento IP en el dashboard.
