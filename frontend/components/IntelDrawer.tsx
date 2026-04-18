@@ -32,7 +32,7 @@ const SectionTitle = ({ icon, title }: { icon: ReactNode; title: string }) => (
     <span className="grid h-8 w-8 place-items-center rounded-xl border border-white/10 bg-black/30 text-zinc-200">
       {icon}
     </span>
-    <p className="text-base font-semibold">{title}</p>
+    <p className="text-lg font-semibold">{title}</p>
   </div>
 );
 
@@ -52,7 +52,7 @@ const Callout = ({
           ? "border-yellow-300/25 bg-yellow-300/10 text-yellow-100"
           : "border-white/10 bg-black/30 text-zinc-200";
 
-  return <div className={`rounded-xl border px-3 py-2 text-base leading-snug ${toneClass}`}>{children}</div>;
+  return <div className={`rounded-xl border px-3 py-2 text-lg leading-snug ${toneClass}`}>{children}</div>;
 };
 
 export function IntelDrawer({ open, context, topic = null, originCountryBreakdown = [], onClose }: IntelDrawerProps) {
@@ -80,20 +80,20 @@ export function IntelDrawer({ open, context, topic = null, originCountryBreakdow
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-base uppercase tracking-[0.25em] text-zinc-400">Intel-Drawer</p>
+            <p className="text-lg uppercase tracking-[0.25em] text-zinc-400">Intel-Drawer</p>
             <h3 className="mt-2 text-2xl font-semibold text-white">{header} — Ayuda Contextual</h3>
-            <p className="mt-1 text-base text-zinc-400">Explicación ampliada (más legible) para interpretar métricas y etiquetas.</p>
+            <p className="mt-1 text-lg text-zinc-400">Explicación ampliada (más legible) para interpretar métricas y etiquetas.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/10 bg-black/40 px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-zinc-200 hover:border-white/20 hover:text-white"
+            className="rounded-full border border-white/10 bg-black/40 px-3 py-1.5 text-base font-semibold uppercase tracking-[0.2em] text-zinc-200 hover:border-white/20 hover:text-white"
           >
             Cerrar
           </button>
         </div>
 
-        <div className="mt-6 space-y-5 text-base text-zinc-300">
+        <div className="mt-6 space-y-5 text-lg text-zinc-300">
           {context === "top-attackers" ? (
             <>
               <SectionTitle icon={<Target className="h-4 w-4 text-orange-200" />} title="Cómo leer el ranking" />
@@ -171,14 +171,14 @@ export function IntelDrawer({ open, context, topic = null, originCountryBreakdow
                       {originCountryBreakdown.map((entry) => (
                         <span
                           key={entry.country}
-                          className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-sm font-semibold text-zinc-200"
+                          className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-base font-semibold text-zinc-200"
                         >
                           <span className="text-sm">{entry.flag}</span>
                           {entry.percent}%
                         </span>
                       ))}
                     </div>
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-2 text-base text-zinc-400">
                       Basado en IP Intel del backend (DB1/PX2). Si falta información, se muestra como Unknown.
                     </p>
                   </Callout>
@@ -198,10 +198,10 @@ export function IntelDrawer({ open, context, topic = null, originCountryBreakdow
               <SectionTitle icon={<Info className="h-4 w-4 text-zinc-200" />} title="Guía de Prioridades" />
               <Callout tone="zinc">
                 <div className="space-y-3">
-                  <p className="text-base leading-relaxed text-zinc-200">
+                  <p className="text-lg leading-relaxed text-zinc-200">
                     La franja vertical en la izquierda de cada incidente resume la prioridad operativa.
                   </p>
-                  <div className="space-y-2 text-base text-zinc-200">
+                  <div className="space-y-2 text-lg text-zinc-200">
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-1.5 rounded-full bg-red-500" />
                       <span>

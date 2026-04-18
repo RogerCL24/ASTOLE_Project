@@ -293,7 +293,7 @@ export default function InvestigacionConsole({
     <div className="relative z-10 p-6 lg:p-10">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold text-white">Sala de Investigación</h1>
-        <p className="mt-2 text-base text-zinc-400">Consola mixta: evidencia a la izquierda y Chat RAG a la derecha.</p>
+        <p className="mt-2 text-lg text-zinc-400">Consola mixta: evidencia a la izquierda y Chat RAG a la derecha.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[420px_1fr]">
@@ -309,7 +309,7 @@ export default function InvestigacionConsole({
               <div className="relative">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-base uppercase tracking-[0.25em] text-zinc-400">Evidencia</p>
+                  <p className="text-lg uppercase tracking-[0.25em] text-zinc-400">Evidencia</p>
                   <h2 className="mt-2 text-xl font-semibold text-white">
                     {hasSelectedCase ? (
                       <DecryptedText
@@ -326,7 +326,7 @@ export default function InvestigacionConsole({
                 </div>
                 {hasSelectedCase ? (
                   <div className="flex items-center gap-2">
-                    <span className={`rounded-full border px-4 py-2 text-base font-semibold ${severityUi.className}`}>
+                    <span className={`rounded-full border px-4 py-2 text-lg font-semibold ${severityUi.className}`}>
                       Severidad: {severityUi.label}
                     </span>
                   </div>
@@ -335,13 +335,13 @@ export default function InvestigacionConsole({
 
               {!hasSelectedCase ? (
                 <div className="mt-6">
-                  <p className="text-base text-zinc-400">
+                  <p className="text-lg text-zinc-400">
                     Abre un incidente desde el Dashboard o selecciona una alerta crítica sugerida para comenzar.
                   </p>
 
                   <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 px-4 py-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-base uppercase tracking-[0.2em] text-zinc-400">Últimas 5 alertas críticas</p>
+                      <p className="text-lg uppercase tracking-[0.2em] text-zinc-400">Últimas 5 alertas críticas</p>
                       {alertsStatus === "loading" ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
                       ) : null}
@@ -372,25 +372,25 @@ export default function InvestigacionConsole({
                             className="block rounded-xl border border-white/10 bg-black/40 px-3 py-2 transition-all hover:border-hyper-accent/30 hover:bg-black/50"
                           >
                             <div className="flex items-center justify-between gap-3">
-                              <p className="text-base font-mono font-medium text-white break-all">{id}</p>
-                              <span className="rounded-full border border-rose-500/30 bg-rose-500/15 px-2.5 py-1 text-sm font-semibold text-rose-100">
+                              <p className="text-lg font-mono font-medium text-white break-all">{id}</p>
+                              <span className="rounded-full border border-rose-500/30 bg-rose-500/15 px-2.5 py-1 text-base font-semibold text-rose-100">
                                 Crítica
                               </span>
                             </div>
-                            <p className="mt-1 text-base text-zinc-200">
+                            <p className="mt-1 text-lg text-zinc-200">
                               {ip} · {at} · dst_port {portLabel}
                             </p>
-                            <p className="mt-1 text-sm text-zinc-400">{formatMadridDateTime(ts)}</p>
+                            <p className="mt-1 text-base text-zinc-400">{formatMadridDateTime(ts)}</p>
                           </Link>
                         );
                         })}
 
                         {alertsStatus === "ready" && criticalSuggestions.length === 0 ? (
-                          <p className="text-base text-zinc-400">Sin alertas críticas recientes en este intervalo.</p>
+                          <p className="text-lg text-zinc-400">Sin alertas críticas recientes en este intervalo.</p>
                         ) : null}
 
                         {alertsStatus === "error" ? (
-                          <p className="text-sm text-zinc-400">No se pudo leer /api/stats. Mostrando sugerencias demo.</p>
+                          <p className="text-base text-zinc-400">No se pudo leer /api/stats. Mostrando sugerencias demo.</p>
                         ) : null}
                       </div>
                     </div>
@@ -401,15 +401,15 @@ export default function InvestigacionConsole({
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
                     <div className="flex items-center gap-2 text-zinc-300">
                       <Barcode className="h-4 w-4 text-zinc-200" />
-                      <p className="text-base uppercase tracking-[0.2em] text-zinc-400">ID del Caso</p>
+                      <p className="text-lg uppercase tracking-[0.2em] text-zinc-400">ID del Caso</p>
                     </div>
-                    <p className="mt-2 text-base font-mono font-medium text-white break-all">{caseId}</p>
+                    <p className="mt-2 text-lg font-mono font-medium text-white break-all">{caseId}</p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
                     <div className="flex items-center gap-2 text-zinc-300">
                       <Target className="h-4 w-4 text-hyper-accent" />
-                      <p className="text-base uppercase tracking-[0.2em] text-zinc-400">Objetivo</p>
+                      <p className="text-lg uppercase tracking-[0.2em] text-zinc-400">Objetivo</p>
                     </div>
                     <div className="mt-2">
                       <IPProfilePopover
@@ -424,36 +424,36 @@ export default function InvestigacionConsole({
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
                     <div className="flex items-center gap-2 text-zinc-300">
                       <Shield className="h-4 w-4 text-rose-200" />
-                      <p className="text-base uppercase tracking-[0.2em] text-zinc-400">Vector</p>
+                      <p className="text-lg uppercase tracking-[0.2em] text-zinc-400">Vector</p>
                     </div>
-                    <p className="mt-2 text-base font-semibold text-zinc-100">{effectiveAttackType}</p>
+                    <p className="mt-2 text-lg font-semibold text-zinc-100">{effectiveAttackType}</p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                    <p className="text-base uppercase tracking-[0.2em] text-zinc-400">Detección Original</p>
-                    <p className="mt-2 text-base font-mono font-medium text-white">{formatMadridDateTime(detectionTime)}</p>
+                    <p className="text-lg uppercase tracking-[0.2em] text-zinc-400">Detección Original</p>
+                    <p className="mt-2 text-lg font-mono font-medium text-white">{formatMadridDateTime(detectionTime)}</p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                    <p className="text-base uppercase tracking-[0.2em] text-zinc-400">Contexto de Red</p>
+                    <p className="text-lg uppercase tracking-[0.2em] text-zinc-400">Contexto de Red</p>
                     <div className="mt-3 grid grid-cols-1 gap-2">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-base text-zinc-300">Otras víctimas de esta IP</p>
-                        <p className="text-base font-semibold text-white">{networkContext.otherVictims} activos</p>
+                        <p className="text-lg text-zinc-300">Otras víctimas de esta IP</p>
+                        <p className="text-lg font-semibold text-white">{networkContext.otherVictims} activos</p>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-base text-zinc-300">Frecuencia de ataque</p>
-                        <p className="text-base font-semibold text-white">
+                        <p className="text-lg text-zinc-300">Frecuencia de ataque</p>
+                        <p className="text-lg font-semibold text-white">
                           {networkContext.frequencyLabel} <span className="text-zinc-400">({networkContext.frequencyCount})</span>
                         </p>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-base text-zinc-300">Destino (incidente actual)</p>
-                        <p className="text-base font-mono font-medium text-white">{selectedDstIp}</p>
+                        <p className="text-lg text-zinc-300">Destino (incidente actual)</p>
+                        <p className="text-lg font-mono font-medium text-white">{selectedDstIp}</p>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-base text-zinc-300">Puerto destino (incidente actual)</p>
-                        <p className="text-base font-mono font-medium text-white">{selectedDstPortLabel}</p>
+                        <p className="text-lg text-zinc-300">Puerto destino (incidente actual)</p>
+                        <p className="text-lg font-mono font-medium text-white">{selectedDstPortLabel}</p>
                       </div>
                     </div>
                   </div>
@@ -468,9 +468,9 @@ export default function InvestigacionConsole({
                 <div className="relative">
                   <div>
                     <div>
-                      <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Pivotar Investigación</p>
+                      <p className="text-lg uppercase tracking-[0.25em] text-zinc-400">Pivotar Investigación</p>
                       <h3 className="mt-2 text-lg font-semibold text-white">Alertas Relacionadas</h3>
-                      <p className="mt-1 text-base text-zinc-300">Reutiliza el contexto de sesión para pivotar sin perder ritmo.</p>
+                      <p className="mt-1 text-lg text-zinc-300">Reutiliza el contexto de sesión para pivotar sin perder ritmo.</p>
                     </div>
                   </div>
 
@@ -478,7 +478,7 @@ export default function InvestigacionConsole({
                     <button
                       type="button"
                       onClick={() => setPivotMode("origin")}
-                      className={`flex-1 px-3 py-2 text-sm font-semibold transition-colors ${
+                      className={`flex-1 px-3 py-2 text-base font-semibold transition-colors ${
                         pivotMode === "origin" ? "bg-white/10 text-white" : "text-zinc-300 hover:bg-white/5 hover:text-white"
                       }`}
                       aria-pressed={pivotMode === "origin"}
@@ -488,7 +488,7 @@ export default function InvestigacionConsole({
                     <button
                       type="button"
                       onClick={() => setPivotMode("destination")}
-                      className={`flex-1 px-3 py-2 text-sm font-semibold transition-colors ${
+                      className={`flex-1 px-3 py-2 text-base font-semibold transition-colors ${
                         pivotMode === "destination" ? "bg-white/10 text-white" : "text-zinc-300 hover:bg-white/5 hover:text-white"
                       }`}
                       aria-pressed={pivotMode === "destination"}
@@ -500,14 +500,14 @@ export default function InvestigacionConsole({
                   <div className="mt-5 max-h-72 overflow-y-auto pr-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
                     <div className="space-y-2">
                       {alertsStatus === "loading" ? (
-                        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-zinc-200">
+                        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-lg text-zinc-200">
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
                           Cargando alertas de sesión...
                         </div>
                       ) : null}
 
                       {alertsStatus === "ready" && relatedAlerts.length === 0 ? (
-                        <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-zinc-300">
+                        <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-lg text-zinc-300">
                           No hay alertas relacionadas para este pivote.
                         </div>
                       ) : null}
@@ -535,10 +535,10 @@ export default function InvestigacionConsole({
                           className="block rounded-xl border border-white/10 bg-black/30 px-3 py-2 transition-all hover:border-hyper-accent/30 hover:bg-black/40"
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-base font-mono font-medium text-white break-all">{id}</p>
-                            <p className="text-sm text-zinc-400">{formatMadridDateTime(ts)}</p>
+                            <p className="text-lg font-mono font-medium text-white break-all">{id}</p>
+                            <p className="text-base text-zinc-400">{formatMadridDateTime(ts)}</p>
                           </div>
-                          <p className="mt-1 text-base text-zinc-200">
+                          <p className="mt-1 text-lg text-zinc-200">
                             {ip} → {String(a?.network_data?.dst_ip ?? "--")} · {at} · dst_port {portLabel}
                           </p>
                         </Link>
@@ -565,9 +565,9 @@ export default function InvestigacionConsole({
               <div aria-hidden className={dotMeshOverlayClass} />
               <div className="relative flex min-h-[calc(100vh-14rem)] flex-col">
             <div className="border-b border-white/10 px-5 py-4">
-              <p className="text-base uppercase tracking-[0.25em] text-zinc-400">Chat RAG</p>
+              <p className="text-lg uppercase tracking-[0.25em] text-zinc-400">Chat RAG</p>
               <h2 className="mt-2 text-xl font-semibold text-white">Asistente de Investigación (Capa 2)</h2>
-              <p className="mt-1 text-base text-zinc-400">Base de interfaz lista; backend RAG en desarrollo.</p>
+              <p className="mt-1 text-lg text-zinc-400">Base de interfaz lista; backend RAG en desarrollo.</p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4 pr-3 [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
@@ -578,7 +578,7 @@ export default function InvestigacionConsole({
                   return (
                     <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                       <div
-                        className={`max-w-[min(740px,92%)] rounded-2xl border px-4 py-3 text-base leading-relaxed ${
+                        className={`max-w-[min(740px,92%)] rounded-2xl border px-4 py-3 text-lg leading-relaxed ${
                           isUser
                             ? "border-hyper-accent/25 bg-hyper-accent/10 text-white"
                             : "border-white/10 bg-black/30 text-zinc-100 font-mono font-medium"
@@ -587,7 +587,7 @@ export default function InvestigacionConsole({
                         {!isUser ? (
                           <div className="mb-2 flex items-center gap-2 text-zinc-300">
                             <Bot className="h-4 w-4 text-hyper-accent" />
-                            <span className="text-sm uppercase tracking-[0.2em] text-zinc-400">Sistema</span>
+                            <span className="text-base uppercase tracking-[0.2em] text-zinc-400">Sistema</span>
                           </div>
                         ) : null}
                         {isWelcome ? (
@@ -616,7 +616,7 @@ export default function InvestigacionConsole({
                   onChange={(e) => setDraft(e.target.value)}
                   rows={2}
                   placeholder="Escribe tu pregunta de investigación..."
-                  className="min-h-[52px] flex-1 resize-none rounded-xl border border-hyper-accent/25 bg-black/50 px-4 py-3 text-base text-zinc-100 outline-none placeholder:text-zinc-400 ring-1 ring-hyper-accent/15 focus:border-hyper-accent/55 focus:ring-hyper-accent/35"
+                  className="min-h-[52px] flex-1 resize-none rounded-xl border border-hyper-accent/25 bg-black/50 px-4 py-3 text-lg text-zinc-100 outline-none placeholder:text-zinc-400 ring-1 ring-hyper-accent/15 focus:border-hyper-accent/55 focus:ring-hyper-accent/35"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -628,13 +628,13 @@ export default function InvestigacionConsole({
                   <button
                     type="button"
                     onClick={onSend}
-                    className="rounded-xl border border-hyper-accent/35 bg-hyper-accent/20 px-5 py-3 text-base font-semibold text-white transition-all ring-1 ring-hyper-accent/25 hover:bg-hyper-accent/30 hover:ring-hyper-accent/45"
+                    className="rounded-xl border border-hyper-accent/35 bg-hyper-accent/20 px-5 py-3 text-lg font-semibold text-white transition-all ring-1 ring-hyper-accent/25 hover:bg-hyper-accent/30 hover:ring-hyper-accent/45"
                   >
                     Enviar
                   </button>
                 </Magnetic>
               </div>
-              <p className="mt-2 text-sm text-zinc-400">Enter para enviar · Shift+Enter para salto de línea</p>
+              <p className="mt-2 text-base text-zinc-400">Enter para enviar · Shift+Enter para salto de línea</p>
             </div>
               </div>
             </Card>
