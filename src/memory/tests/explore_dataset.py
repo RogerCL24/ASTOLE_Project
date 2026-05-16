@@ -20,20 +20,20 @@ for i, col in enumerate(df.columns, 1):
     dtype = df[col].dtype
     print(f"  {i:2d}. {col:40s} ({dtype})")
 
-print(f"\n👀 Datos principales (primeras 3 filas):")
+print("\n👀 Datos principales (primeras 3 filas):")
 main_cols = ['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_SRC_PORT', 'L4_DST_PORT', 'Label', 'Attack']
 print(df[main_cols].head(3).to_string(index=False))
 
 if 'Label' in df.columns:
     benignos = (df['Label'] == 0).sum()
     ataques = (df['Label'] == 1).sum()
-    print(f"\n🚨 Distribución:")
+    print("\n🚨 Distribución:")
     print(f"  Benignos: {benignos} ({benignos/len(df)*100:.1f}%)")
     print(f"  Ataques:  {ataques} ({ataques/len(df)*100:.1f}%)")
 
 if 'Attack' in df.columns:
-    print(f"\n📊 Tipos de ataque:")
+    print("\n📊 Tipos de ataque:")
     print(df['Attack'].value_counts().to_string())
 
 print(f"\n✅ Total columnas: {len(df.columns)}")
-print(f"✅ Dataset real")
+print("✅ Dataset real")
