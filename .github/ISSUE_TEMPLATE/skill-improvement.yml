@@ -1,0 +1,38 @@
+name: Skill improvement
+description: Propose a new skill, refine an existing one, or report a routing miss
+labels: ["skill", "enhancement"]
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - "New skill"
+        - "Refine existing skill"
+        - "Routing miss (router → wrong skill)"
+        - "Token budget tuning"
+        - "RAG query template"
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Target skill name
+      placeholder: dos_fuzzers / exploits_backdoor / ...
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example payload (optional)
+      render: json

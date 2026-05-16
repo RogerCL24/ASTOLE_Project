@@ -3,7 +3,7 @@
 Includes:
 - Schema validation tests (Pydantic)
 - Router tests (rule-based and fallback)
-- Full pipeline integration tests (with mocks)
+- Full pipeline integration tests (with deterministic LiteLLM mocking)
 - Fixtures with sample alerts for each attack type from NF-UNSW-NB15-v3
 """
 
@@ -12,7 +12,9 @@ from __future__ import annotations
 import json
 import os
 import random
+from types import SimpleNamespace
 from typing import Any, Dict
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -25,13 +27,9 @@ os.environ["CACHE_ENABLED"] = "false"
 from src.agents.main import app
 from src.agents.models.input_schemas import (
     AttackCategory,
-    GNNMetadata,
     InputAlert,
     NetworkData,
-    TopFeatures,
-    WindowStats,
 )
-from src.agents.models.output_schemas import SkillAssessment, TriageOutput
 from src.agents.agents.router import SKILL_MAP, router_node
 
 
@@ -279,21 +277,57 @@ class TestAPI:
 
     @pytest.mark.asyncio
     async def test_triage_valid_alert_structure(self, client):
+        """End-to-end /triage with a deterministic LiteLLM mock.
+
+        Mocks ``litellm.acompletion`` for both the skill and summarizer
+        nodes so the test always returns 200 and validates the contract
+        without external dependencies.
         """
-        Send a valid alert and verify the output structure.
-        NOTE: This test requires configured API keys to pass completely.
-        Without keys, we verify the endpoint responds (500 is acceptable without keys).
-        """
-        resp = await client.post("/triage", json=SAMPLE_ALERTS["DoS"])
-        # If API keys are configured, the response will be 200
-        # If not, it may be 500 (LLM error) — both are acceptable in tests
-        if resp.status_code == 200:
-            data = resp.json()
-            assert "triage_id" in data
-            assert "alert_id" in data
-            assert "severity" in data
-            assert "narrative" in data
-            assert "metadata" in data
+        skill_payload = json.dumps({
+            "threat_type": "DoS",
+            "threat_subtype": "Volumetric",
+            "threat_level": "high",
+            "confidence_adjusted": 0.92,
+            "is_real_threat": True,
+            "false_positive_probability": 0.05,
+            "key_indicators": ["High pps from single source"],
+            "recommended_actions": ["Rate-limit", "Notify SOC"],
+            "iocs": [],
+            "technical_detail": "Mocked DoS assessment.",
+        })
+        summarizer_payload = json.dumps({
+            "executive": "DoS detected.",
+            "tactical": "High pps unidirectional flow.",
+            "impact": "Service availability at risk.",
+            "recommended_actions": ["Rate-limit"],
+            "suggested_queries": ["Has this src_ip recurred?"],
+            "severity": "high",
+            "should_escalate": False,
+        })
+
+        async def fake_acompletion(*args, **kwargs):
+            messages = kwargs.get("messages") or (args[1] if len(args) > 1 else [])
+            sys_msg = next((m for m in messages if m.get("role") == "system"), {}) or {}
+            content = sys_msg.get("content", "")
+            payload = summarizer_payload if "CISO" in content or "executive" in content.lower() else skill_payload
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content=payload))],
+                usage=SimpleNamespace(total_tokens=50, prompt_tokens=30, completion_tokens=20),
+            )
+
+        with patch("src.agents.agents.skills.base_skill.acompletion", side_effect=fake_acompletion), \
+             patch("src.agents.agents.summarizer.acompletion", side_effect=fake_acompletion):
+            resp = await client.post("/triage", json=SAMPLE_ALERTS["DoS"])
+
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert "triage_id" in data
+        assert data["alert_id"] == SAMPLE_ALERTS["DoS"]["alert_id"]
+        assert data["severity"] in {"critical", "high", "medium", "low", "info"}
+        for key in ("executive", "tactical", "impact"):
+            assert data["narrative"][key], f"narrative.{key} must not be empty"
+        assert "metadata" in data
+        assert "tokens_used" in data["metadata"]
 
     @pytest.mark.asyncio
     async def test_triage_batch_too_many(self, client):

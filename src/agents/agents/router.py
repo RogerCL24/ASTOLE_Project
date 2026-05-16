@@ -18,6 +18,7 @@ from typing import Any, Dict
 
 from litellm import acompletion
 
+from src.agents.core.circuit_breaker import assert_router_invariants
 from src.agents.core.config import (
     CONFIDENCE_DEEP_THRESHOLD,
     CONFIDENCE_FAST_THRESHOLD,
@@ -25,6 +26,7 @@ from src.agents.core.config import (
     ROUTER_MODEL,
     ROUTER_TEMPERATURE,
 )
+from src.agents.core.handoffs import PlanStatus, append_handoff, make_handoff
 from src.agents.core.helpers import get_binary_attack, get_multiclass_label
 from src.agents.prompts import load_prompt
 
@@ -117,11 +119,15 @@ async def router_node(state: Dict[str, Any]) -> Dict[str, Any]:
         predicted_label = response.choices[0].message.content.strip()
         state["models_used"] = state.get("models_used", []) + [ROUTER_MODEL]
 
-        # Update tokens
+        # Update tokens — keep `router` and the `total` counter consistent
+        # with skill / summarizer accounting so /metrics is accurate even
+        # when the LLM fallback path runs.
         usage = getattr(response, "usage", None)
         if usage:
             tokens = state.get("tokens_used", {})
-            tokens["router"] = getattr(usage, "total_tokens", 0)
+            router_tokens = getattr(usage, "total_tokens", 0) or 0
+            tokens["router"] = router_tokens
+            tokens["total"] = tokens.get("total", 0) + router_tokens
             state["tokens_used"] = tokens
 
         if predicted_label in SKILL_MAP:
@@ -136,4 +142,40 @@ async def router_node(state: Dict[str, Any]) -> Dict[str, Any]:
         state["skill_activated"] = "generic"
         state["errors"] = state.get("errors", []) + [f"Router LLM error: {str(e)}"]
 
+    # --- Emit structured handoff + run circuit breaker ---
+    skill = state.get("skill_activated", "generic")
+    plan_status = PlanStatus.OK
+    reason = None
+    if state.get("errors"):
+        last_error = state["errors"][-1]
+        if "Router" in last_error:
+            plan_status = PlanStatus.ERROR
+            reason = last_error
+
+    handoff = make_handoff(
+        stage="router",
+        from_agent="router",
+        to_agent=skill,
+        task=f"Run threat assessment using skill '{skill}'.",
+        scope=["alert_id", "network_data", "gnn_metadata", "top_features"],
+        accumulated_context={
+            "label_multiclase": label,
+            "confidence_score": confidence,
+            "confidence_tier": state["confidence_tier"],
+            "binary_attack": binary_attack,
+        },
+        constraints=[
+            "Validate cache / prior-assessment existence before re-computing.",
+            "Respect token budget for the chosen tier.",
+            "Return strict JSON SkillAssessment only.",
+        ],
+        attention_points=[
+            "Bias toward true-positive when label is critical-class.",
+            "Worms / Shellcode require immediate-containment recommendations.",
+        ],
+        plan_status=plan_status,
+        reason=reason,
+    )
+    append_handoff(state, handoff)
+    assert_router_invariants(state)
     return state

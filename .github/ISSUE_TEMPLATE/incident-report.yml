@@ -1,0 +1,44 @@
+name: ASTOLE incident
+description: Auto-opened by the triage-batch workflow when a critical alert is detected
+labels: ["astole-incident"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > This template is also consumed by the [`triage-batch`](../../workflows/triage-batch.yml)
+        > workflow when an alert exceeds the escalation threshold.
+        > For manual incidents, fill in all sections.
+  - type: input
+    id: triage_id
+    attributes:
+      label: Triage ID
+      placeholder: TRG-XXXXXXXX
+    validations:
+      required: false
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options: [critical, high, medium, low, info]
+    validations:
+      required: true
+  - type: textarea
+    id: executive
+    attributes:
+      label: Executive narrative
+    validations:
+      required: true
+  - type: textarea
+    id: tactical
+    attributes:
+      label: Tactical narrative
+  - type: textarea
+    id: actions
+    attributes:
+      label: Recommended actions
+  - type: textarea
+    id: payload
+    attributes:
+      label: Original alert payload
+      description: Paste the original `InputAlert` JSON to allow reproduction.
+      render: json

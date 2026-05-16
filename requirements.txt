@@ -17,3 +17,4 @@ litellm         # Proxy unificado de modelos
 langsmith       # Trazabilidad y observabilidad
 pytest          # Tests
 pytest-asyncio  # Tests async
+pyyaml          # YAML frontmatter parsing for .agent.md / *.skill.md

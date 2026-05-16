@@ -1,0 +1,25 @@
+# CODEOWNERS — ASTOLE
+#
+# This file maps repository paths to teams or users that must review changes.
+# It is consumed by GitHub when a PR touches any matching path.
+#
+# Defaults: changes to the agents layer require review from the agents team.
+
+# Default owners for everything
+*                              @astole/maintainers
+
+# Agents layer (Engineer 2)
+/src/agents/                   @astole/agents-team
+/AGENTS.md                     @astole/agents-team
+
+# RAG layer (Engineer 3)
+/src/memory/                   @astole/rag-team
+
+# CI / Runners
+/.github/workflows/            @astole/devops
+/.github/ISSUE_TEMPLATE/        @astole/devops
+/.github/PULL_REQUEST_TEMPLATE.md  @astole/devops
+
+# Contracts (Engineer 4 dashboard)
+/docs/specs/                   @astole/contracts
+/src/agents/models/            @astole/contracts

@@ -7,8 +7,8 @@ per each call and exposes them for the AgentState to collect.
 from __future__ import annotations
 
 import threading
-from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+from typing import Any, Dict
 
 from litellm import completion_cost
 from litellm.integrations.custom_logger import CustomLogger
@@ -82,16 +82,24 @@ class CostTracker(CustomLogger):
         return calls
 
     def get_totals(self) -> Dict[str, Any]:
-        """Return accumulated totals without resetting."""
+        """Return accumulated totals without resetting.
+
+        ``num_calls`` MUST be captured under the same lock as the rest of
+        the metrics; otherwise concurrent ``log_success_event`` callbacks
+        can mutate ``self._calls`` between the two reads and produce a
+        ``num_calls`` that is inconsistent with ``total_tokens`` /
+        ``total_cost_usd``.
+        """
         with self._lock:
             total_tokens = sum(c.total_tokens for c in self._calls)
             total_cost = sum(c.cost_usd for c in self._calls)
             models = list({c.model for c in self._calls})
+            num_calls = len(self._calls)
         return {
             "total_tokens": total_tokens,
             "total_cost_usd": total_cost,
             "models_used": models,
-            "num_calls": len(self._calls),
+            "num_calls": num_calls,
         }
 
 

@@ -3,6 +3,11 @@
 This service exposes a thin HTTP contract over the ChromaDB memory managed by
 Engineer 3 so the LangGraph pipeline can consume historical context as an
 external dependency.
+
+The Chroma manager (``MemoryManager``) is synchronous and may take tens of
+milliseconds per call (embedding + similarity search). We therefore offload
+those calls to a worker thread via ``run_in_threadpool`` to avoid blocking
+FastAPI's event loop under concurrent load.
 """
 
 from __future__ import annotations
@@ -10,6 +15,7 @@ from __future__ import annotations
 from typing import List
 
 from fastapi import FastAPI
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from src.memory.chromadb_manager import MemoryManager
@@ -34,14 +40,17 @@ class QueryResponse(BaseModel):
 @app.get("/health")
 async def health() -> dict:
     """Lightweight health endpoint for docker-compose readiness checks."""
-    stats = manager.get_stats()
+    stats = await run_in_threadpool(manager.get_stats)
     return {"status": "ok", "windows_indexed": stats.get("total_windows", 0)}
 
 
 @app.post("/query", response_model=QueryResponse)
 async def query_memory(payload: QueryRequest) -> QueryResponse:
     """Retrieve semantic context snippets from ChromaDB."""
-    results = manager.search_similar(payload.query, n_results=payload.top_k)
+    def _search() -> dict:
+        return manager.search_similar(payload.query, n_results=payload.top_k)
+
+    results = await run_in_threadpool(_search)
     docs = []
     if isinstance(results, dict):
         docs = (results.get("documents") or [[]])[0] or []

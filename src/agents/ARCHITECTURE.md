@@ -85,13 +85,57 @@ flowchart TB
 When `LANGSMITH_TRACING=true`, runtime exports `LANGCHAIN_TRACING_V2`,
 `LANGCHAIN_API_KEY`, `LANGCHAIN_ENDPOINT` and `LANGCHAIN_PROJECT`.
 
+## Pipeline architecture
+
+ASTOLE implements a hub-and-spoke + planner-executor pattern for
+real-time alert triage:
+
+- **L0/L1/L2 hierarchy** — declared in `AGENTS.md` and `*.agent.md` files.
+- **Mandatory 4-stage pipeline** — Router → Skill → RAG → Summarizer, no
+  stage skippable; each stage tags its output as `OK` / `PLAN_VACIO` / `ERROR`.
+- **Structured 5-block handoffs** — `task`, `scope`, `accumulated_context`,
+  `constraints`, `attention_points` — implemented in
+  `src/agents/core/handoffs.py` and traced in `AgentState["handoffs"]`.
+- **Circuit breakers** — per-stage post-action invariants in
+  `src/agents/core/circuit_breaker.py`.
+- **Markdown-defined agents and skills** — every agent has a `*.agent.md`,
+  every skill has a `*.skill.md`, validated by CI.
+- **Parallel execution** — the skill assessment, RAG pre-fetch and
+  external-intelligence calls run concurrently inside each skill super-step
+  (see `docs/PIPELINE_DESIGN.md`).
+
+See [`docs/PIPELINE_DESIGN.md`](docs/PIPELINE_DESIGN.md) for the full design rationale.
+
+## GitHub Runners (CI/CD + Issue-driven triage)
+
+```mermaid
+flowchart LR
+  push[push / PR] --> tests[ci-tests]
+  push --> contracts[ci-contract-validation]
+  push --> agentmd[ci-agent-md-validate]
+  push --> smoke[ci-docker-smoke]
+  tag[git tag v*] --> release[release-docker]
+  issueLbl[issue label astole-triage] --> triageIssue[triage-issue]
+  cron[daily cron] --> triageBatch[triage-batch]
+  triageBatch -->|critical| autoIssue[(astole-incident issue)]
+```
+
+See [`docs/CI_PIPELINE.md`](docs/CI_PIPELINE.md) and
+[`docs/ISSUE_DRIVEN_TRIAGE.md`](docs/ISSUE_DRIVEN_TRIAGE.md).
+
 ## Full docs
 
 For complete operational and integration documentation, see:
 
+- `AGENTS.md` (top-level hierarchy)
 - `src/agents/README.md`
+- `src/agents/docs/PIPELINE_DESIGN.md`
+- `src/agents/docs/HANDOFFS.md`
+- `src/agents/docs/CI_PIPELINE.md`
+- `src/agents/docs/ISSUE_DRIVEN_TRIAGE.md`
 - `src/agents/docs/DOCKER_DEPLOYMENT.md`
 - `src/agents/docs/OPERATIONS.md`
 - `src/agents/docs/CONTRACTS_AND_API.md`
 - `src/agents/docs/SKILLS_AND_PROMPTS.md`
 - `src/agents/docs/OBSERVABILITY.md`
+- `src/agents/agents/skills/README.md`

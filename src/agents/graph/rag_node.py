@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
+from src.agents.core.circuit_breaker import assert_rag_invariants
+from src.agents.core.handoffs import PlanStatus, append_handoff, make_handoff
 from src.agents.core.helpers import get_multiclass_label
 from src.agents.tools.rag_tool import rag_retrieve_with_count
 
@@ -38,4 +40,43 @@ async def rag_enrichment_node(state: Dict[str, Any]) -> Dict[str, Any]:
         state["rag_context"] = extra_context
 
     state["rag_snippets_count"] = int(state.get("rag_snippets_count", 0)) + extra_count
+
+    # --- Structured handoff + plan-status + circuit breaker ---
+    rag_health = "ok"
+    plan_status = PlanStatus.OK
+    reason = None
+    if "unavailable" in (state.get("rag_context") or "").lower():
+        rag_health = "unavailable"
+        plan_status = PlanStatus.ERROR
+        reason = "RAG service unreachable; pipeline degraded."
+    elif state["rag_snippets_count"] == 0:
+        rag_health = "empty"
+        plan_status = PlanStatus.PLAN_VACIO
+        reason = "No historical context matched the alert query."
+
+    handoff = make_handoff(
+        stage="rag_enrichment",
+        from_agent="rag_enrichment",
+        to_agent="summarizer",
+        task="Synthesize executive/tactical/impact narrative.",
+        scope=["assessment", "rag_context", "input"],
+        accumulated_context={
+            "rag_snippets_count": state["rag_snippets_count"],
+            "rag_health": rag_health,
+            "rag_query": query,
+        },
+        constraints=[
+            "Validate cache / prior-assessment existence before re-computing.",
+            "Do not invent IOCs — use only what exists in assessment + rag_context.",
+            "Strict JSON narrative output.",
+        ],
+        attention_points=[
+            "Empty context is allowed — handle gracefully.",
+            "Note RAG-degraded mode in the impact section if applicable.",
+        ],
+        plan_status=plan_status,
+        reason=reason,
+    )
+    append_handoff(state, handoff)
+    assert_rag_invariants(state)
     return state

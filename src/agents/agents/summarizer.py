@@ -16,11 +16,13 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from litellm import acompletion
 
+from src.agents.core.circuit_breaker import assert_summarizer_invariants
 from src.agents.core.config import SUMMARIZER_MAX_TOKENS, SUMMARIZER_MODEL, SUMMARIZER_TEMPERATURE
+from src.agents.core.handoffs import PlanStatus, append_handoff, make_handoff
 from src.agents.core.helpers import get_multiclass_label
 from src.agents.prompts import load_prompt
 
@@ -54,7 +56,13 @@ Generate the report with this JSON schema:
 
 
 def _map_severity(threat_level: str, confidence: float, attack_flows: int) -> str:
-    """Determine severity based on threat_level + additional factors."""
+    """Determine severity based on threat_level + additional factors.
+
+    Maps to ``SeverityLevel`` (`critical`/`high`/`medium`/`low`/`info`).
+    `threat_level == "none"` MUST collapse to `"info"` because `"none"` is
+    not a valid ``SeverityLevel`` and would break the response-model
+    validation.
+    """
     if threat_level == "critical":
         return "critical"
     if threat_level == "high":
@@ -165,9 +173,12 @@ async def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         label = label.split(".")[-1]
     # FIN NUEVO --- 
 
-    severity = summary.get("severity", _map_severity(
+    # Severity guardrail: never accept 'none' (not a valid SeverityLevel)
+    raw_severity = summary.get("severity") or _map_severity(
         threat_level, gnn.get("confidence_score", 0.5), attack_flows
-    ))
+    )
+    severity = _map_severity(raw_severity, gnn.get("confidence_score", 0.5), attack_flows) \
+        if raw_severity == "none" else raw_severity
 
     auto_escalate, escalation_reason = _should_auto_escalate(
         threat_level, attack_flows, label
@@ -228,17 +239,55 @@ async def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         },
     }
 
+    # --- Terminal handoff + circuit breaker ---
+    summarizer_errors = [
+        e for e in state.get("errors", []) if e.startswith("Summarizer error")
+    ]
+    plan_status = PlanStatus.ERROR if summarizer_errors else PlanStatus.OK
+    handoff = make_handoff(
+        stage="summarizer",
+        from_agent="summarizer",
+        to_agent="dashboard",
+        task="Deliver final TriageOutput to downstream layer.",
+        scope=["triage_output"],
+        accumulated_context={
+            "severity": severity,
+            "is_escalated": is_escalated,
+            "tokens_total": state.get("tokens_used", {}).get("total", 0),
+        },
+        constraints=[
+            "Do not modify TriageOutput once emitted.",
+            "Preserve hierarchical narrative (executive/tactical/impact).",
+        ],
+        attention_points=[
+            "Auto-escalation triggered" if is_escalated else "No auto-escalation",
+        ],
+        plan_status=plan_status,
+        reason=summarizer_errors[-1] if summarizer_errors else None,
+    )
+    append_handoff(state, handoff)
+    assert_summarizer_invariants(state)
     return state
 
 
 def _fallback_summary(assessment: Dict[str, Any], input_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Fallback summary when the summarizer LLM fails."""
+    """Fallback summary when the summarizer LLM fails.
+
+    The fallback severity goes through ``_map_severity`` so the value is
+    always a valid ``SeverityLevel``. In particular, ``threat_level='none'``
+    is translated to ``'info'`` to avoid breaking the response-model
+    validation when the summarizer is invoked on a benign flow.
+    """
     label = get_multiclass_label(input_data.get("gnn_metadata", {}))
     src_ip = input_data.get("network_data", {}).get("src_ip", "?")
     dst_ip = input_data.get("network_data", {}).get("dst_ip", "?")
+    threat_level = assessment.get("threat_level", "medium")
+    confidence = float(input_data.get("gnn_metadata", {}).get("confidence_score", 0.5))
+    attack_flows = int(input_data.get("window_stats", {}).get("attack_flows", 1))
+    severity = _map_severity(threat_level, confidence, attack_flows)
     return {
         "executive": f"{label} activity detected from {src_ip} towards {dst_ip}. "
-                     f"Threat level: {assessment.get('threat_level', 'medium')}.",
+                     f"Threat level: {threat_level}.",
         "tactical": assessment.get("technical_detail", "Technical detail unavailable."),
         "impact": "Potential effect on service availability and incident-response workload.",
         "recommended_actions": assessment.get("recommended_actions", ["Manual review required"]),
@@ -246,6 +295,6 @@ def _fallback_summary(assessment: Dict[str, Any], input_data: Dict[str, Any]) ->
             f"What other destinations has {src_ip} recently contacted?",
             f"Are there other attackers targeting {dst_ip}?",
         ],
-        "severity": assessment.get("threat_level", "medium"),
-        "should_escalate": assessment.get("threat_level") == "critical",
+        "severity": severity,
+        "should_escalate": threat_level == "critical",
     }

@@ -55,10 +55,12 @@ async def test_single_alert():
             response = await client.post(API_URL, json=single_alert)
             
             if response.status_code == 200:
-                print("\n✅ ÉXITO: El Agente ha respondido correctamente.")
+                print("\nOK: El Agente ha respondido correctamente.")
                 result = response.json()
                 print("-" * 30)
-                print(f"NARRATIVA: {result.get('narrative', {}).get('executive_summary')}")
+                # Use the canonical TriageOutput contract field name:
+                # narrative.executive (not executive_summary).
+                print(f"NARRATIVA: {result.get('narrative', {}).get('executive')}")
                 print(f"SEVERIDAD: {result.get('severity')}")
                 print("-" * 30)
             else:

@@ -95,6 +95,10 @@ async def triage(alert: InputAlert) -> Dict[str, Any]:
         "errors": [],
     }
 
+    # Snapshot global cost-tracker totals before the pipeline runs so we
+    # can compute a per-request delta and propagate it into TriageOutput.
+    cost_before = cost_tracker.get_totals()
+
     # Run graph
     try:
         result = await triage_graph.ainvoke(initial_state)
@@ -105,6 +109,13 @@ async def triage(alert: InputAlert) -> Dict[str, Any]:
     triage_output = result.get("triage_output")
     if not triage_output:
         raise HTTPException(status_code=500, detail="Pipeline produced no output")
+
+    # Per-request cost = totals_after - totals_before. This keeps
+    # TriageOutput.metadata.cost_usd consistent with the global /metrics
+    # endpoint without requiring per-node cost propagation.
+    cost_after = cost_tracker.get_totals()
+    request_cost = max(0.0, cost_after["total_cost_usd"] - cost_before["total_cost_usd"])
+    triage_output["metadata"]["cost_usd"] = round(request_cost, 6)
 
     # Calculate processing time
     elapsed_ms = int((time.monotonic() - start) * 1000)

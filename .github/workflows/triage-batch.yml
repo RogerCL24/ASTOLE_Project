@@ -1,0 +1,147 @@
+name: triage-batch
+
+on:
+  schedule:
+    # Daily at 03:00 UTC: replays curated sample stream against the pipeline
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      sample_path:
+        description: "Path to a JSON or JSONL file containing alerts (defaults to docs/samples/live_alerts.json)"
+        required: false
+        default: "docs/samples/live_alerts.json"
+      escalate_threshold:
+        description: "Severity threshold that auto-opens an incident issue"
+        required: false
+        default: "critical"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  batch-triage:
+    name: Batch triage with auto-incident issues
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: .
+      RAG_USE_MOCK: "true"
+      CACHE_ENABLED: "false"
+      LITELLM_MOCK_RESPONSE: "true"
+      OPENAI_API_KEY: "sk-test-mock"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run batch triage (in-process)
+        id: batch
+        run: |
+          SAMPLE_PATH="${{ inputs.sample_path || 'docs/samples/live_alerts.json' }}"
+          THRESHOLD="${{ inputs.escalate_threshold || 'critical' }}"
+          echo "Sample: $SAMPLE_PATH | threshold=$THRESHOLD"
+          python - "$SAMPLE_PATH" "$THRESHOLD" <<'PY' > /tmp/batch_results.json
+          import asyncio, json, sys, pathlib
+          from src.agents.graph.workflow import triage_graph
+          from src.agents.models.input_schemas import InputAlert
+
+          path = pathlib.Path(sys.argv[1])
+          threshold = sys.argv[2]
+          ranks = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
+          threshold_rank = ranks.get(threshold, 4)
+
+          raw = path.read_text(encoding="utf-8").strip()
+          if path.suffix == ".jsonl":
+              records = [json.loads(line) for line in raw.splitlines() if line.strip()]
+          else:
+              parsed = json.loads(raw)
+              records = parsed if isinstance(parsed, list) else [parsed]
+
+          escalations = []
+          summaries = []
+          for i, rec in enumerate(records):
+              try:
+                  alert = InputAlert.model_validate(rec)
+              except Exception as e:
+                  summaries.append({"index": i, "error": f"validation: {e}"})
+                  continue
+              state = {"input": alert.model_dump(mode="json", by_alias=True)}
+              final = asyncio.run(triage_graph.ainvoke(state))
+              out = final.get("triage_output") or {}
+              sev = out.get("severity", "info")
+              esc = bool(out.get("is_escalated"))
+              summaries.append({
+                  "index": i,
+                  "alert_id": out.get("alert_id"),
+                  "severity": sev,
+                  "is_escalated": esc,
+                  "skill": (out.get("skills_activated") or [None])[0],
+                  "tokens_total": (out.get("metadata") or {}).get("tokens_used", {}).get("total", 0),
+              })
+              if ranks.get(sev, 0) >= threshold_rank or esc:
+                  escalations.append(out)
+
+          print(json.dumps({"summaries": summaries, "escalations": escalations}, indent=2, default=str))
+          PY
+
+      - name: Open incident issues for escalations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, pathlib
+          data = json.loads(pathlib.Path("/tmp/batch_results.json").read_text(encoding="utf-8"))
+          escalations = data.get("escalations", [])
+          opened = 0
+          for out in escalations:
+              alert_id = out.get("alert_id", "unknown")
+              triage_id = out.get("triage_id", "n/a")
+              severity = out.get("severity", "n/a")
+              skills = ",".join(out.get("skills_activated") or [])
+              executive = (out.get("narrative") or {}).get("executive", "")
+              tactical = (out.get("narrative") or {}).get("tactical", "")
+              actions = (out.get("narrative") or {}).get("recommended_actions", [])
+              title = f"[ASTOLE][{severity.upper()}] Auto-triage incident {alert_id}"
+              body = (
+                  f"**Triage ID:** `{triage_id}`\n"
+                  f"**Severity:** `{severity}`\n"
+                  f"**Skills activated:** `{skills}`\n\n"
+                  f"### Executive\n{executive}\n\n"
+                  f"### Tactical\n{tactical}\n\n"
+                  f"### Recommended actions\n"
+                  + "\n".join(f"- {a}" for a in actions)
+                  + "\n\n<details><summary>Full TriageOutput</summary>\n\n```json\n"
+                  + json.dumps(out, indent=2, default=str)
+                  + "\n```\n\n</details>\n"
+              )
+              p = subprocess.run(
+                  ["gh", "issue", "create", "--title", title, "--body", body,
+                   "--label", "astole-incident", "--label", f"severity:{severity}"],
+                  capture_output=True, text=True,
+              )
+              print(p.stdout or p.stderr)
+              opened += 1
+          print(f"Opened {opened} incident issue(s).")
+          PY
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Batch Triage Summary"
+            echo ""
+            echo '```json'
+            cat /tmp/batch_results.json | head -c 8000 || true
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY

@@ -5,18 +5,45 @@ Every specialized skill delegates to this module to guarantee:
 - deterministic fallback behavior when model output is invalid;
 - centralized token/model accounting for observability and cost tracking;
 - homogeneous RAG access pattern before summarization.
+
+Parallelism within a skill super-step
+-------------------------------------
+Inside ``run_skill`` we run three independent jobs **concurrently** with
+``asyncio.gather``:
+
+1. RAG pre-fetch (organisational context from ChromaDB).
+2. Threat-intelligence look-ups (MITRE ATT&CK, IP reputation, optional CVE).
+3. Subagent micro-checks (deterministic heuristics over the alert).
+
+Only when all three are ready we call the LLM once with a richer prompt.
+This keeps end-to-end latency close to the slowest of the three jobs
+instead of summing them sequentially.
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from litellm import acompletion
 
+from src.agents.agents.skills.subagents import (
+    SKILL_SUBAGENTS,
+    SubagentResult,
+    run_subagents,
+    summarize_subagents,
+)
+from src.agents.core.circuit_breaker import assert_skill_invariants
 from src.agents.core.config import SKILL_MAX_TOKENS, SKILL_MODEL, SKILL_TEMPERATURE
+from src.agents.core.handoffs import PlanStatus, append_handoff, make_handoff
 from src.agents.core.helpers import get_multiclass_label
+from src.agents.tools.external_intel import (
+    cve_lookup,
+    ip_reputation_lookup,
+    mitre_attack_lookup,
+)
 from src.agents.tools.rag_tool import rag_retrieve_with_count
 
 logger = logging.getLogger(__name__)
@@ -43,7 +70,7 @@ def _build_network_summary(net: Dict[str, Any]) -> str:
 
     flag_map = [(0x01, "F"), (0x02, "S"), (0x04, "R"), (0x08, "P"), (0x10, "A"), (0x20, "U")]
     flags_int = net.get("tcp_flags", 0)
-    flags_str = "".join(l for m, l in flag_map if flags_int & m) or str(flags_int)
+    flags_str = "".join(letter for mask, letter in flag_map if flags_int & mask) or str(flags_int)
 
     return (
         f"Src: {net.get('src_ip')}:{net.get('src_port')} → "
@@ -103,15 +130,50 @@ async def run_skill(
     # Adjust RAG depth per tier
     rag_k = {"fast": 2, "standard": 5, "deep": 10}.get(tier, 5)
 
-    # 2. Query ChromaDB
-    rag_context, rag_count = await rag_retrieve_with_count(rag_query, top_k=rag_k)
+    # 2. Run RAG pre-fetch + external intelligence in parallel.
+    # The three coroutines are independent; we only need their results
+    # to enrich the prompt + the subagent inputs, so gather is enough.
+    label = get_multiclass_label(gnn)
+    rag_task = rag_retrieve_with_count(rag_query, top_k=rag_k)
+    mitre_task = mitre_attack_lookup(label)
+    iprep_task = ip_reputation_lookup(net.get("src_ip", "") or "")
+    cve_task = cve_lookup(net.get("l7_proto"), net.get("dst_port"))
+
+    (rag_context, rag_count), mitre, iprep, cves = await asyncio.gather(
+        rag_task, mitre_task, iprep_task, cve_task
+    )
     state["rag_context"] = rag_context
     state["rag_snippets_count"] = rag_count
+    state["intel"] = {
+        "mitre": mitre.data,
+        "ip_reputation": iprep.data,
+        "cve": cves.data,
+        "sources": {
+            "mitre": mitre.source,
+            "ip_reputation": iprep.source,
+            "cve": cves.source,
+        },
+    }
 
-    # 3. Build prompt
+    # 3. Run the skill's subagents in parallel — they are pure functions,
+    # but we keep the gather() interface to mirror the L2 contract.
+    sub_catalogue = SKILL_SUBAGENTS.get(skill_name, {})
+    intel_for_subs = {
+        "ip_reputation": iprep.data,
+        "rag_snippets_count": rag_count,
+    }
+    sub_results: List[SubagentResult] = await run_subagents(
+        sub_catalogue, input_data, intel_for_subs
+    )
+    sub_summary = summarize_subagents(sub_results)
+    state.setdefault("subagent_results", {})[skill_name] = sub_summary
+
+    # 4. Build prompt
     network_summary = _build_network_summary(net)
     window_context = _build_window_context(window)
     top_features_str = json.dumps(input_data.get("top_features", {}), indent=2)
+    intel_block = _format_intel_block(state["intel"])
+    sub_block = _format_subagents_block(sub_summary)
 
     depth_instruction = {
         "fast": "Quick analysis: focus on key indicators and classification.",
@@ -130,6 +192,12 @@ async def run_skill(
 
 ## Historical Context (ChromaDB)
 {rag_context}
+
+## External Intelligence
+{intel_block}
+
+## Subagent Evidence
+{sub_block}
 
 ## Instruction
 {depth_instruction}
@@ -186,6 +254,33 @@ Respond EXCLUSIVELY with valid JSON following this schema:
         state["assessment"] = _fallback_assessment(gnn, skill_name)
         state["errors"] = state.get("errors", []) + [f"Skill {skill_name}: {str(e)}"]
 
+    # --- Skill -> rag_enrichment handoff + circuit breaker ---
+    skill_errors = [e for e in state.get("errors", []) if skill_name in e]
+    plan_status = PlanStatus.ERROR if skill_errors else PlanStatus.OK
+    handoff = make_handoff(
+        stage=f"skill:{skill_name}",
+        from_agent=skill_name,
+        to_agent="rag_enrichment",
+        task="Enrich assessment with external organizational context.",
+        scope=["assessment", "input"],
+        accumulated_context={
+            "threat_level": state["assessment"].get("threat_level"),
+            "is_real_threat": state["assessment"].get("is_real_threat"),
+            "rag_context_pre_enrichment_chars": len(state.get("rag_context") or ""),
+            "rag_snippets_pre_enrichment": state.get("rag_snippets_count", 0),
+        },
+        constraints=[
+            "Validate cache / prior-assessment existence before re-computing.",
+            "Do not modify assessment fields after this point.",
+        ],
+        attention_points=[
+            "If RAG service is unavailable, summarizer must note degraded mode.",
+        ],
+        plan_status=plan_status,
+        reason=skill_errors[-1] if skill_errors else None,
+    )
+    append_handoff(state, handoff)
+    assert_skill_invariants(state, skill_name)
     return state
 
 
@@ -203,3 +298,33 @@ def _fallback_assessment(gnn: Dict[str, Any], skill_name: str) -> Dict[str, Any]
         "iocs": [],
         "technical_detail": f"Skill {skill_name} could not complete the analysis. Manual review recommended.",
     }
+
+
+def _format_intel_block(intel: Dict[str, Any]) -> str:
+    """Render the external-intel payload in a compact prompt block."""
+    if not intel:
+        return "(no external intelligence available)"
+    mitre = intel.get("mitre", {}) or {}
+    iprep = intel.get("ip_reputation", {}) or {}
+    cve = intel.get("cve", {}) or {}
+    techniques = ", ".join(
+        f"{t.get('id')}/{t.get('name')}" for t in mitre.get("techniques", [])[:3]
+    ) or "—"
+    cves = ", ".join(cve.get("cves", [])[:3]) or "—"
+    return (
+        f"- MITRE ATT&CK: {techniques}\n"
+        f"- IP reputation: score={iprep.get('score', 'n/a')}, "
+        f"category={iprep.get('category', 'n/a')}\n"
+        f"- Candidate CVEs ({cve.get('service') or 'unknown service'}): {cves}"
+    )
+
+
+def _format_subagents_block(summary: Dict[str, Any]) -> str:
+    """Render the aggregated subagent verdicts for the prompt."""
+    if not summary:
+        return "(no subagents executed)"
+    matched = ", ".join(summary.get("matched", [])) or "(none)"
+    return (
+        f"- Subagents executed: {', '.join(summary.get('ran', [])) or '—'}\n"
+        f"- Matched: {matched} (avg conf {summary.get('avg_match_confidence', 0):.2f})"
+    )
