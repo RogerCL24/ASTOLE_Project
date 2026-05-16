@@ -1,4 +1,5 @@
 pandas>=2.2.0          # Procesamiento de datos (Ingeniero 1)
+pyarrow>=14.0.0        # Parquet / IP2Location optimizado (ultra rápido)
 scikit-learn>=1.4.0   # Normalización (Ingeniero 1)
 langchain>=0.3.0      # Orquestación de agentes (Ingeniero 2)
 langgraph>=0.2.0      # Workflow graph runtime

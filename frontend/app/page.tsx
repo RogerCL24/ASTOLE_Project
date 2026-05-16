@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Badge, Card } from "@tremor/react";
-import { IntelDrawer, type IntelDrawerContext, type IntelDrawerTopic } from "../components/IntelDrawer";
+import { IntelDrawer, type IntelDrawerContext, type IntelDrawerTopic } from "@/components/IntelDrawer";
+import { IPProfilePopover, type IPIntelPayload } from "../components/IPProfilePopover";
+import SpotlightCard from "../components/ui/SpotlightCard";
+import Magnetic from "../components/ui/Magnetic";
+import TiltedCard from "../components/ui/TiltedCard";
+import {
+  formatPortWithService,
+  getIPMetadata,
+  getPortServiceName,
+  normalizePortNumber,
+} from "../lib/netIntel";
 import {
   AreaChart,
   Area,
@@ -73,9 +84,81 @@ const buildUniqueColorsByLabel = (labels: string[]) => {
 };
 const POLL_INTERVAL_MS = 1000;
 const TRAFFIC_WINDOW_SIZE = 20;
+const TRAFFIC_BUFFER_SIZE = 200;
 const MAX_VISIBLE_INCIDENTS = 50;
 const SPEED_STORAGE_KEY = "astole.simulation.speed";
 const SPEED_EVENT_NAME = "astole:speed";
+
+type TrafficTooltipPayload = {
+  minute?: number;
+  [key: string]: any;
+};
+
+const TrafficCustomTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+
+  const entry = payload[0]?.payload as TrafficTooltipPayload | undefined;
+  const minute = Number(entry?.minute ?? 0);
+  const minutesAgo = Math.max(0, Math.round(Math.abs(minute)));
+  const relativeLabel = minute === 0 ? "0 min" : `-${minutesAgo} min`;
+
+  const absoluteTime = new Date(Date.now() - minutesAgo * 60_000);
+  const absoluteLabel = absoluteTime.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  const normalValue = payload.find((p: any) => p?.dataKey === "Tráfico Normal")?.value;
+  const anomalousValue = payload.find((p: any) => p?.dataKey === "Tráfico Anómalo")?.value;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/90 px-4 py-3">
+      <div className="text-lg font-semibold text-white">{relativeLabel}</div>
+      <div className="mt-1 text-sm text-zinc-400">Hora absoluta: {absoluteLabel}</div>
+
+      <div className="mt-3 grid gap-1 text-sm">
+        <div className="flex items-center justify-between gap-6 text-zinc-200">
+          <span>Tráfico Normal</span>
+          <span className="font-mono text-white">{Number(normalValue ?? 0).toLocaleString("es-ES")}</span>
+        </div>
+        <div className="flex items-center justify-between gap-6 text-zinc-200">
+          <span>Tráfico Anómalo</span>
+          <span className="font-mono text-white">{Number(anomalousValue ?? 0).toLocaleString("es-ES")}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TrafficXAxisTick = ({ x, y, payload, highlightedTickValue }: any) => {
+  const value = Number(payload?.value);
+  const isHighlighted = Number.isFinite(value) && highlightedTickValue != null && value === highlightedTickValue;
+  const label = Number.isFinite(value) ? String(value) : "";
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={16}
+        textAnchor="middle"
+        fill="#e4e4e7"
+        fontSize={15}
+        fontWeight={isHighlighted ? 700 : 500}
+        opacity={isHighlighted ? 1 : 0.55}
+      >
+        {label}
+      </text>
+    </g>
+  );
+};
+
+const getTrafficTickStep = (windowMinutes: number) => {
+  if (windowMinutes <= 5) return 1;
+  if (windowMinutes <= 20) return 5;
+  return 15;
+};
 
 const PROTOCOL_NAMES: Record<number, string> = {
   1: "ICMP",
@@ -84,6 +167,17 @@ const PROTOCOL_NAMES: Record<number, string> = {
 };
 
 const MADRID_TIME_ZONE = "Europe/Madrid";
+
+const InfoDot = ({ onClick, label }: { onClick: () => void; label: string }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={label}
+    className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-base font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+  >
+    i
+  </button>
+);
 
 type InfrastructureSeverity = "critical" | "high" | "medium" | "low";
 
@@ -194,6 +288,34 @@ type StatsResponse = {
   alerts?: any[];
 };
 
+const getAttackType = (alert: any) => {
+  const raw =
+    alert?.attack_type ??
+    alert?.gnn_metadata?.attack_type ??
+    alert?.gnn_metadata?.label_multiclass ??
+    alert?.gnn_metadata?.label_multiclase;
+  return String(raw ?? "").trim();
+};
+
+const getSmartNarrativeSummary = (alert: any) => {
+  const attackType = getAttackType(alert);
+  const normalized = attackType.toLowerCase();
+
+  if (normalized === "exploits" || normalized.startsWith("exploit")) {
+    return "Intento de ejecución de código remoto detectado. Patrón de desbordamiento de buffer.";
+  }
+
+  if (normalized === "dos" || normalized.includes("dos")) {
+    return "Inundación de paquetes detectada. Saturación de recursos en el puerto destino.";
+  }
+
+  if (normalized === "reconnaissance" || normalized.includes("reconnaissance") || normalized.includes("recon")) {
+    return "Escaneo de puertos activo. Múltiples intentos de conexión SYN.";
+  }
+
+  return "Comportamiento anómalo en el flujo de red. Desviación detectada respecto al baseline normal.";
+};
+
 const fallbackData: StatsResponse = {
   metrics: {
     last_update: "2026-03-19T17:29:25Z",
@@ -244,7 +366,7 @@ const normalizeAlert = (alert: any) => ({
     executive_summary:
       alert?.narrative?.executive_summary ??
       alert?.narrative?.summary ??
-      "Analizando comportamiento del flujo con inteligencia narrativa...",
+      getSmartNarrativeSummary(alert),
     technical_detail:
       alert?.narrative?.technical_detail ??
       (alert?.technical_details ? `Duración: ${alert?.technical_details?.duration_ms ?? 0}ms` : undefined),
@@ -262,6 +384,13 @@ const formatUtcTime = (value?: string) => {
   } catch {
     return new Date(value).toLocaleTimeString("es-ES", { hour12: false });
   }
+};
+
+const truncateAlertId = (value: unknown) => {
+  const raw = String(value ?? "");
+  if (!raw) return "";
+  if (raw.length <= 14) return raw;
+  return `${raw.slice(0, 8)}…${raw.slice(-4)}`;
 };
 
 const formatIncidentTime = (value?: string) => {
@@ -332,47 +461,6 @@ const normalizeTrafficPoint = (point: any): TrafficPoint => ({
 
 const getProtocolName = (protocol?: number) => PROTOCOL_NAMES[Number(protocol)] ?? `Protocolo ${protocol ?? "N/A"}`;
 
-const PORT_MAP: Record<number, string> = {
-  21: "FTP",
-  22: "SSH",
-  23: "Telnet",
-  25: "SMTP",
-  53: "DNS",
-  80: "HTTP",
-  110: "POP3",
-  111: "RPCBind",
-  135: "RPC",
-  137: "NetBIOS",
-  139: "NetBIOS-SSN",
-  143: "IMAP",
-  161: "SNMP",
-  443: "HTTPS",
-  445: "SMB",
-  514: "Syslog",
-  1433: "MSSQL",
-  3306: "MySQL",
-  3389: "RDP",
-  5432: "PostgreSQL",
-  8080: "HTTP-Proxy",
-  8800: "HTTP-Alt",
-  1723: "PPTP",
-};
-
-const normalizePortNumber = (value: unknown): number | null => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  const port = Math.trunc(parsed);
-  if (port <= 0 || port > 65535) return null;
-  return port;
-};
-
-const getPortServiceName = (port: number) => PORT_MAP[port] ?? null;
-
-const formatPortWithService = (port: number) => {
-  const service = getPortServiceName(port);
-  return service ? `${port} (${service})` : String(port);
-};
-
 const severityRank: Record<InfrastructureSeverity, number> = {
   critical: 4,
   high: 3,
@@ -382,7 +470,7 @@ const severityRank: Record<InfrastructureSeverity, number> = {
 
 const getAlertSeverity = (alert: any): InfrastructureSeverity => {
   const confidenceScore = Number(alert?.gnn_metadata?.confidence_score ?? 0);
-  const binaryLabel = Number(alert?.gnn_metadata?.label_binary ?? 0);
+  const binaryLabel = Number(alert?.gnn_metadata?.label_binary ?? alert?.gnn_metadata?.binary_attack ?? 0);
   const priorityLabel = getPriorityLabel(confidenceScore, binaryLabel);
   return PRIORITY_ORDER[priorityLabel] ?? "low";
 };
@@ -422,21 +510,38 @@ const buildNarrative = (alert: any) => {
 };
 
 const mergeTrafficHistory = (previousHistory: TrafficPoint[], incomingHistory: TrafficPoint[]) => {
-  if (!incomingHistory.length) {
-    return previousHistory.slice(-TRAFFIC_WINDOW_SIZE);
+  const prev = previousHistory.slice(-TRAFFIC_BUFFER_SIZE);
+  if (!incomingHistory.length) return prev;
+
+  if (!prev.length) return incomingHistory.slice(-TRAFFIC_BUFFER_SIZE);
+
+  // Merge all points newer than the last seen sample.
+  // This avoids dropping intermediate samples when the backend produces multiple points between polls.
+  const lastPrevTiempo = String(prev[prev.length - 1]?.tiempo ?? "");
+  const overlapIndex = incomingHistory
+    .map((point) => String(point?.tiempo ?? ""))
+    .lastIndexOf(lastPrevTiempo);
+
+  if (overlapIndex >= 0) {
+    const merged = [...prev.slice(0, -1), incomingHistory[overlapIndex], ...incomingHistory.slice(overlapIndex + 1)];
+    return merged.slice(-TRAFFIC_BUFFER_SIZE);
   }
 
-  if (!previousHistory.length) {
-    return incomingHistory.slice(-TRAFFIC_WINDOW_SIZE);
-  }
+  // Fallback: if we can't find overlap (e.g., backend restarted / format changed), keep streaming stable.
+  const newest = incomingHistory[incomingHistory.length - 1];
+  const last = prev[prev.length - 1];
+  const newestTiempo = String(newest?.tiempo ?? "");
+  const lastTiempo = String(last?.tiempo ?? "");
 
-  const byLabel = new Map(previousHistory.map((point) => [point.tiempo, point]));
-  const merged = incomingHistory.slice(-TRAFFIC_WINDOW_SIZE).map((point) => {
-    const previousPoint = byLabel.get(point.tiempo);
-    return previousPoint ? { ...previousPoint, ...point } : point;
-  });
+  const isSameAsLast =
+    !!last &&
+    newestTiempo === lastTiempo &&
+    Number(last["Tráfico Normal"] ?? 0) === Number(newest["Tráfico Normal"] ?? 0) &&
+    Number(last["Tráfico Anómalo"] ?? 0) === Number(newest["Tráfico Anómalo"] ?? 0);
 
-  return merged.slice(-TRAFFIC_WINDOW_SIZE);
+  if (isSameAsLast) return prev;
+  if (newestTiempo && newestTiempo === lastTiempo) return [...prev.slice(0, -1), newest].slice(-TRAFFIC_BUFFER_SIZE);
+  return [...prev, newest].slice(-TRAFFIC_BUFFER_SIZE);
 };
 
 const buildTopAttackers = (alerts: any[]): Array<{ srcIp: string; count: number }> => {
@@ -529,6 +634,7 @@ export default function Capa1Triaje() {
   const [speed, setSpeed] = useState<number | "MAX">(1);
   const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);
+  const [incidentFeedLimit, setIncidentFeedLimit] = useState<20 | 50 | 100>(50);
   const [isIntelOpen, setIsIntelOpen] = useState(false);
   const [intelContext, setIntelContext] = useState<IntelDrawerContext | null>(null);
   const [intelTopic, setIntelTopic] = useState<IntelDrawerTopic>(null);
@@ -540,6 +646,16 @@ export default function Capa1Triaje() {
   const [trafficHistory, setTrafficHistory] = useState<TrafficPoint[]>(() =>
     buildSeedTrafficHistory(fallbackData.metrics?.performance)
   );
+  const [trafficChartHistory, setTrafficChartHistory] = useState<TrafficPoint[]>(() =>
+    buildSeedTrafficHistory(fallbackData.metrics?.performance)
+  );
+  const [viewWindow, setViewWindow] = useState<5 | 20 | 60>(TRAFFIC_WINDOW_SIZE);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    setTrafficChartHistory(trafficHistory);
+  }, [trafficHistory, isPaused]);
 
   const openIntel = (context: IntelDrawerContext, topic: IntelDrawerTopic = null) => {
     setIntelContext(context);
@@ -678,6 +794,7 @@ export default function Capa1Triaje() {
   const alerts = Array.isArray(data.alerts) ? data.alerts : [data.alerts];
 
   const visibleAlerts = alerts.slice(-MAX_VISIBLE_INCIDENTS).reverse();
+  const incidentFeedAlerts = alerts.slice(-incidentFeedLimit).reverse();
 
   const alertCounts = visibleAlerts.reduce((acc: Record<string, number>, alert: any) => {
     const label = String(alert?.gnn_metadata?.label_multiclass || "Unknown");
@@ -698,6 +815,109 @@ export default function Capa1Triaje() {
 
   const totalAlertEvents = dynamicDistribution.reduce((acc, item) => acc + item.value, 0);
   const topAttackers = buildTopAttackers(visibleAlerts);
+
+  const toFlagEmoji = (countryCode: string) => {
+    const code = String(countryCode ?? "").trim().toUpperCase();
+    if (code === "ZZ") return "🌐";
+    if (code.length !== 2) return "🌐";
+    const A = 0x1f1e6;
+    const first = code.charCodeAt(0) - 65;
+    const second = code.charCodeAt(1) - 65;
+    if (first < 0 || first > 25 || second < 0 || second > 25) return "🌐";
+    return String.fromCodePoint(A + first, A + second);
+  };
+
+  const srcIntelByIp = useMemo(() => {
+    const map = new Map<string, IPIntelPayload>();
+    for (const alert of visibleAlerts) {
+      const srcIp = String(alert?.network_data?.src_ip ?? "").trim();
+      if (!srcIp) continue;
+      const intel = alert?.ip_intel?.src as IPIntelPayload | undefined;
+      if (intel && typeof intel === "object") {
+        map.set(srcIp, intel);
+      }
+    }
+    return map;
+  }, [visibleAlerts]);
+
+  const dstIntelByIp = useMemo(() => {
+    const map = new Map<string, IPIntelPayload>();
+    for (const alert of visibleAlerts) {
+      const dstIp = String(alert?.network_data?.dst_ip ?? "").trim();
+      if (!dstIp) continue;
+      const intel = alert?.ip_intel?.dst as IPIntelPayload | undefined;
+      if (intel && typeof intel === "object") {
+        map.set(dstIp, intel);
+      }
+    }
+    return map;
+  }, [visibleAlerts]);
+
+  const originCountryBreakdown = useMemo(() => {
+    const total = visibleAlerts.length;
+    if (!total) return [] as Array<{ country: string; flag: string; percent: number }>;
+
+    const byCountry = new Map<string, { country: string; flag: string; count: number }>();
+    for (const alert of visibleAlerts) {
+      const srcIp = String(alert?.network_data?.src_ip ?? "").trim();
+      const intel = (alert?.ip_intel?.src as IPIntelPayload | undefined) ?? undefined;
+      const fallbackMeta = !intel && srcIp ? getIPMetadata(srcIp) : null;
+      const codeRaw = String(intel?.country ?? fallbackMeta?.country ?? "zz").trim().toLowerCase();
+      const code = codeRaw && codeRaw !== "zz" && codeRaw.length === 2 ? codeRaw.toUpperCase() : "ZZ";
+      const current = byCountry.get(code) ?? { country: code, flag: toFlagEmoji(code), count: 0 };
+      current.count += 1;
+      byCountry.set(code, current);
+    }
+
+    const sorted = Array.from(byCountry.values()).sort((a, b) => b.count - a.count);
+    const top = sorted.slice(0, 3).map((entry) => ({
+      country: entry.country,
+      flag: entry.flag,
+      percent: Math.round((entry.count / total) * 100),
+    }));
+
+    const restCount = sorted.slice(3).reduce((acc, entry) => acc + entry.count, 0);
+    if (restCount > 0) {
+      top.push({ country: "OT", flag: "🌐", percent: Math.round((restCount / total) * 100) });
+    }
+
+    return top;
+  }, [visibleAlerts]);
+
+  const topAttackerCountries = useMemo(() => {
+    const total = visibleAlerts.length;
+    if (!total) {
+      return [] as Array<{ code: string; name: string; percent: number; source: "ip_intel" | "heuristic" | "unknown" }>;
+    }
+
+    const byCode = new Map<string, { code: string; name: string; count: number; source: "ip_intel" | "heuristic" | "unknown" }>();
+    for (const alert of visibleAlerts) {
+      const srcIp = String(alert?.network_data?.src_ip ?? "").trim();
+      const intel = alert?.ip_intel?.src as IPIntelPayload | undefined;
+      const fallbackMeta = !intel && srcIp ? getIPMetadata(srcIp) : null;
+      const source: "ip_intel" | "heuristic" | "unknown" = intel ? "ip_intel" : fallbackMeta ? "heuristic" : "unknown";
+      const codeRaw = String(intel?.country ?? fallbackMeta?.country ?? "zz").trim().toLowerCase();
+      const code = codeRaw && codeRaw !== "zz" && codeRaw.length === 2 ? codeRaw : "zz";
+      const name = String(intel?.country_name ?? fallbackMeta?.countryName ?? "Unknown").trim() || "Unknown";
+      const current = byCode.get(code) ?? { code, name, count: 0, source };
+      current.count += 1;
+      // Keep the first non-empty name we see.
+      if (current.name === "Unknown" && name !== "Unknown") current.name = name;
+      if (current.source !== "ip_intel" && source === "ip_intel") current.source = "ip_intel";
+      if (current.source === "unknown" && source !== "unknown") current.source = source;
+      byCode.set(code, current);
+    }
+
+    return Array.from(byCode.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((entry) => ({
+        code: entry.code,
+        name: entry.name,
+        percent: Math.round((entry.count / total) * 100),
+        source: entry.source,
+      }));
+  }, [visibleAlerts]);
   const attackerPrimaryTypeByIp = useMemo(() => {
     const bySrc = new Map<string, Record<string, number>>();
 
@@ -775,7 +995,7 @@ export default function Capa1Triaje() {
 
     return primary;
   }, [visibleAlerts]);
-  const recentAlerts = visibleAlerts;
+  const recentAlerts = incidentFeedAlerts;
   const infrastructureAssets = buildInfrastructureAssets(alerts, visibleAlerts);
 
   const alertsByDstIp = useMemo(() => {
@@ -921,10 +1141,63 @@ export default function Capa1Triaje() {
     previousCriticalAssets.current = nextSet;
   }, [isClient, criticalAssetsKey]);
 
-  const displayTrafficHistory = trafficHistory.map((point, index, array) => ({
-    ...point,
-    tiempo: index === array.length - 1 ? "Ahora" : `-${array.length - 1 - index}m`,
-  }));
+  const trafficWindowHistory = useMemo(
+    () => trafficChartHistory.slice(-viewWindow),
+    [trafficChartHistory, viewWindow]
+  );
+
+  const displayTrafficHistory = useMemo(() => {
+    if (!trafficWindowHistory.length) {
+      return [
+        { minute: -viewWindow, "Tráfico Normal": 0, "Tráfico Anómalo": 0 },
+        { minute: 0, "Tráfico Normal": 0, "Tráfico Anómalo": 0 },
+      ];
+    }
+
+    const base = trafficWindowHistory.map((point, index, array) => {
+      const minutesAgo = array.length - 1 - index;
+      const minute = -minutesAgo;
+      return {
+        ...point,
+        minute,
+      };
+    });
+
+    // Ensure the axis domain never collapses and the chart visually spans up to -viewWindow.
+    const first = base[0];
+    const boundaryPoint = { ...first, minute: -viewWindow };
+    return [boundaryPoint, ...base];
+  }, [trafficWindowHistory, viewWindow]);
+
+  const trafficXTicks = useMemo(() => {
+    const step = getTrafficTickStep(viewWindow);
+    const ticks = new Set<number>();
+
+    ticks.add(0);
+    ticks.add(-viewWindow);
+
+    for (let v = -step; v >= -viewWindow; v -= step) {
+      ticks.add(v);
+    }
+
+    return Array.from(ticks).sort((a, b) => a - b);
+  }, [viewWindow]);
+
+  const [trafficHoverMinute, setTrafficHoverMinute] = useState<number | null>(null);
+  const highlightedTrafficTick = useMemo(() => {
+    if (trafficHoverMinute == null || !trafficXTicks.length) return null;
+
+    let best = trafficXTicks[0];
+    let bestDist = Math.abs(best - trafficHoverMinute);
+    for (const tick of trafficXTicks) {
+      const dist = Math.abs(tick - trafficHoverMinute);
+      if (dist < bestDist) {
+        best = tick;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }, [trafficHoverMinute, trafficXTicks]);
 
   const totalAlertsValueRaw = metrics.total_alerts_triggered;
   const totalAlertsValue = Number.isFinite(Number(totalAlertsValueRaw))
@@ -937,7 +1210,7 @@ export default function Capa1Triaje() {
   const totalThreats = alerts.filter(Boolean).length;
 
   return (
-    <div className="min-h-screen p-8 lg:p-12 font-sans relative z-10 flex flex-col gap-8 bg-black">
+    <div className="min-h-screen p-8 lg:p-12 font-sans relative z-10 flex flex-col gap-8 bg-transparent">
       <div
         className={`pointer-events-none fixed inset-0 z-[60] border-2 border-red-500/40 transition-opacity duration-500 ${
           flashCriticalBorder ? "opacity-100" : "opacity-0"
@@ -963,11 +1236,11 @@ export default function Capa1Triaje() {
               </span>
               Última actualización: {isClient ? formatUtcTime(data.metrics?.last_update) : "--:--:--"}
             </p>
-            <p className="text-zinc-500 font-mono">
+            <p className="text-zinc-400 font-mono">
               Flujo en Tiempo Real: <span className="text-white">{currentTime || "--:--:--"}</span> ·
               <span className="text-hyper-accent"> {speedLabel}</span>
             </p>
-            <p className="text-zinc-500 font-mono">
+            <p className="text-zinc-400 font-mono">
               Ciclos de Análisis: <span className="text-white">{analysisCycles.toLocaleString("es-ES")}</span> ·
               <span className="text-hyper-accent"> Amenazas Totales: {totalThreats.toLocaleString("es-ES")}</span>
             </p>
@@ -1014,17 +1287,17 @@ export default function Capa1Triaje() {
         </details>
       </HeaderTag>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
-        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
-          <p className="text-base text-zinc-500 uppercase tracking-wider mb-1">Alertas</p>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-2">
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 ring-0 min-w-0">
+          <p className="text-lg text-zinc-300 uppercase tracking-wider mb-2">Alertas</p>
           <p className="text-3xl font-mono text-white">{totalAlertsValue.toLocaleString("es-ES")}</p>
-          <p className="text-sm text-zinc-500">Eventos detectados por el motor de respuesta</p>
+          <p className="mt-2 text-base text-zinc-400">Eventos detectados por el motor de respuesta</p>
         </Card>
 
-        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
-          <p className="text-base text-zinc-500 uppercase tracking-wider mb-1">Reducción de Ruido</p>
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 ring-0 min-w-0">
+          <p className="text-lg text-zinc-300 uppercase tracking-wider mb-2">Reducción de Ruido</p>
           <p className="text-3xl font-mono text-white">{Number(metrics.compression_rate_percent ?? 0).toFixed(2)}%</p>
-          <p className="text-sm text-zinc-500">Ruido eliminado frente al tráfico bruto</p>
+          <p className="mt-2 text-base text-zinc-400">Ruido eliminado frente al tráfico bruto</p>
         </Card>
       </div>
 
@@ -1036,16 +1309,50 @@ export default function Capa1Triaje() {
               transition: { duration: 0.6, delay: 0.2 },
             }
           : {})}
-        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+        className="grid grid-cols-1 gap-6 lg:grid-cols-2"
       >
-        <Card className="bg-hyper-surface border-hyper-border ring-0 lg:col-span-3 min-w-0">
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 lg:col-span-2 min-w-0">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-white font-medium mb-1">Firma de Tráfico (Motor Ingestión)</h3>
-              <p className="text-base text-zinc-500">Ventana operativa de los últimos 20 minutos</p>
+              <p className="text-base text-zinc-400">Ventana operativa de los últimos 20 minutos</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge color="orange" size="xs">
+              <div className="flex items-center gap-1">
+                {([5, 20, 60] as const).map((minutes) => {
+                  const isActive = viewWindow === minutes;
+                  return (
+                    <button
+                      key={minutes}
+                      type="button"
+                      onClick={() => setViewWindow(minutes)}
+                      aria-pressed={isActive}
+                      aria-label={`Ver últimos ${minutes} minutos`}
+                      className={`text-base font-semibold border border-white/10 bg-zinc-900/50 px-3 py-2 rounded-lg ${
+                        isActive
+                          ? "text-white border-white/20"
+                          : "text-zinc-300 hover:text-white hover:border-white/20"
+                      }`}
+                    >
+                      {minutes}m
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPaused((value) => !value)}
+                aria-pressed={isPaused}
+                aria-label={isPaused ? "Reanudar streaming" : "Congelar streaming"}
+                className={`text-base font-semibold border border-white/10 bg-zinc-900/50 px-3 py-2 rounded-lg ${
+                  isPaused ? "text-white border-white/20" : "text-zinc-300 hover:text-white hover:border-white/20"
+                }`}
+              >
+                {isPaused ? "Live" : "Freeze"}
+              </button>
+
+              <Badge color="orange" size="xs" className="text-base px-2.5 py-1.5">
                 Real-Time Flow
               </Badge>
             </div>
@@ -1054,7 +1361,16 @@ export default function Capa1Triaje() {
           <div className="h-80 mt-6 w-full min-w-0">
             {isClient ? (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                <AreaChart data={displayTrafficHistory}>
+                <AreaChart
+                  data={displayTrafficHistory}
+                  onMouseMove={(state: any) => {
+                    if (!state?.isTooltipActive || !state?.activePayload?.length) return;
+                    const minute = Number(state.activePayload[0]?.payload?.minute);
+                    if (!Number.isFinite(minute)) return;
+                    setTrafficHoverMinute(minute);
+                  }}
+                  onMouseLeave={() => setTrafficHoverMinute(null)}
+                >
                   <defs>
                     <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
@@ -1066,29 +1382,30 @@ export default function Capa1Triaje() {
                     </linearGradient>
                   </defs>
                   <XAxis
-                    dataKey="tiempo"
+                    dataKey="minute"
+                    type="number"
+                    domain={[-viewWindow, 0]}
+                    ticks={trafficXTicks}
+                    interval="preserveStartEnd"
                     stroke="#3f3f46"
-                    fontSize={13}
+                    fontSize={15}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: "#e4e4e7", fontSize: 13 }}
+                    tick={(props: any) => (
+                      <TrafficXAxisTick {...props} highlightedTickValue={highlightedTrafficTick} />
+                    )}
                   />
                   <YAxis
                     stroke="#3f3f46"
-                    fontSize={13}
+                    fontSize={15}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v) => `${v}`}
-                    tick={{ fill: "#f59e0b", fontSize: 13 }}
+                    tick={{ fill: "#f59e0b", fontSize: 15, fontWeight: 500 }}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#09090b",
-                      borderColor: "#27272a",
-                      borderRadius: "8px",
-                      fontSize: "15px",
-                    }}
-                    itemStyle={{ color: "#fff" }}
+                    cursor={{ stroke: "rgba(255,255,255,0.08)" }}
+                    content={<TrafficCustomTooltip />}
                   />
                   <Area
                     type="monotone"
@@ -1097,7 +1414,19 @@ export default function Capa1Triaje() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorNormal)"
-                    animationDuration={1500}
+                    dot={false}
+                    activeDot={{
+                      r: 6,
+                      fill: "#09090b",
+                      stroke: "#D18400",
+                      strokeWidth: 2,
+                      style: {
+                        filter: "drop-shadow(0 0 6px rgba(209, 132, 0, 0.55))",
+                      },
+                    }}
+                    isAnimationActive
+                    animationDuration={300}
+                    animationEasing="ease-in-out"
                   />
                   <Area
                     type="monotone"
@@ -1106,7 +1435,19 @@ export default function Capa1Triaje() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorAnomalo)"
-                    animationDuration={1500}
+                    dot={false}
+                    activeDot={{
+                      r: 6,
+                      fill: "#09090b",
+                      stroke: "#D18400",
+                      strokeWidth: 2,
+                      style: {
+                        filter: "drop-shadow(0 0 6px rgba(209, 132, 0, 0.55))",
+                      },
+                    }}
+                    isAnimationActive
+                    animationDuration={300}
+                    animationEasing="ease-in-out"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -1116,26 +1457,26 @@ export default function Capa1Triaje() {
           </div>
         </Card>
 
-        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0 h-full">
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 min-w-0 h-full">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-white font-medium">Composición de Amenazas</h3>
-              <p className="text-base text-zinc-500">Basado en la ventana visible</p>
+              <h3 className="text-white font-medium text-xl">Composición de Amenazas</h3>
+              <p className="text-lg text-zinc-400">Basado en el intervalo actual</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge color="orange" size="xs">Donut</Badge>
+              <Badge color="orange" size="xs" className="text-base px-2.5 py-1.5">Donut</Badge>
               <button
                 type="button"
                 onClick={() => openIntel("composition", "distribution")}
                 aria-label="Ayuda contextual"
-                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-base font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
               >
                 i
               </button>
             </div>
           </div>
 
-          <div className="mt-4 h-44 w-full min-w-0 relative">
+          <div className="mt-4 h-60 w-full min-w-0 relative">
             {isClient ? (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
@@ -1143,8 +1484,8 @@ export default function Capa1Triaje() {
                     data={dynamicDistribution}
                     cx="50%"
                     cy="50%"
-                    innerRadius={52}
-                    outerRadius={74}
+                    innerRadius={68}
+                    outerRadius={98}
                     paddingAngle={6}
                     dataKey="value"
                     stroke="none"
@@ -1170,14 +1511,14 @@ export default function Capa1Triaje() {
             )}
 
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-mono text-white">{totalAlertEvents}</span>
-              <span className="text-sm text-zinc-500 uppercase tracking-widest mt-1">Eventos</span>
+              <span className="text-4xl font-mono text-white">{totalAlertEvents}</span>
+              <span className="text-sm text-zinc-400 uppercase tracking-widest mt-1">Eventos</span>
             </div>
           </div>
 
           <div className="mt-4 flex flex-col gap-2 px-2">
             {dynamicDistribution.slice(0, 6).map((item) => (
-              <div key={item.name} className="flex items-center justify-between text-base">
+              <div key={item.name} className="flex items-center justify-between text-xl">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-zinc-400 truncate">{item.name}</span>
@@ -1186,21 +1527,71 @@ export default function Capa1Triaje() {
               </div>
             ))}
           </div>
+
+          <div className="mt-5 pt-4 border-t border-white/5">
+            <p className="text-base text-zinc-400 uppercase tracking-wider mb-3">Top 5 Países Atacantes</p>
+            <div className="space-y-2">
+              {isClient ? (
+                topAttackerCountries.length ? (
+                  topAttackerCountries.map((entry) => {
+                    const code = entry.code;
+                    const src = code !== "zz" ? `/flags/${code}_32.png` : "/globe.svg";
+                    const alt = code !== "zz" ? code.toUpperCase() : "Unknown";
+                    const sourceLabel =
+                      entry.source === "ip_intel" ? "IP Intel" : entry.source === "heuristic" ? "Heurística" : "Unknown";
+
+                    return (
+                      <div
+                        key={code}
+                        className="flex w-full items-start gap-3 rounded-xl border border-white/5 bg-black/40 px-3 py-2"
+                      >
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <img
+                            src={src}
+                            alt={alt}
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 shrink-0 rounded-sm"
+                            onError={(e) => {
+                              e.currentTarget.src = "/globe.svg";
+                            }}
+                          />
+                          <div className="flex-1 w-full">
+                            <span className="block whitespace-normal break-words text-[15px] leading-snug text-zinc-100" title={entry.name}>
+                              {entry.name}
+                            </span>
+                            <span className="mt-0.5 block text-sm uppercase tracking-[0.2em] text-zinc-400">
+                              Fuente: {sourceLabel}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="shrink-0 font-mono text-[15px] text-white">{entry.percent}%</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-base text-zinc-400">Sin datos suficientes en la ventana actual.</p>
+                )
+              ) : (
+                <div className="h-20 w-full rounded-xl border border-white/5 bg-black/30" />
+              )}
+            </div>
+          </div>
         </Card>
 
-        <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0 h-full">
+        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 min-w-0 h-full">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-white font-medium">Top Atacantes</h3>
-              <p className="text-base text-zinc-500">IPs de origen con más alertas en la ventana actual</p>
+              <h3 className="text-white font-medium text-xl">Top Atacantes</h3>
+              <p className="text-lg text-zinc-400">IPs de origen con más alertas en la ventana actual</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge color="red" size="xs">Top 5</Badge>
+              <Badge color="red" size="xs" className="text-base px-2.5 py-1.5">Top 5</Badge>
               <button
                 type="button"
                 onClick={() => openIntel("top-attackers")}
                 aria-label="Ayuda contextual"
-                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-base font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
               >
                 i
               </button>
@@ -1212,23 +1603,19 @@ export default function Capa1Triaje() {
               topAttackers.length > 0 ? (
                 topAttackers.map((attacker, index) => (
                   <div key={attacker.srcIp} className="rounded-xl border border-white/5 bg-black/40 px-3 py-2">
-                    <div className="flex items-center justify-between gap-3 text-base">
-                      <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center justify-between gap-3 text-xl">
+                    <div className="flex flex-1 items-center gap-2 min-w-0">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-hyper-accent/10 text-sm font-semibold text-hyper-accent">
                           {index + 1}
                         </span>
-                        <div className="min-w-0 flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openIntel("top-attackers")}
-                            className="relative truncate font-mono text-zinc-200 group/ip hover:text-white"
-                          >
-                            {attacker.srcIp}
-                            <span className="pointer-events-none absolute -top-14 left-0 z-10 w-[340px] rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/ip:opacity-100 transition-none">
-                              Ranking de sesión #{index + 1}. Total de alertas disparadas en la ventana visible: {attacker.count}.
-                            </span>
-                          </button>
-                          <span className="shrink-0 text-zinc-600">|</span>
+                        <div className="min-w-0 flex-1 flex items-center gap-3 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          <IPProfilePopover
+                            ip={attacker.srcIp}
+                            intel={srcIntelByIp.get(attacker.srcIp) ?? null}
+                            className="shrink-0 inline-flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
+                            textClassName="font-mono text-lg text-zinc-100 hover:text-white whitespace-nowrap"
+                          />
+                          <span className="shrink-0 inline-block h-4 w-px bg-white/10" aria-hidden />
                           {(() => {
                             const primaryType = attackerPrimaryTypeByIp.get(String(attacker.srcIp));
                             const portMeta = attackerTopDstPortByIp.get(String(attacker.srcIp));
@@ -1252,37 +1639,22 @@ export default function Capa1Triaje() {
                                   <button
                                     type="button"
                                     onClick={() => openIntel("top-attackers", "attack-label")}
-                                    className="relative inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 group/attack hover:border-white/20"
+                                    className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3.5 py-2 text-base font-semibold text-zinc-200 hover:border-white/20"
                                   >
                                     [Benigno]
-                                    <span className="pointer-events-none absolute -top-16 left-1/2 z-10 w-[360px] -translate-x-1/2 rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/attack:opacity-100 transition-none">
-                                      Vector principal: no detectado (tráfico benigno). Las etiquetas se usan para correlacionar categorías con la Composición de Amenazas.
-                                    </span>
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => openIntel("top-attackers", "ports")}
-                                    className="relative inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 group/port hover:border-white/20"
+                                    className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3.5 py-2 text-base font-semibold text-zinc-200 hover:border-white/20"
                                   >
                                     {portLabel}
-                                    <span className="pointer-events-none absolute -top-20 left-1/2 z-10 w-[380px] -translate-x-1/2 rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/port:opacity-100 transition-none">
-                                      {topPort != null ? (
-                                        portService ? (
-                                          <>Puerto objetivo: {topPort} ({portService}).</>
-                                        ) : (
-                                          <>Puerto objetivo: {topPort}.</>
-                                        )
-                                      ) : (
-                                        <>Puerto objetivo: --.</>
-                                      )}{" "}
-                                      Clasificado por frecuencia en la ventana visible. {frequencyLabel}. {lastSeenLabel}.
-                                    </span>
                                   </button>
                                   {isIntrusionRiskPort ? (
                                     <button
                                       type="button"
                                       onClick={() => openIntel("top-attackers", "intrusion-risk")}
-                                      className="inline-flex items-center rounded-full border border-red-500/40 bg-red-600/80 px-2.5 py-1 text-xs font-semibold text-white hover:border-red-400/60"
+                                      className="shrink-0 inline-flex items-center whitespace-nowrap rounded-full border border-red-500/40 bg-red-600/80 px-4 py-2 text-base font-semibold text-white hover:border-red-400/60"
                                     >
                                       [Riesgo de Intrusión]
                                     </button>
@@ -1297,38 +1669,23 @@ export default function Capa1Triaje() {
                                 <button
                                   type="button"
                                   onClick={() => openIntel("top-attackers", "attack-label")}
-                                  className="relative inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold group/attack hover:border-white/20"
+                                  className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3.5 py-2 text-base font-semibold hover:border-white/20"
                                   style={{ color }}
                                 >
                                   [{primaryType}]
-                                  <span className="pointer-events-none absolute -top-16 left-1/2 z-10 w-[380px] -translate-x-1/2 rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/attack:opacity-100 transition-none">
-                                    Vector principal detectado. Color {color} correlaciona la categoría con el donut “Composición de Amenazas” (no es severidad).
-                                  </span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => openIntel("top-attackers", "ports")}
-                                  className="relative inline-flex items-center rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-zinc-200 group/port hover:border-white/20"
+                                  className="inline-flex items-center rounded-full border border-white/10 bg-black/30 px-3.5 py-2 text-base font-semibold text-zinc-200 hover:border-white/20"
                                 >
                                   {portLabel}
-                                  <span className="pointer-events-none absolute -top-20 left-1/2 z-10 w-[380px] -translate-x-1/2 rounded-md border border-white/10 bg-black/95 px-3 py-2 text-sm font-sans leading-snug text-zinc-200 opacity-0 group-hover/port:opacity-100 transition-none">
-                                    {topPort != null ? (
-                                      portService ? (
-                                        <>Puerto objetivo: {topPort} ({portService}).</>
-                                      ) : (
-                                        <>Puerto objetivo: {topPort}.</>
-                                      )
-                                    ) : (
-                                      <>Puerto objetivo: --.</>
-                                    )}{" "}
-                                    Clasificado por frecuencia en la ventana visible. {frequencyLabel}. {lastSeenLabel}.
-                                  </span>
                                 </button>
                                 {isIntrusionRiskPort ? (
                                   <button
                                     type="button"
                                     onClick={() => openIntel("top-attackers", "intrusion-risk")}
-                                    className="inline-flex items-center rounded-full border border-red-500/40 bg-red-600/80 px-2.5 py-1 text-xs font-semibold text-white hover:border-red-400/60"
+                                    className="shrink-0 inline-flex items-center whitespace-nowrap rounded-full border border-red-500/40 bg-red-600/80 px-4 py-2 text-base font-semibold text-white hover:border-red-400/60"
                                   >
                                     [Riesgo de Intrusión]
                                   </button>
@@ -1349,10 +1706,10 @@ export default function Capa1Triaje() {
                   </div>
                 ))
               ) : (
-                <p className="text-lg text-zinc-500">Sin alertas suficientes para construir un ranking.</p>
+                <p className="text-lg text-zinc-400">Sin alertas suficientes para construir un ranking.</p>
               )
             ) : (
-              <p className="text-lg text-zinc-500">Cargando ranking...</p>
+              <p className="text-lg text-zinc-400">Cargando ranking...</p>
             )}
           </div>
         </Card>
@@ -1409,7 +1766,7 @@ export default function Capa1Triaje() {
                             </span>
                           </div>
                           <div className="relative grid place-items-center">
-                            <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2 py-1 text-xs font-mono text-zinc-100 opacity-0 group-hover:opacity-100 transition-none">
+                            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-black/90 px-3 py-2 text-base font-mono text-zinc-100 opacity-0 group-hover:opacity-100 transition-none">
                               {String(asset.dstIp)}
                             </div>
 
@@ -1438,13 +1795,23 @@ export default function Capa1Triaje() {
                   </div>
                 </div>
 
-                <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-black/30 p-5">
+        				<SpotlightCard
+        					spotlightColor="rgba(209, 132, 0, 0.15)"
+                  className="w-full max-w-xl border border-white/10 bg-zinc-950/10 backdrop-blur-md p-5"
+        				>
                   {selectedAsset ? (
                     <div>
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Ficha del Activo</p>
-                          <h3 className="mt-2 text-3xl font-semibold text-white font-mono break-all">{selectedAsset.dstIp}</h3>
+                          <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Ficha del Activo</p>
+                          <div className="mt-2">
+                            <IPProfilePopover
+                              ip={selectedAsset.dstIp}
+                              intel={dstIntelByIp.get(String(selectedAsset.dstIp)) ?? null}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 hover:border-white/20"
+                              textClassName="text-3xl font-semibold text-white font-mono break-all"
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={() => openIntel("assets", "ioc")}
@@ -1498,7 +1865,7 @@ export default function Capa1Triaje() {
                             ))}
                           </div>
                         ) : (
-                          <p className="mt-2 text-base text-zinc-500">Sin ataques (solo tráfico benigno registrado).</p>
+                          <p className="mt-2 text-base text-zinc-400">Sin ataques (solo tráfico benigno registrado).</p>
                         )}
                       </div>
 
@@ -1520,7 +1887,7 @@ export default function Capa1Triaje() {
                             ))}
                           </div>
                         ) : (
-                          <p className="mt-2 text-base text-zinc-500">Sin puertos detectados en las alertas de este activo.</p>
+                          <p className="mt-2 text-base text-zinc-400">Sin puertos detectados en las alertas de este activo.</p>
                         )}
                       </div>
 
@@ -1545,46 +1912,90 @@ export default function Capa1Triaje() {
                                     </span>
                                     <span className="text-sm font-semibold text-zinc-200">{priority}</span>
                                   </div>
-                                  <div className="mt-1 text-sm font-mono text-zinc-500">{String(log?.alert_id ?? "")}</div>
+                                  <div className="mt-1 text-sm font-mono text-zinc-400">{String(log?.alert_id ?? "")}</div>
                                 </div>
                               );
                             })}
                           </div>
                         ) : (
-                          <p className="mt-2 text-base text-zinc-500">Sin logs disponibles.</p>
+                          <p className="mt-2 text-base text-zinc-400">Sin logs disponibles.</p>
                         )}
                       </div>
                     </div>
                   ) : (
                     <div className="text-center py-10">
                       <p className="text-base text-zinc-400">Selecciona un cubo para ver la ficha del activo.</p>
-                      <p className="mt-2 text-sm text-zinc-600">Panel fijo (sin tooltip).</p>
+                      <p className="mt-2 text-sm text-zinc-400">Panel fijo (sin tooltip).</p>
                     </div>
                   )}
-                </div>
+				</SpotlightCard>
               </div>
             </div>
           </motion.div>
         </motion.div>
       ) : null}
 
-      <IntelDrawer open={isIntelOpen} context={intelContext} topic={intelTopic} onClose={closeIntel} />
+      <IntelDrawer
+        open={isIntelOpen}
+        context={intelContext}
+        topic={intelTopic}
+        originCountryBreakdown={originCountryBreakdown}
+        onClose={closeIntel}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6 pb-12">
-        <div className="lg:col-span-2 flex min-h-0 flex-col gap-4 self-start">
+      <div className="grid grid-cols-1 items-start gap-6 pb-12 lg:grid-cols-[1.2fr_1.3fr]">
+        <div className="flex min-h-0 flex-col gap-4 self-start">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-2xl font-medium text-white flex items-center gap-2">Narrativa de Incidentes (Real-Time)</h2>
-            <Badge color="orange" size="xs">
-              {Math.min(MAX_VISIBLE_INCIDENTS, alerts.length)} visibles / {alerts.length} totales
-            </Badge>
+            <InfoDot onClick={() => openIntel("incidents")} label="Ayuda contextual: Narrativa de Incidentes" />
           </div>
 
-          <p className="text-base text-zinc-500">
-            Mostrando últimos {MAX_VISIBLE_INCIDENTS} incidentes.
-          </p>
+          <div className="flex flex-wrap items-center gap-3 text-base text-zinc-400">
+            <span>Mostrando últimos {incidentFeedLimit} incidentes.</span>
+            <div className="inline-flex overflow-hidden rounded-full border border-white/10 bg-black/30">
+              {([20, 50, 100] as const).map((limit) => {
+                const isActive = incidentFeedLimit === limit;
+                return (
+                  <button
+                    key={limit}
+                    type="button"
+                    onClick={() => setIncidentFeedLimit(limit)}
+                    className={`px-4 py-2 text-base font-semibold transition-colors ${
+                      isActive ? "bg-white/10 text-white" : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                    }`}
+                    aria-pressed={isActive}
+                    aria-label={`Mostrar últimos ${limit} incidentes`}
+                  >
+                    {limit}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-          <div className="grid max-h-[calc(100vh-18rem)] grid-cols-1 gap-6 overflow-y-auto pr-2">
-            {recentAlerts.map((alerta: any, index: number) => (
+          <div className="grid max-h-[calc(100vh-18rem)] grid-cols-1 gap-6 overflow-y-auto pr-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
+            {recentAlerts.map((alerta: any, index: number) => {
+              const narrative = buildNarrative(alerta);
+              const stripeClass =
+                narrative.priority === "Crítica"
+                  ? "bg-rose-500"
+                  : narrative.priority === "Alta"
+                    ? "bg-orange-400"
+                    : narrative.priority === "Media"
+                      ? "bg-zinc-500"
+                      : "bg-zinc-700";
+              const fullId = String(alerta.alert_id ?? "");
+              const shortId = truncateAlertId(fullId);
+
+              const investigationHref = `/investigacion?${new URLSearchParams({
+                id: fullId,
+                src_ip: String(alerta.network_data?.src_ip ?? ""),
+                attack_type: String(getAttackType(alerta) ?? ""),
+                dst_port: String(alerta.network_data?.dst_port ?? ""),
+                timestamp: String(alerta.timestamp ?? ""),
+              }).toString()}`;
+
+              return (
               <MotionAlertTag
                 key={alerta.alert_id ?? index}
                 {...(isClient
@@ -1595,67 +2006,86 @@ export default function Capa1Triaje() {
                     }
                   : {})}
               >
-                <Card className="bg-hyper-surface border-hyper-border ring-0 h-full flex flex-col">
+				<SpotlightCard spotlightColor="rgba(209, 132, 0, 0.15)" className="h-full">
+          <Card className="relative h-full flex flex-col overflow-hidden rounded-2xl bg-zinc-950/10 backdrop-blur-md border border-white/10 ring-0">
+                  <div className={`absolute left-0 top-0 h-full w-1.5 ${stripeClass}`} />
                   <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
-                      <Badge color={alerta.gnn_metadata?.label_binary === 1 ? "red" : "green"}>
-                        {alerta.gnn_metadata?.label_binary === 1 ? "ATAQUE" : "BENIGNO"}
-                      </Badge>
-                      <h3 className="text-xl font-medium text-white">{alerta.gnn_metadata?.label_multiclass}</h3>
-                    </div>
+                    <h3 className="text-xl font-medium text-white">
+                      {String(alerta.gnn_metadata?.label_multiclass ?? alerta.gnn_metadata?.label_multiclase ?? "")}
+                    </h3>
                     <div className="text-right">
-                      <p className="text-base text-zinc-500">Log Time: {isClient ? formatIncidentTime(alerta.timestamp) : "--:--:--"}</p>
-                      <p className="text-base text-hyper-accent font-mono">{alerta.alert_id}</p>
+                      <p className="text-base font-medium text-zinc-300">Data Time: {isClient ? formatIncidentTime(alerta.timestamp) : "--:--:--"}</p>
+                      <p className="text-base font-semibold text-hyper-accent font-mono" title={fullId}>
+                        {shortId}
+                      </p>
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <div className="bg-black/60 rounded-t-md p-3 font-mono text-base text-zinc-400 border border-white/5 border-b-0">
-                      <span className="text-hyper-accent mr-2">ORIGEN:</span> {alerta.network_data?.src_ip}:{alerta.network_data?.src_port}
-                      <span className="mx-2 text-zinc-600">→</span>
-                      <span className="text-blue-400 mr-2">DESTINO:</span> {alerta.network_data?.dst_ip}:{alerta.network_data?.dst_port}
+                    <div className="bg-black/40 rounded-t-md p-3 font-mono text-lg text-zinc-400 border border-white/5 border-b-0">
+                      <span className="text-hyper-accent mr-2">ORIGEN:</span> {alerta.network_data?.src_ip}:
+                      {(() => {
+                        const port = normalizePortNumber(alerta.network_data?.src_port);
+                        return port != null ? formatPortWithService(port) : String(alerta.network_data?.src_port ?? "--");
+                      })()}
+                      <span className="mx-2 text-zinc-400">→</span>
+                      <span className="text-blue-400 mr-2">DESTINO:</span> {alerta.network_data?.dst_ip}:
+                      {(() => {
+                        const port = normalizePortNumber(alerta.network_data?.dst_port);
+                        return port != null ? formatPortWithService(port) : String(alerta.network_data?.dst_port ?? "--");
+                      })()}
                     </div>
                     <div className="bg-hyper-accent/5 border border-hyper-accent/10 rounded-b-md p-4 flex gap-3 items-start">
                       <span className="text-hyper-accent text-lg mt-0.5">✨</span>
                       <div className="flex flex-col gap-2">
-                        <p className="text-zinc-300 text-lg leading-relaxed">
-                          {buildNarrative(alerta).summary}
+                        <p className="text-zinc-100 text-xl leading-relaxed">
+                          {narrative.summary}
                         </p>
-                        <p className="text-zinc-500 text-base italic border-l border-white/10 pl-3">{buildNarrative(alerta).detail}</p>
+                        <p className="text-zinc-300 text-lg italic border-l border-white/10 pl-3">{narrative.detail}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center mt-auto pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-2 text-base text-zinc-500">
+                    <div className="flex items-center gap-2 text-base text-zinc-400">
                       <span>Confianza GNN: {(alerta.gnn_metadata?.confidence_score * 100).toFixed(1)}%</span>
                       <span className="text-zinc-700">•</span>
-                      <span>{buildNarrative(alerta).protocolName}</span>
+                      <span>{narrative.protocolName}</span>
                     </div>
-                    <Badge color={buildNarrative(alerta).priority === "Crítica" ? "red" : "orange"} size="xs">
-                      Prioridad {buildNarrative(alerta).priority}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Magnetic>
+                        <Link
+                          href={investigationHref}
+                          className="rounded-xl border border-hyper-accent/25 bg-hyper-accent/10 px-4 py-2 text-sm font-semibold text-white transition-all ring-1 ring-hyper-accent/20 hover:border-hyper-accent/40 hover:bg-hyper-accent/15 hover:ring-hyper-accent/40"
+                          aria-label="Investigar incidente con IA"
+                        >
+                          Investigar con IA 🤖
+                        </Link>
+                      </Magnetic>
+                    </div>
                   </div>
-                </Card>
+					</Card>
+				</SpotlightCard>
               </MotionAlertTag>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        <div className="lg:col-span-1 self-start">
+        <div className="self-start">
           <div className="sticky top-6">
             <div className="flex flex-col gap-6">
-              <Card className="bg-hyper-surface border-hyper-border ring-0 min-w-0">
+                <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 min-w-0">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-white font-medium">Estado de Activos Críticos</h3>
-                    <p className="text-base text-zinc-500">Destinos dst_ip con vista 3D</p>
+                    <h3 className="text-white font-medium text-xl">Estado de Activos Críticos</h3>
+                    <p className="text-lg text-zinc-400">Destinos dst_ip con vista 3D</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setIsTacticalOpen(true)}
-                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-zinc-200 transition-all hover:border-hyper-accent/40 hover:text-white hover:shadow-[0_0_12px_rgba(249,115,22,0.18)]"
+                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-base font-semibold uppercase tracking-[0.2em] text-zinc-200 transition-all hover:border-hyper-accent/40 hover:text-white hover:shadow-[0_0_12px_rgba(249,115,22,0.18)]"
                     >
                       Expandir Vista Táctica
                     </button>
@@ -1663,7 +2093,7 @@ export default function Capa1Triaje() {
                       type="button"
                       onClick={() => openIntel("assets")}
                       aria-label="Ayuda contextual"
-                      className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/30 text-xs font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
+                      className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-base font-semibold text-zinc-200 hover:border-white/20 hover:text-white"
                     >
                       i
                     </button>
@@ -1671,74 +2101,89 @@ export default function Capa1Triaje() {
                 </div>
 
                 <div className="mt-4 px-2">
-                  <div className="mx-auto w-full max-w-[520px] overflow-visible py-6">
-                    <div className="grid grid-cols-6 gap-3 place-items-center">
+                  <div className="w-full overflow-visible py-8">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 place-items-stretch">
                       {infrastructureAssets.map((asset) => {
                         const ui = getInfrastructureSeverityUi(asset.severity);
                         const hasRecentRing = hasRecentMaxSeverityRingByDstIp.get(String(asset.dstIp)) ?? false;
+                        const blinkClass = hasRecentRing || asset.severity === "critical" ? "animate-pulse" : "";
 
                         return (
-                          <div key={asset.dstIp} className="group">
-                            <div className="mb-1 flex items-center justify-center">
-                              <span className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-sm font-mono text-white">
-                                {Number(asset.count ?? 0).toLocaleString("es-ES")}
-                              </span>
-                            </div>
+                  <TiltedCard
+                    key={asset.dstIp}
+                    className="group cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    title={String(asset.dstIp)}
+                    onClick={() => {
+                      setSelectedAssetIp(String(asset.dstIp));
+                      setIsTacticalOpen(true);
+                    }}
+                    onKeyDown={(evt) => {
+                      if (evt.key !== "Enter" && evt.key !== " ") return;
+                      evt.preventDefault();
+                      setSelectedAssetIp(String(asset.dstIp));
+                      setIsTacticalOpen(true);
+                    }}
+                  >
+                    <div
+                      className={`relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-white/5 bg-black/40 p-4 text-left backdrop-blur-md transition-colors hover:bg-black/45 ${
+                        hasRecentRing ? "ring-1 ring-rose-500/35" : ""
+                      }`}
+                    >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Activo</p>
+                    <p className="mt-1 text-base font-semibold text-white font-mono whitespace-nowrap">
+                      {String(asset.dstIp)}
+                    </p>
+                  </div>
 
-                            <div className="relative grid place-items-center">
-                              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2 py-1 text-xs font-mono text-zinc-100 opacity-0 group-hover:opacity-100 transition-none">
-                                {String(asset.dstIp)}
-                              </div>
+                  <div className="shrink-0 grid place-items-center">
+                    <div
+                      className={`relative h-12 w-12 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)] ${
+                        hasRecentRing
+                        ? "ring-2 ring-red-500/80 shadow-[0_0_14px_rgba(239,68,68,0.35)] rounded-md"
+                        : ""
+                      } ${blinkClass}`}
+                    >
+                      <div className={`absolute inset-0 rounded-md border ${ui.cube} bg-black/40`} />
+                      <div
+                        className={`absolute -top-2 left-1 right-1 h-2 rounded-t-md border border-white/10 ${ui.top} [transform:skewX(-35deg)]`}
+                      />
+                      <div
+                        className={`absolute top-1 -right-2 bottom-1 w-2 rounded-r-md border border-white/10 ${ui.side} [transform:skewY(-35deg)]`}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-base font-mono text-zinc-200 select-none">
+                          {String(asset.dstIp).split(".").slice(-1)[0] ?? "--"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                              <div
-                                className={`relative h-10 w-10 ${ui.glow} [transform:skewX(-12deg)_skewY(6deg)] ${
-                                  hasRecentRing ? "ring-2 ring-red-500/80 shadow-[0_0_14px_rgba(239,68,68,0.35)] rounded-md" : ""
-                                }`}
-                              >
-                                <div className={`absolute inset-0 rounded-md border ${ui.cube} bg-black/40`} />
-                                <div
-                                  className={`absolute -top-2 left-1 right-1 h-2 rounded-t-md border border-white/10 ${ui.top} [transform:skewX(-35deg)]`}
-                                />
-                                <div
-                                  className={`absolute top-1 -right-2 bottom-1 w-2 rounded-r-md border border-white/10 ${ui.side} [transform:skewY(-35deg)]`}
-                                />
-
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <span className="text-sm font-mono text-zinc-200 select-none">
-                                    {String(asset.dstIp).split(".").slice(-1)[0] ?? "--"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+              <div className="flex items-end justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base text-zinc-400">{ui.label}</span>
+                </div>
+							<span className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-base font-mono text-white">
+									{Number(asset.count ?? 0).toLocaleString("es-ES")}
+								</span>
+							</div>
+                    </div>
+                  </TiltedCard>
                         );
                       })}
                     </div>
 
-                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-base text-zinc-500">
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-lg text-zinc-400">
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500/80" />Crítica</span>
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-400/80" />Alta</span>
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-300/80" />Media</span>
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-zinc-500/50" />Baja</span>
                     </div>
                   </div>
-                </div>
-              </Card>
-
-              <Card className="bg-[#0a0a0a]/80 backdrop-blur-md border border-white/10 ring-0 flex flex-col shadow-2xl overflow-hidden">
-                <div className="flex items-center gap-2 pb-4 border-b border-white/10">
-                  <div className="w-2 h-2 rounded-full bg-hyper-accent animate-pulse" />
-                  <h3 className="text-white font-medium">SOC Assistant</h3>
-                </div>
-                <div className="py-4 space-y-4 text-lg text-zinc-400">
-                  <p>Bienvenido al asistente de investigación. Selecciona una alerta para profundizar en el contexto del RAG.</p>
-                  <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                    <p className="text-base font-bold text-hyper-accent uppercase mb-1">Sugerencia:</p>
-                    "¿Qué otros destinos ha visitado la IP {alerts[0]?.network_data?.src_ip} en la última hora?"
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-white/10 mt-auto">
-                  <input type="text" placeholder="Consultar memoria técnica..." className="w-full bg-black/50 border border-white/10 rounded-md py-2.5 px-3 text-lg text-white outline-none focus:border-hyper-accent" />
                 </div>
               </Card>
             </div>

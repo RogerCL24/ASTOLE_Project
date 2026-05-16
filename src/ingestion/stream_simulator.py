@@ -17,6 +17,13 @@ if str(SRC_DIR) not in sys.path:
 
 from memory.ingest_from_ing1 import index_window, wait_for_completion
 
+try:
+    from services.ip_intel_service import IPIntelService
+
+    _IP_INTEL = IPIntelService.get_instance()
+except Exception:
+    _IP_INTEL = None
+
 # Configuración de rutas
 DATASET_PATH = BASE_DIR / "data" / "NF-UNSW-NB15-v3.csv"
 OUTPUT_ALERTS = BASE_DIR / "docs" / "samples" / "live_alerts.json"
@@ -309,6 +316,15 @@ def trigger_alert(window_id, row):
             "out_pkts": int(row['OUT_PKTS'])
         }
     }
+
+    if _IP_INTEL is not None:
+        try:
+            alert["ip_intel"] = {
+                "src": _IP_INTEL.get_info(alert["network_data"]["src_ip"]),
+                "dst": _IP_INTEL.get_info(alert["network_data"]["dst_ip"]),
+            }
+        except Exception:
+            pass
     
     alert_history = []
     try:

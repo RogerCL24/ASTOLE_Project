@@ -61,3 +61,70 @@
 ### Fixed
 - **Timezone**: Visualización consistente en `Europe/Madrid` para tiempos mostrados en Triaje/Telemetría.
 - **Donut colors**: Paleta consistente con el UI y sin colores repetidos.
+
+## [0.6.0-ui] - 2026-04-06
+
+### Added
+- **Sala de Investigación (Capa 2)**: Nueva consola 2 columnas (Evidencia + Chat RAG) con estética consistente (glass/terminal).
+- **Entrada sin caso**: Estado inicial con selector y “Últimas 5 alertas críticas” clicables desde `/api/stats`.
+- **Pivotaje ORIGEN/DESTINO**: Lista de alertas relacionadas scrolleable para pivotar por sesión sin romper el layout.
+- **Intel Drawer (Incidentes)**: Ayuda contextual para interpretar el feed y el CTA “Investigar con IA”.
+
+### Changed
+- **Navegación de investigación**: El CTA del feed abre `/investigacion` pasando `id`, `src_ip`, `attack_type`, `dst_port`, `timestamp` por query.
+- **Legibilidad en narrativa**: Refinos de tipografía/contraste y scroll interno más “humano”.
+
+### Fixed
+- **Severidad al pivotar**: El vector/severidad se extrae correctamente desde el esquema real de alertas (`gnn_metadata.label_multiclase`, `gnn_metadata.binary_attack`) evitando el fallback “Actividad”.
+- **App Router searchParams**: Ajuste para evitar errores de APIs dinámicas (unwrap seguro de `searchParams`).
+
+## [0.7.0-ui] - 2026-04-09
+
+### Added
+- **Dossier Técnico (IP Popover)**: Popover de perfil de IP con bandera, país real, ISP/ASN, tipo de uso y aviso si la IP es nodo de privacidad (Proxy/VPN/TOR/WEB).
+- **Top 5 Países Atacantes**: Nuevo bloque bajo el donut de Composición de Amenazas con banderas + porcentaje por país (preferencia por datos `ip_intel` cuando están presentes en la alerta).
+
+### Changed
+- **Flags 32px**: Migración de assets de banderas a convención `*_32.png` y aumento de tamaños de render para legibilidad.
+- **UI Surface**: Ajuste del token de superficie (`--color-hyper-surface`) para mejorar contraste en cards “glass”.
+- **Intel Drawer (copy)**: Texto alineado para indicar que el breakdown de países se alimenta desde enriquecimiento backend cuando está disponible.
+
+## [0.8.0-ui] - 2026-04-10
+
+### Added
+- **Capa visual ambiental**: Fondo dinámico global (`GridDistortion`) + overlay de ruido (`Noise`) para estética y profundidad sin bloquear interacciones.
+- **UI primitives**: Nuevos componentes en `frontend/components/ui/` para encapsular efectos (tilt, spotlight, etc.).
+
+### Changed
+- **Layout Capa 1**: Rebalanceo de columnas entre “Narrativa de Incidentes (Real-Time)” y “Estado de Activos Críticos” para mejor lectura.
+- **Composición de Amenazas**: Donut y tipografía escalados para mejor legibilidad.
+- **Top Atacantes**: Tipografía y espaciado de pills escalados (sin romper single-line).
+- **Intel Drawer**: Panel lateral más ancho para que el contenido no quede apretado.
+
+### Fixed
+- **Fondo dinámico**: Tracking de ratón a nivel `window` y canvas sin captura de eventos para que el fondo responda aunque haya cards encima.
+- **Top Atacantes**: IP completa sin salto de línea, separador sin solaparse y badge `[Riesgo de Intrusión]` sin recortes.
+- **Top 5 Países Atacantes**: Nombres largos sin truncado (wrap permitido).
+- **Activos Críticos**: Click más fiable al interactuar con tiles.
+
+## [0.8.1-ui] - 2026-04-16
+
+### Changed
+- **Gráfica de Tráfico (streaming)**: Buffer de 200 muestras + selector 5m/20m/60m y modo Freeze/Live (pausa el render sin perder datos).
+- **Animación de la gráfica**: Transiciones más cortas y suaves (300ms, `ease-in-out`) para evitar “saltos” visuales.
+- **Escala tipográfica global**: Controles/badges/CTAs y tooltips aumentados para legibilidad.
+- **Ejes de la gráfica**: Ticks X/Y a 15px y peso medio para mejor lectura.
+- **KPIs de cabecera**: Títulos/descripciones más grandes y mayor espaciado interno.
+- **Sidebar**: Navegación en `text-lg`, indicadores e iconos escalados; layout alineado con ancho final (`w-72`).
+
+## [0.8.2-ui] - 2026-04-18
+
+### Changed
+- **Gráfica de Tráfico (X Axis)**: Ticks dinámicos según ventana (5m=1m, 20m=5m, 60m=15m) + extremos preservados (0 y `-viewWindow`).
+- **Hitos e Interactividad**: Tick más cercano al cursor se resalta (opacidad 1 + bold) durante el hover.
+- **Tooltip de alta precisión**: Tiempo relativo destacado + hora absoluta calculada desde la hora del sistema.
+- **Active Dot (destello)**: Punto activo con stroke `#D18400` + glow sutil.
+- **Stability**: El dominio del eje X no colapsa aunque no haya datos al inicio.
+
+### Added
+- **Guía de datos IP Intel**: Pasos para generar Parquet a partir de CSV (`scripts/optimize_ip_data.py`) para habilitar enriquecimiento IP en el dashboard.

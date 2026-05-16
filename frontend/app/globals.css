@@ -3,15 +3,15 @@
 
 :root {
   /* Paleta inspirada en Hypergraph / Deep Tech */
-  --color-hyper-bg: #030303;       /* Fondo principal (casi negro puro) */
-  --color-hyper-surface: #0a0a0a;  /* Fondo de las tarjetas */
+  --color-hyper-bg: #09090b;       /* Fondo principal (zinc-950) */
+  --color-hyper-surface: rgb(24 24 27 / 0.95);  /* Fondo de las tarjetas (zinc-900/95) */
   --color-hyper-border: #1f1f22;   /* Bordes muy sutiles */
   --color-hyper-accent: #D18400;   /* El color "vivo" */
   --color-hyper-alert: #ff4108;
 }
 
 body {
-  background-color: var(--color-hyper-bg);
+  background-color: transparent;
   color: #ededed;
 }
 
