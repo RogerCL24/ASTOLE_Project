@@ -8,6 +8,7 @@ on:
       - "src/memory/**"
       - "docker-compose.yml"
       - "src/agents/Dockerfile"
+      - "src/memory/Dockerfile"
       - ".github/workflows/ci-docker-smoke.yml"
   pull_request:
     branches: [main, develop]
@@ -16,6 +17,7 @@ on:
       - "src/memory/**"
       - "docker-compose.yml"
       - "src/agents/Dockerfile"
+      - "src/memory/Dockerfile"
       - ".github/workflows/ci-docker-smoke.yml"
   workflow_dispatch: {}
 
@@ -30,8 +32,26 @@ jobs:
   docker-smoke:
     name: Build + up + health + smoke triage
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
+      - name: Free disk space
+        # The ubuntu-latest runner ships with ~14 GB free. Our images include
+        # torch + sentence-transformers (~5 GB each), which exhausts the disk
+        # during the export step. Removing unused pre-installed toolchains
+        # recovers ~10 GB before the build starts.
+        run: |
+          echo "Disk before cleanup:"
+          df -h /
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          docker image prune --all --force || true
+          echo "Disk after cleanup:"
+          df -h /
+
       - name: Checkout
         uses: actions/checkout@v4
 

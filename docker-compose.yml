@@ -12,16 +12,22 @@ services:
       - RAG_API_URL=http://rag-api:8001
       - RAG_USE_MOCK=false
       - CACHE_ENABLED=false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
-      - rag-api
+      rag-api:
+        condition: service_healthy
     restart: unless-stopped
 
   rag-api:
     build:
       context: .
-      dockerfile: src/agents/Dockerfile
+      dockerfile: src/memory/Dockerfile
     container_name: astole-rag-api
-    command: ["uvicorn", "src.memory.rag_api:app", "--host", "0.0.0.0", "--port", "8001"]
     ports:
       - "8001:8001"
     environment:
@@ -31,8 +37,10 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
     depends_on:
-      - chromadb
+      chromadb:
+        condition: service_started
     restart: unless-stopped
 
   chromadb:

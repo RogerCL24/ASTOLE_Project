@@ -35,7 +35,12 @@ jobs:
       - name: Install minimal deps
         run: |
           python -m pip install --upgrade pip
-          pip install pydantic==2.* httpx fastapi uvicorn
+          # python-dotenv is required because src/agents/core/config.py calls
+          # load_dotenv() at import time; it is pulled in when any core module
+          # is imported (e.g. handoffs.py → core/__init__.py → config.py).
+          # litellm is needed by the same chain (config.py imports it lazily
+          # but the __init__ re-exports setup_litellm which is type-checked).
+          pip install pydantic==2.* httpx fastapi uvicorn python-dotenv litellm
 
       - name: Validate sample alerts against InputAlert schema
         shell: bash
