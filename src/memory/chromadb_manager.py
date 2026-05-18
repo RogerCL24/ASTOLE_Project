@@ -144,23 +144,44 @@ Ventana {window_id}:
     def search_similar(self, query: str, n_results: int = 3):
         """
         Buscar ventanas similares.
-        
+
+        Chroma raises if ``n_results`` is larger than the number of indexed items
+        (or if the collection is empty). Clamp to ``collection.count()`` and
+        skip the query when there is nothing indexed.
+
         Args:
             query: Texto de búsqueda
-            n_results: Número de resultados
-            
+            n_results: Número de resultados solicitado
+
         Returns:
-            Resultados de ChromaDB
+            Resultados en el mismo formato que ``collection.query()``.
         """
         print(f"[MemoryManager] Querying: '{query}'")
-        
+
+        empty = {"ids": [[]], "documents": [[]], "metadatas": [[]], "distances": [[]]}
+
+        count = self.collection.count()
+        if count == 0:
+            print("[MemoryManager] Collection empty, skipping query.\n")
+            return empty
+
+        # Chroma rejects n_results > number of embeddings in the collection
+        want = max(1, int(n_results))
+        effective_n = min(want, count)
+        if effective_n != want:
+            print(
+                f"[MemoryManager] Clamping n_results {want} -> {effective_n} "
+                f"(only {count} window(s) indexed)\n"
+            )
+
         results = self.collection.query(
             query_texts=[query],
-            n_results=n_results
+            n_results=effective_n,
         )
-        
-        print(f"[MemoryManager] Retrieved {len(results['ids'][0])} results\n")
-        
+
+        row = results.get("ids") or [[]]
+        print(f"[MemoryManager] Retrieved {len(row[0])} results\n")
+
         return results
     
     def get_stats(self):

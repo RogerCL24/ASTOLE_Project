@@ -84,11 +84,17 @@ async def stats() -> dict:
 
 @app.post("/query", response_model=QueryResponse)
 async def query_memory(payload: QueryRequest) -> QueryResponse:
-    """Retrieve semantic context snippets from ChromaDB."""
+    """Retrieve semantic context snippets from ChromaDB.
+
+    ``payload.top_k`` may exceed indexed windows; ``MemoryManager.search_similar``
+    clamps ``n_results`` to ``collection.count()`` and returns empty snippets when
+    the collection has no rows (Chroma rejects ``n_results`` above those cases).
+    """
     if _USE_MOCK or _manager is None:
         return QueryResponse(snippets=[])
 
     def _search() -> dict:
+        # Clamping lives in chromadb_manager (single place for API + scripts).
         return _manager.search_similar(payload.query, n_results=payload.top_k)  # type: ignore[attr-defined]
 
     results = await run_in_threadpool(_search)
