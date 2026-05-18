@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ASTOLE Operations Runbook
+    url: https://github.com/astole/astole/blob/main/src/agents/docs/OPERATIONS.md
+    about: Day-to-day operations and CLI commands.
+  - name: ASTOLE Architecture
+    url: https://github.com/astole/astole/blob/main/src/agents/ARCHITECTURE.md
+    about: Architectural overview and integration boundaries.

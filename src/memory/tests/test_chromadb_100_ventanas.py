@@ -3,18 +3,19 @@ AST-54: Testing ChromaDB con 100+ ventanas
 Testing escalabilidad y rendimiento
 """
 
+import json
 import sys
+import time
+from datetime import datetime
 from pathlib import Path
 
-# Añadir src/ al path
+import pandas as pd
+
+# Añadir src/ al path para poder importar el módulo memory sin instalarlo
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-import pandas as pd
-import time
-from memory.chromadb_manager import MemoryManager
-import json
-from datetime import datetime
+from memory.chromadb_manager import MemoryManager  # noqa: E402
 
 def run_test(num_ventanas, filas_por_ventana):
     """
@@ -38,7 +39,7 @@ def run_test(num_ventanas, filas_por_ventana):
     dataset_path = Path("data/NF-UNSW-NB15-v3.csv")
     total_rows = num_ventanas * filas_por_ventana
     
-    print(f"📥 Cargando dataset...")
+    print("📥 Cargando dataset...")
     print(f"   Filas a cargar: {total_rows:,}")
     
     load_start = time.time()
@@ -101,7 +102,7 @@ def run_test(num_ventanas, filas_por_ventana):
     min_index_time = min(index_times)
     max_index_time = max(index_times)
     
-    print(f"\n✅ Indexación completada:")
+    print("\n✅ Indexación completada:")
     print(f"   Tiempo total: {index_time:.2f}s")
     print(f"   Promedio: {avg_index_time:.3f}s/ventana")
     print(f"   Mínimo: {min_index_time:.3f}s")
@@ -144,7 +145,7 @@ def run_test(num_ventanas, filas_por_ventana):
         print(f"   '{query[:30]}': {search_time:.4f}s (sim: {avg_similarity:.3f})")
     
     avg_search_time = sum(r['tiempo'] for r in search_results) / len(search_results)
-    print(f"\n✅ Búsquedas completadas:")
+    print("\n✅ Búsquedas completadas:")
     print(f"   Promedio: {avg_search_time:.4f}s/búsqueda\n")
     
     # ──────────────────────────────────────

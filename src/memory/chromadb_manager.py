@@ -30,7 +30,7 @@ class MemoryManager:
         # Crear directorio si no existe
         Path(persist_directory).mkdir(parents=True, exist_ok=True)
         
-        print("🔧 Inicializando MemoryManager...")
+        print("[MemoryManager] Initializing...")
         
         # Cliente ChromaDB persistente
         self.client = chromadb.PersistentClient(path=persist_directory)
@@ -42,10 +42,10 @@ class MemoryManager:
         )
         
         # Modelo embeddings
-        print("📥 Cargando modelo embeddings...")
+        print("[MemoryManager] Loading embedding model...")
         # Forzar dispositivo CPU para evitar requisitos de GPU/instalaciones especiales
         self.embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
-        print("✅ MemoryManager listo\n")
+        print("[MemoryManager] Ready\n")
     
     def add_netflow_window(self, window_id: str, dataframe: pd.DataFrame):
         """
@@ -56,10 +56,10 @@ class MemoryManager:
             dataframe: DataFrame con datos de la ventana
         """
         if dataframe.empty:
-            print(f"⚠️  {window_id} está vacía, saltando...")
+            print(f"[MemoryManager] {window_id} is empty, skipping...")
             return
         
-        print(f"📦 Indexando {window_id} ({len(dataframe)} flujos)...")
+        print(f"[MemoryManager] Indexing {window_id} ({len(dataframe)} flows)...")
         
         # Convertir DataFrame a texto descriptivo
         text = self._dataframe_to_text(dataframe, window_id)
@@ -83,19 +83,19 @@ class MemoryManager:
                 metadatas=[metadata],
                 ids=[window_id]
             )
-            print(f"✅ {window_id} indexada")
+            print(f"[MemoryManager] {window_id} indexed")
         except Exception as e:
             # Si ya existe, actualizar
             error_msg = str(e).lower()
             if "already exists" in error_msg or "duplicate" in error_msg:
-                print(f"⚠️  {window_id} ya existe, actualizando...")
+                print(f"[MemoryManager] {window_id} already exists, updating...")
                 self.collection.update(
                     documents=[text],
                     embeddings=[embedding],
                     metadatas=[metadata],
                     ids=[window_id]
                 )
-                print(f"✅ {window_id} actualizada")
+                print(f"[MemoryManager] {window_id} updated")
             else:
                 # Otro tipo de error, re-lanzar
                 raise
@@ -144,23 +144,44 @@ Ventana {window_id}:
     def search_similar(self, query: str, n_results: int = 3):
         """
         Buscar ventanas similares.
-        
+
+        Chroma raises if ``n_results`` is larger than the number of indexed items
+        (or if the collection is empty). Clamp to ``collection.count()`` and
+        skip the query when there is nothing indexed.
+
         Args:
             query: Texto de búsqueda
-            n_results: Número de resultados
-            
+            n_results: Número de resultados solicitado
+
         Returns:
-            Resultados de ChromaDB
+            Resultados en el mismo formato que ``collection.query()``.
         """
-        print(f"🔍 Buscando: '{query}'")
-        
+        print(f"[MemoryManager] Querying: '{query}'")
+
+        empty = {"ids": [[]], "documents": [[]], "metadatas": [[]], "distances": [[]]}
+
+        count = self.collection.count()
+        if count == 0:
+            print("[MemoryManager] Collection empty, skipping query.\n")
+            return empty
+
+        # Chroma rejects n_results > number of embeddings in the collection
+        want = max(1, int(n_results))
+        effective_n = min(want, count)
+        if effective_n != want:
+            print(
+                f"[MemoryManager] Clamping n_results {want} -> {effective_n} "
+                f"(only {count} window(s) indexed)\n"
+            )
+
         results = self.collection.query(
             query_texts=[query],
-            n_results=n_results
+            n_results=effective_n,
         )
-        
-        print(f"✅ Encontrados {len(results['ids'][0])} resultados\n")
-        
+
+        row = results.get("ids") or [[]]
+        print(f"[MemoryManager] Retrieved {len(row[0])} results\n")
+
         return results
     
     def get_stats(self):

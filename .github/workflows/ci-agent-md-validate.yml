@@ -1,0 +1,107 @@
+name: ci-agent-md-validate
+
+on:
+  push:
+    branches: [main, develop, feature/**]
+    paths:
+      - "AGENTS.md"
+      - "src/agents/docs/agents/*.agent.md"
+      - "src/agents/docs/skills/*.agent.md"
+      - "src/agents/docs/skills/*.skill.md"
+      - ".github/workflows/ci-agent-md-validate.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "AGENTS.md"
+      - "src/agents/docs/agents/*.agent.md"
+      - "src/agents/docs/skills/*.agent.md"
+      - "src/agents/docs/skills/*.skill.md"
+      - ".github/workflows/ci-agent-md-validate.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-agent-md:
+    name: Validate .agent.md and *.skill.md frontmatter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install yaml parser
+        run: |
+          pip install pyyaml
+
+      - name: Validate frontmatter
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+          import yaml
+
+          AGENT_REQUIRED = {"name", "level", "description", "implementation"}
+          SKILL_REQUIRED = {"name", "description"}
+
+          errors = []
+
+          def parse_frontmatter(text: str):
+              m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
+              if not m:
+                  return None
+              return yaml.safe_load(m.group(1)) or {}
+
+          # L0/L1 agent definitions
+          for p in Path("src/agents/docs/agents").glob("*.agent.md"):
+              fm = parse_frontmatter(p.read_text(encoding="utf-8"))
+              if fm is None:
+                  errors.append(f"{p}: missing YAML frontmatter")
+                  continue
+              missing = AGENT_REQUIRED - set(fm.keys())
+              if missing:
+                  errors.append(f"{p}: missing fields {missing}")
+              level = fm.get("level")
+              if level not in {"L0", "L1", "L2"}:
+                  errors.append(f"{p}: invalid level '{level}' (expected L0/L1/L2)")
+
+          # L2 skill agent definitions
+          for p in Path("src/agents/docs/skills").glob("*.agent.md"):
+              fm = parse_frontmatter(p.read_text(encoding="utf-8"))
+              if fm is None:
+                  errors.append(f"{p}: missing YAML frontmatter")
+                  continue
+              missing = AGENT_REQUIRED - set(fm.keys())
+              if missing:
+                  errors.append(f"{p}: missing fields {missing}")
+              level = fm.get("level")
+              if level not in {"L0", "L1", "L2"}:
+                  errors.append(f"{p}: invalid level '{level}' (expected L0/L1/L2)")
+
+          # Skill bundles
+          for p in Path("src/agents/docs/skills").glob("*.skill.md"):
+              if p.name.startswith("_"):
+                  continue  # skip _template
+              fm = parse_frontmatter(p.read_text(encoding="utf-8"))
+              if fm is None:
+                  errors.append(f"{p}: missing YAML frontmatter")
+                  continue
+              missing = SKILL_REQUIRED - set(fm.keys())
+              if missing:
+                  errors.append(f"{p}: missing fields {missing}")
+
+          if errors:
+              for e in errors:
+                  print(f"::error::{e}")
+              sys.exit(1)
+          print("All .agent.md and *.skill.md frontmatter are valid.")
+          PY

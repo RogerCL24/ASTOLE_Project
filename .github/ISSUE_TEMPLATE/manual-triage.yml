@@ -1,0 +1,38 @@
+name: Manual triage request
+description: Run the ASTOLE pipeline against a custom alert payload via GitHub Actions
+labels: ["astole-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Adding the **`astole-triage`** label triggers the
+        [`triage-issue`](../../workflows/triage-issue.yml) workflow which will
+        run the pipeline against the JSON payload you paste below and post the
+        TriageOutput as a comment.
+  - type: textarea
+    id: payload
+    attributes:
+      label: Alert payload (canonical InputAlert v1.1)
+      description: |
+        Paste the alert in a fenced ```json``` block. The workflow extracts the
+        first JSON code block from this issue body.
+      placeholder: |
+        ```json
+        {
+          "alert_id": "AST-MANUAL-001",
+          "timestamp": "2026-04-09T10:00:00Z",
+          "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.91
+          },
+          "network_data": { "...": "..." },
+          "technical_details": { "...": "..." }
+        }
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes for the analyst

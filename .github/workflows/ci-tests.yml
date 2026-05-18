@@ -1,0 +1,80 @@
+name: ci-tests
+
+on:
+  push:
+    branches: [main, develop, feature/**]
+    paths:
+      - "src/agents/**"
+      - "src/memory/**"
+      - "requirements.txt"
+      - ".github/workflows/ci-tests.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "src/agents/**"
+      - "src/memory/**"
+      - "requirements.txt"
+      - ".github/workflows/ci-tests.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: Unit tests + lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: .
+      RAG_USE_MOCK: "true"
+      CACHE_ENABLED: "false"
+      LITELLM_MOCK_RESPONSE: "true"
+      LANGSMITH_TRACING: "false"
+      OPENAI_API_KEY: "sk-test-not-used"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff mypy pytest pytest-asyncio
+
+      - name: Lint (ruff)
+        run: |
+          ruff check src/agents src/memory --output-format=github
+
+      - name: Type-check critical modules (mypy, soft)
+        continue-on-error: true
+        run: |
+          mypy --ignore-missing-imports \
+               src/agents/core/state.py \
+               src/agents/core/handoffs.py \
+               src/agents/core/circuit_breaker.py
+
+      - name: Run pytest
+        run: |
+          pytest src/agents/tests -q --maxfail=1 --disable-warnings
+
+      - name: Upload pytest output as artifact (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-output
+          path: |
+            .pytest_cache
+            junit-*.xml
+          if-no-files-found: ignore
