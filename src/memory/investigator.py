@@ -8,7 +8,7 @@ Milestone 4: Chat de Investigación
 import requests
 import sys
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator
 from collections import Counter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -73,7 +73,7 @@ class Investigator:
                             break
         except requests.exceptions.ConnectionError:
             yield "Bloquear la IP en el firewall e investigar los hosts comprometidos."
-        except Exception as e:
+        except Exception:
             yield "Revisar los logs de seguridad y activar las medidas de contención."
 
     def _build_stats_summary(self, ids: list, metadatas: list, src_ip: str) -> str:
