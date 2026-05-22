@@ -10,9 +10,9 @@
 Sistema de memoria vectorial con ChromaDB para almacenamiento histórico de alertas, motor RAG para recuperación de contexto, y chat de investigación con Llama 3 local.
 
 **Responsabilidades:**
-- **Storage Feed:** Recibir e indexar ventanas de 60s desde Ing1
-- **Context Feed:** Proveer contexto histórico a Ing2 para narrativas
-- **Investigation:** Chat con Llama 3 para análisis interactivo 
+- **Storage Feed (M2):** Recibir e indexar ventanas de 60s desde Ing1
+- **Context Feed (M3):** Proveer contexto histórico a Ing2 para narrativas
+- **Investigation (M4):** Chat con Llama 3 para análisis interactivo de incidentes
 
 ---
 
@@ -23,29 +23,27 @@ Sistema de memoria vectorial con ChromaDB para almacenamiento histórico de aler
 **Qué es:** Gestor de la base de datos vectorial ChromaDB.
 
 **Qué hace:**
-- Guarda ventanas de tráfico de red de 60 segundos
-- Convierte datos a embeddings (vectores numéricos)
-- Permite buscar ventanas similares por contenido semántico
+- Guarda ventanas de tráfico de red de 60 segundos con embeddings semánticos
+- Guarda metadata de IPs y tipos de ataque para filtrado exacto
+- Permite búsqueda semántica y filtrada por IP
 
 **Funciones principales:**
 ```python
 from memory.chromadb_manager import MemoryManager
 
 manager = MemoryManager()
-
-# Indexar ventana
 manager.add_netflow_window("window_001", dataframe)
-
-# Buscar ventanas similares
 results = manager.search_similar("ataques SSH", n_results=5)
-
-# Ver estadísticas
+results_filtered = manager.search_similar("ataque", where={"top_src_ips": {"$contains": "1.2.3.4"}})
 stats = manager.get_stats()
 ```
 
-**Uso:**
-- Ing1 envía ventanas → se indexan automáticamente
-- RAG Engine busca contexto histórico aquí
+**Colecciones ChromaDB:**
+
+| Colección | Contenido | Quién la usa |
+|---|---|---|
+| `netflow_windows` | Ventanas de 60s de tráfico completo | Ing2 via rag_api, Investigator |
+| `alerts` | Alertas detectadas por GNN | Investigator (M4) |
 
 ---
 
@@ -54,74 +52,137 @@ stats = manager.get_stats()
 **Qué es:** Sistema de ingesta con cola para recibir ventanas desde Ing1.
 
 **Qué hace:**
-- Recibe ventanas de Ing1 sin bloquearlo
+- Recibe ventanas de Ing1 sin bloquearlo (retorna en <0.001s)
 - Las encola en background (máximo 100)
 - Un worker thread las indexa en ChromaDB
 
-**Funciones principales:**
 ```python
 from memory.ingest_from_ing1 import index_window
-
-# Ing1 llama esto cuando genera cada ventana
 result = index_window("window_042", window_dataframe)
-# Returns: {'status': 'queued', 'window_id': 'window_042', 'queue_size': 5}
+# Returns: {'status': 'queued', 'window_id': 'window_042'}
 ```
 
-**Cómo Ing1 puede usarla:**
+---
+
+### rag_api.py (M3)
+
+**Qué es:** API REST que expone ChromaDB a Ing2 (Sergio).
+
+**Puerto:** 8001  
+**Endpoint principal:** `POST /query`
+
 ```python
-# En el código de Ing1 (Roger)
-from memory.ingest_from_ing1 import index_window
-
-for window in generated_windows:
-    result = index_window(window.id, window.dataframe)
-    # Continúa inmediatamente, no espera
-    # Worker procesa en paralelo
+# Contrato con Ing2
+POST /query
+{"query": "ataques DoS IP 1.2.3.4", "top_k": 5}
+→ {"snippets": ["Ventana WIN_XXX: ...", ...]}
 ```
 
-**Ventajas:**
-- No bloquea a Ing1 (retorna en <0.001s)
-- Procesa ventanas en background
-- Cola de hasta 100 ventanas
+**Arranque:**
+```bash
+python src/memory/rag_api.py
+# Con mock para CI: RAG_USE_MOCK=true python src/memory/rag_api.py
+```
+
+---
+
+### investigator.py (M4)
+
+**Qué es:** Agente de investigación local con Llama 3 via Ollama.
+
+**Qué hace:**
+- Pre-calcula resumen estadístico de alertas por IP (puertos, hosts, tipos, fechas)
+- Genera RECOMENDACIÓN en streaming con llama3
+- Mantiene historial de conversación por caso
+
+**Arranque CLI:**
+```bash
+ollama serve  # En otra terminal
+python src/memory/investigator.py
+```
+
+---
+
+### investigator_api.py (M4)
+
+**Qué es:** API FastAPI con SSE streaming para el frontend de Ing4.
+
+**Puerto:** 8003  
+**Endpoint principal:** `POST /chat`
+
+```json
+POST /chat
+{
+  "question": "¿A qué puertos ha atacado esta IP?",
+  "case_id": "AST-WIN_23737707-...",
+  "src_ip": "175.45.176.0",
+  "attack_type": "Backdoor",
+  "dst_port": "53",
+  "dst_ip": "149.171.126.10",
+  "frequency": 249,
+  "victims": 9
+}
+→ SSE stream con tokens
+```
+
+**Lógica de respuesta:**
+
+```
+Pregunta directa (puertos, hosts, tipos, fechas, escalada)
+  → ChromaDB colección "alerts" → VEREDICTO + EVIDENCIA
+  → llama3 genera RECOMENDACIÓN en streaming
+
+Pregunta abierta (interpretación, patrones)
+  → llama3 con resumen estadístico completo
+```
+
+**Arranque:**
+```bash
+python src/memory/investigator_api.py
+```
+
+---
+
+### ingest_alerts.py (M4)
+
+**Qué es:** Script para indexar `live_alerts.json` en ChromaDB colección `alerts`.
+
+**Cuándo ejecutarlo:** Después de correr el simulador, antes de usar el investigator.
+
+```bash
+python src/memory/ingest_alerts.py
+```
+
+---
+
+## 🚀 Arranque Completo del Módulo
+
+```bash
+# 1. Activar entorno
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
+
+# 2. Arrancar Ollama
+ollama serve
+
+# 3. Correr el simulador (genera ventanas + alertas)
+python src/ingestion/stream_simulator.py
+
+# 4. Indexar alertas en ChromaDB
+python src/memory/ingest_alerts.py
+
+# 5. Arrancar APIs
+python src/memory/rag_api.py          # Puerto 8001 (para Ing2)
+python src/memory/investigator_api.py  # Puerto 8003 (para Ing4)
+```
 
 ---
 
 ## 📂 Carpetas
 
-### tests/
-
-**Qué se guarda:** Tests automatizados de todos los componentes.
-
-**Archivos:**
-- `test_chromadb_manager.py` - Test de indexación y búsqueda
-- `test_ingest_from_ing1.py` - Test de cola e ingesta
-- `test_chromadb_100_ventanas.py` - Test de escalabilidad (M2)
-- Otros tests legacy
-
-Ver documentación completa en [`tests/README.md`](tests/README.md)
-
----
-
 ### chromadb_data/
 
-**Qué se guarda:** Base de datos persistente de ChromaDB.
-
-**Contenido:**
-- Archivos SQLite con metadatos
-- Índices HNSW (búsqueda vectorial)
-- Embeddings de todas las ventanas indexadas
-
-**Importante:**
-- ⚠️ NO commitear a Git (está en `.gitignore`)
-- ⚠️ NO borrar esta carpeta (se pierden datos)
-- ✅ ChromaDB lee/escribe automáticamente aquí
-
-**Ubicación:** `src/memory/chromadb_data/`
-
----
-
-## 🧪 Testing
-
-Ver documentación completa de tests: [`tests/README.md`](tests/README.md)
+Base de datos persistente de ChromaDB. ⚠️ No commitear a Git (en `.gitignore`).
 
 ---
 
@@ -132,4 +193,4 @@ Ver documentación completa de tests: [`tests/README.md`](tests/README.md)
 
 ---
 
-**Última actualización:** 12 Marzo 2026
+**Última actualización:** 22 Mayo 2026
