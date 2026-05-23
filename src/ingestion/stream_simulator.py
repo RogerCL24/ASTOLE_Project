@@ -73,9 +73,9 @@ def reset_output_files():
 
 def load_simulation_config():
     default_config = {
-    "speed": 1,
-    "last_updated": None,
-    "mode": "normal",
+        "speed": 1,
+        "last_updated": None,
+        "mode": "normal",
     }
 
     try:

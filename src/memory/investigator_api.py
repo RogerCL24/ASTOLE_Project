@@ -7,6 +7,7 @@ Milestone 4: Chat de Investigación
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from typing import Optional
 from collections import Counter
@@ -29,20 +30,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_investigator = None
+# Singleton solo para la conexión a ChromaDB (sin estado mutable por request)
+_alerts_collection = None
 
 
-def get_investigator() -> Investigator:
-    global _investigator
-    if _investigator is None:
-        _investigator = Investigator()
-    return _investigator
+def get_alerts_collection():
+    """Singleton solo para la colección ChromaDB — sin estado mutable."""
+    global _alerts_collection
+    if _alerts_collection is None:
+        investigator = Investigator()
+        _alerts_collection = investigator.alerts_collection
+    return _alerts_collection
 
 
 def get_alerts_data(src_ip: str) -> tuple:
-    investigator = get_investigator()
+    """Obtener alertas de ChromaDB para una IP."""
     try:
-        results = investigator.alerts_collection.get(
+        collection = get_alerts_collection()
+        results = collection.get(
             where={"src_ip": {"$eq": src_ip}},
             limit=1000
         )
@@ -282,15 +287,6 @@ def health():
 @app.post("/chat")
 def chat(req: ChatRequest):
     try:
-        investigator = get_investigator()
-
-        case_context = {
-            "src_ip": req.src_ip,
-            "attack_type": req.attack_type,
-            "dst_port": req.dst_port,
-            "dst_ip": req.dst_ip,
-        }
-
         current_case = {
             "dst_port": req.dst_port,
             "dst_ip": req.dst_ip,
@@ -299,27 +295,37 @@ def chat(req: ChatRequest):
             "victims": req.victims,
         }
 
+        case_context = {
+            "src_ip": req.src_ip,
+            "attack_type": req.attack_type,
+            "dst_port": req.dst_port,
+            "dst_ip": req.dst_ip,
+        }
+
         async def generate():
             if is_direct_question(req.question) and req.src_ip:
-                # VEREDICTO + EVIDENCIA directo desde ChromaDB
-                veredicto_evidencia = build_veredicto_evidencia(req.question, req.src_ip, current_case)
+                # VEREDICTO + EVIDENCIA directo desde ChromaDB (offload a threadpool)
+                veredicto_evidencia = await run_in_threadpool(
+                    build_veredicto_evidencia, req.question, req.src_ip, current_case
+                )
 
                 if veredicto_evidencia:
-                    # Generar RECOMENDACIÓN con llama3 mientras los puntos están activos
+                    # Instancia por request — sin estado compartido entre usuarios
+                    investigator = Investigator()
+
+                    # Generar RECOMENDACIÓN con llama3 en threadpool (bloqueante)
                     prompt = build_recomendacion_prompt(req.question, veredicto_evidencia, req.src_ip, current_case)
-                    recomendacion = ""
-                    for token in investigator.generate_recommendation(prompt):
-                        recomendacion += token
+                    recomendacion = await run_in_threadpool(
+                        lambda: "".join(investigator.generate_recommendation(prompt))
+                    )
 
                     # Limpiar asteriscos y markdown
                     recomendacion = re.sub(r'\*+', '', recomendacion).strip()
                     recomendacion = re.sub(r'#+\s*', '', recomendacion).strip()
                     recomendacion = re.sub(r'^Recomendaci[oó]n\s*:\s*', '', recomendacion, flags=re.IGNORECASE).strip()
 
-                    # Construir respuesta completa
+                    # Construir respuesta completa y enviar con efecto de escritura
                     full_text = veredicto_evidencia + "\n\nRECOMENDACIÓN: " + recomendacion
-
-                    # Enviar todo con efecto de escritura
                     for char in full_text:
                         data = json.dumps({"token": char}, ensure_ascii=False)
                         yield f"data: {data}\n\n"
@@ -328,14 +334,15 @@ def chat(req: ChatRequest):
                     yield "data: [DONE]\n\n"
                     return
 
-            # Si no es pregunta directa, usar el modelo completo
-            full_response = ""
-            for token in investigator.ask_stream(
-                question=req.question,
-                case_id=req.case_id,
-                case_context=case_context
-            ):
-                full_response += token
+            # Pregunta abierta — instancia por request, offload a threadpool
+            investigator = Investigator()
+            full_response = await run_in_threadpool(
+                lambda: "".join(investigator.ask_stream(
+                    question=req.question,
+                    case_id=req.case_id,
+                    case_context=case_context
+                ))
+            )
             formatted = format_response(full_response, question=req.question)
 
             for char in formatted:
@@ -356,8 +363,6 @@ def chat(req: ChatRequest):
 
 @app.post("/reset")
 def reset():
-    investigator = get_investigator()
-    investigator.reset()
     return JSONResponse(
         content={"status": "ok", "message": "Historial reseteado"},
         media_type="application/json; charset=utf-8"
@@ -367,4 +372,3 @@ def reset():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8003)
-    
