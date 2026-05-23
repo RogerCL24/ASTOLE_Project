@@ -19,3 +19,4 @@ langsmith>=0.1.0      # Trazabilidad y observabilidad
 pytest>=8.0.0         # Tests
 pytest-asyncio>=0.23.0  # Tests async
 pyyaml>=6.0.1         # YAML frontmatter parsing — 6.0.1 patches CVE-2022-42969
+ollama>=0.2.0         # Cliente Python para Ollama (opcional, se usa requests directamente)

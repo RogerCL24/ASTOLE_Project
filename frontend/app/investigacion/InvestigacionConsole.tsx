@@ -85,6 +85,9 @@ export default function InvestigacionConsole({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const [alerts, setAlerts] = useState<any[]>([]);
   const [alertsStatus, setAlertsStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -279,15 +282,89 @@ export default function InvestigacionConsole({
   }, [initialMessage]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!isStreaming) return;
+    const container = chatContainerRef.current;
+    if (!container) return;
+    container.scrollTop = container.scrollHeight;
+  }, [messages, isStreaming]);
 
-  const onSend = () => {
-    const trimmed = draft.trim();
-    if (!trimmed) return;
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
-    setDraft("");
-  };
+  const onSend = async () => {
+  const trimmed = draft.trim();
+  if (!trimmed || isStreaming) return;
+
+  setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+  setDraft("");
+  setIsStreaming(true);
+  setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+  try {
+    const response = await fetch("/api/investigator", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+      question: trimmed,
+      case_id: caseId !== "--" ? caseId : null,
+      src_ip: effectiveSrcIp !== "--" ? effectiveSrcIp : null,
+      attack_type: effectiveAttackType !== "--" ? effectiveAttackType : null,
+      dst_ip: selectedDstIp !== "--" ? selectedDstIp : null,
+      dst_port: dstPort !== "--" ? dstPort : null,
+      frequency: networkContext.frequencyCount,
+      victims: networkContext.otherVictims,
+    }),
+    });
+
+    if (!response.ok || !response.body) {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: "Error al conectar con el asistente." };
+        return updated;
+      });
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") break;
+
+        try {
+          const parsed = JSON.parse(data);
+          const token = parsed.token ?? "";
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              content: (updated[updated.length - 1].content ?? "") + token,
+            };
+            return updated;
+          });
+        } catch {
+          // ignorar líneas malformadas
+        }
+      }
+    }
+  } catch {
+    setMessages((prev) => {
+      const updated = [...prev];
+      updated[updated.length - 1] = { role: "assistant", content: "Error al conectar con el asistente." };
+      return updated;
+    });
+  } finally {
+    setIsStreaming(false);
+  }
+};
 
   return (
     <div className="relative z-10 p-6 lg:p-10">
@@ -570,11 +647,14 @@ export default function InvestigacionConsole({
               <p className="mt-1 text-lg text-zinc-400">Base de interfaz lista; backend RAG en desarrollo.</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4 pr-3 [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-5 py-4 pr-3 [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
               <div className="space-y-3">
                 {messages.map((msg, idx) => {
                   const isUser = msg.role === "user";
                   const isWelcome = !isUser && idx === 0;
+                  // No renderizar placeholder vacío del asistente — lo muestra la animación de puntos
+                  if (!isUser && msg.content === "" && isStreaming) return null;
+ 
                   return (
                     <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                       <div
@@ -599,13 +679,28 @@ export default function InvestigacionConsole({
                             characters={'0101X?#&."'}
                           />
                         ) : (
-                          msg.content
+                          <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
                         )}
                       </div>
                     </div>
                   );
                 })}
-                <div ref={bottomRef} />
+                {isStreaming && (messages[messages.length - 1]?.content ?? "").length === 0 && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[min(740px,92%)] rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+                      <div className="mb-2 flex items-center gap-2 text-zinc-300">
+                        <Bot className="h-4 w-4 text-hyper-accent" />
+                        <span className="text-base uppercase tracking-[0.2em] text-zinc-400">Sistema</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce [animation-delay:0ms]" />
+                        <span className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce [animation-delay:150ms]" />
+                        <span className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce [animation-delay:300ms]" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
               </div>
             </div>
 
