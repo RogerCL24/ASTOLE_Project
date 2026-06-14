@@ -121,11 +121,20 @@ export default function Sidebar() {
               Telemetría & KPIs
             </Link>
           </li>
+          <li>
+            <Link href="/visualizacion-3d" className={getLinkClass('/visualizacion-3d')}>
+              <svg className={`w-6 h-6 ${pathname === '/visualizacion-3d' ? 'text-hyper-accent' : 'text-zinc-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7L12 3L4 7M20 7L12 11M20 7V17L12 21M12 11L4 7M12 11V21M4 7V17L12 21" />
+              </svg>
+              Activo bajo ataque (3D)
+            </Link>
+          </li>
         </ul>
       </div>
-      
-      <div className="bg-white/5 rounded-lg p-4 border border-white/5">
-        <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-2">Engine Status</p>
+
+      <div className="flex flex-col gap-3">
+        <div className="bg-white/5 rounded-lg p-4 border border-white/5">
+          <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-2">Engine Status</p>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
@@ -139,6 +148,7 @@ export default function Sidebar() {
           <span className="text-[11px] font-mono">{status}</span>
         </div>
           <span className="text-[10px] font-mono text-zinc-400">{speedLabel}</span>
+        </div>
         </div>
       </div>
     </nav>

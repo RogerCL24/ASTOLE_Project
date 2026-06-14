@@ -12,16 +12,32 @@
 
 body {
   background-color: transparent;
-  color: #ededed;
+  font-weight: 600;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-/* Customización para los gráficos de Tremor/Recharts */
-.custom-chart text {
-  fill: #f5f5ec !important; 
-  font-size: 12px !important;
-  font-weight: 500;
+/* ------------------------------------------------------------
+   Tamaño tipográfico base — sirve para ambos temas.
+   ------------------------------------------------------------ */
+.text-xs { font-size: 0.875rem !important; line-height: 1.35 !important; }
+.text-sm { font-size: 1rem    !important; line-height: 1.45 !important; }
+
+/* ============================================================
+   DARK MODE (único)
+   ============================================================ */
+body { color: #ffffff; }
+
+/* Texto secundario en blanco-negrita */
+.text-zinc-100,
+.text-zinc-200,
+.text-zinc-300,
+.text-zinc-400,
+.text-zinc-500,
+.text-zinc-700 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
 }
 
-.custom-chart .tremor-legend-text {
-  color: #f5f5ec !important;
-}
+/* Gráficos Tremor/Recharts */
+.custom-chart text { fill: #f5f5ec !important; font-size: 12px !important; font-weight: 500; }
+.custom-chart .tremor-legend-text { color: #f5f5ec !important; }

@@ -11,6 +11,7 @@ export type DecryptedTextProps = {
 	revealDuration?: number;
 	sequential?: boolean;
 	characters?: string;
+	fixedWidth?: boolean;
 };
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -32,6 +33,7 @@ export default function DecryptedText({
 	revealDuration = 0.8,
 	sequential = true,
 	characters = "0101X?#&.",
+	fixedWidth = false,
 }: DecryptedTextProps) {
 	const value = String(text ?? "");
 	const [display, setDisplay] = useState(value);
@@ -142,7 +144,24 @@ export default function DecryptedText({
 
 	return (
 		<span ref={wrapperRef} className={className}>
-			<span aria-hidden>{display}</span>
+			{fixedWidth ? (
+				<span aria-hidden style={{ whiteSpace: "pre" }}>
+					{display.split("").map((ch, i) => (
+						<span
+							key={i}
+							style={{
+								display: "inline-block",
+								width: "1ch",
+								textAlign: "center",
+							}}
+						>
+							{ch}
+						</span>
+					))}
+				</span>
+			) : (
+				<span aria-hidden>{display}</span>
+			)}
 			<span className="sr-only">{value}</span>
 		</span>
 	);

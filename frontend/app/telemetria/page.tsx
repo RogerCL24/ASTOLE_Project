@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Badge, BarList, Card, Metric, Text } from "@tremor/react";
+import { useEffect, useRef, useState } from "react";
+import { BarList } from "@tremor/react";
+import { motion, useInView } from "framer-motion";
 import {
   Cell,
   Line,
@@ -13,6 +14,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Activity, Database, Gauge, Layers, ShieldCheck, Zap } from "lucide-react";
+import ShinyText from "@/components/ui/ShinyText";
+import SpotlightCard from "@/components/ui/SpotlightCard";
+import TiltedCard from "@/components/ui/TiltedCard";
+import Magnetic from "@/components/ui/Magnetic";
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_LATENCY_POINTS = 120;
@@ -102,30 +108,9 @@ const fallbackData: StatsResponse = {
     },
   },
   alerts: [
-    {
-      gnn_metadata: {
-        label_multiclass: "Shellcode",
-        label_binary: 1,
-        confidence_score: 0.99,
-      },
-      network_data: { protocol: 6 },
-    },
-    {
-      gnn_metadata: {
-        label_multiclass: "Fuzzers",
-        label_binary: 1,
-        confidence_score: 0.95,
-      },
-      network_data: { protocol: 6 },
-    },
-    {
-      gnn_metadata: {
-        label_multiclass: "Analysis",
-        label_binary: 1,
-        confidence_score: 0.93,
-      },
-      network_data: { protocol: 17 },
-    },
+    { gnn_metadata: { label_multiclass: "Shellcode", label_binary: 1, confidence_score: 0.99 }, network_data: { protocol: 6 } },
+    { gnn_metadata: { label_multiclass: "Fuzzers", label_binary: 1, confidence_score: 0.95 }, network_data: { protocol: 6 } },
+    { gnn_metadata: { label_multiclass: "Analysis", label_binary: 1, confidence_score: 0.93 }, network_data: { protocol: 17 } },
   ],
 };
 
@@ -139,15 +124,26 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 4,
   }).format(value);
 
-const MADRID_TIME_ZONE = "Europe/Madrid";
+const formatRelativeTime = (value?: string): string => {
+  if (!value) return "--";
+  const ms = Date.parse(value);
+  if (!Number.isFinite(ms)) return "--";
+  const diffSec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+  if (diffSec < 1) return "ahora";
+  if (diffSec < 60) return `hace ${diffSec}s`;
+  const min = Math.floor(diffSec / 60);
+  if (min < 60) return `hace ${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `hace ${hr}h`;
+  return `hace ${Math.floor(hr / 24)}d`;
+};
 
-const formatMadridTime = (value?: string) => {
-  if (!value) return "--:--:--";
-  try {
-    return new Date(value).toLocaleTimeString("es-ES", { hour12: false, timeZone: MADRID_TIME_ZONE });
-  } catch {
-    return new Date(value).toLocaleTimeString("es-ES", { hour12: false });
-  }
+const formatRelativeWindow = (label: string): string => {
+  const match = /^T-(\d+)$/.exec(label);
+  if (!match) return label;
+  const n = Number(match[1]);
+  if (n === 0) return "ahora";
+  return `hace ${n}s`;
 };
 
 const normalizeTrafficPoint = (point: any): TrafficPoint => ({
@@ -157,23 +153,16 @@ const normalizeTrafficPoint = (point: any): TrafficPoint => ({
 });
 
 const calculateLatencyAverage = (latencies: number[]) => {
-  if (!latencies.length) {
-    return 0;
-  }
-
+  if (!latencies.length) return 0;
   return latencies.reduce((sum, value) => sum + Number(value || 0), 0) / latencies.length;
 };
 
 const normalizeProtocol = (protocol?: number) => {
   switch (Number(protocol)) {
-    case 1:
-      return "ICMP";
-    case 6:
-      return "TCP";
-    case 17:
-      return "UDP";
-    default:
-      return "OTHER";
+    case 1: return "ICMP";
+    case 6: return "TCP";
+    case 17: return "UDP";
+    default: return "OTHER";
   }
 };
 
@@ -198,19 +187,87 @@ const calculateAlertsPerMinute = (alerts: AlertEntry[]) => {
     .map((alert) => (typeof alert?.timestamp === "string" ? Date.parse(alert.timestamp) : NaN))
     .filter((value) => Number.isFinite(value)) as number[];
 
-  if (timestamps.length < 2) {
-    return 0;
-  }
+  if (timestamps.length < 2) return 0;
 
   const min = Math.min(...timestamps);
   const max = Math.max(...timestamps);
   const minutes = (max - min) / 60_000;
-  if (minutes <= 0) {
-    return 0;
-  }
+  if (minutes <= 0) return 0;
 
   return alerts.length / minutes;
 };
+
+/* ============================================================
+   Animated number — smoothly transitions on each value change.
+   ============================================================ */
+function useAnimatedNumber(target: number, durationMs = 1200, startWhen = true) {
+  const [value, setValue] = useState(0);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    if (!startWhen) return;
+    let raf = 0;
+    const start = performance.now();
+    const from = fromRef.current;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / durationMs);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const next = from + (target - from) * eased;
+      setValue(next);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else fromRef.current = target;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      fromRef.current = target;
+      cancelAnimationFrame(raf);
+    };
+  }, [target, durationMs, startWhen]);
+  return value;
+}
+
+type KpiCardProps = {
+  icon: React.ReactNode;
+  label: string;
+  target: number;
+  suffix?: string;
+  format?: "comma" | "decimal2";
+  caption: string;
+  index: number;
+};
+
+function KpiCard({ icon, label, target, suffix, format = "comma", caption, index }: KpiCardProps) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const inView = useInView(ref, { once: false, amount: 0.3 });
+  const animated = useAnimatedNumber(target, 1200, inView);
+  const display =
+    format === "decimal2"
+      ? animated.toFixed(2)
+      : new Intl.NumberFormat("es-ES").format(Math.round(animated));
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay: index * 0.08 }}
+    >
+      <SpotlightCard className="h-full rounded-2xl border border-white/5 bg-black/40 p-5 transition-colors hover:border-hyper-accent/40">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] uppercase tracking-[0.25em] text-zinc-400">{label}</span>
+          <span className="text-hyper-accent">{icon}</span>
+        </div>
+        <div className="mt-4 font-mono text-4xl font-black text-white tabular-nums leading-none drop-shadow-[0_0_18px_rgba(209,132,0,0.35)]">
+          {display}
+          {suffix ? <span className="text-hyper-accent">{suffix}</span> : null}
+        </div>
+        <p className="mt-3 text-xs text-zinc-400">{caption}</p>
+      </SpotlightCard>
+    </motion.div>
+  );
+}
+
+const dotMeshOverlayClass =
+  "pointer-events-none absolute inset-0 opacity-[0.08] bg-[radial-gradient(circle,rgba(255,255,255,0.35)_1px,transparent_1px)] [background-size:18px_18px]";
 
 export default function TelemetriaPage() {
   const [data, setData] = useState<StatsResponse>(fallbackData);
@@ -220,31 +277,24 @@ export default function TelemetriaPage() {
 
   useEffect(() => {
     setIsClient(true);
-
     let active = true;
 
     const fetchStats = async () => {
       try {
         const response = await fetch("/api/stats", { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const json = (await response.json()) as StatsResponse;
         if (active) {
           setData(json);
           setError(null);
         }
-      } catch (fetchError) {
-        if (active) {
-          setError("No se pudieron cargar las métricas de telemetría.");
-        }
+      } catch {
+        if (active) setError("No se pudieron cargar las métricas de telemetría.");
       }
     };
 
     fetchStats();
     const interval = window.setInterval(fetchStats, POLL_INTERVAL_MS);
-
     return () => {
       active = false;
       window.clearInterval(interval);
@@ -277,7 +327,10 @@ export default function TelemetriaPage() {
 
   const protocolChartData = buildProtocolDistribution(alerts);
   const protocolTotal = protocolChartData.reduce((sum, entry) => sum + Number(entry.value || 0), 0);
-  const protocolPieData = protocolTotal > 0 ? protocolChartData.filter((entry) => entry.value > 0) : [{ name: "Sin datos", value: 1, color: "#334155" }];
+  const protocolPieData =
+    protocolTotal > 0
+      ? protocolChartData.filter((entry) => entry.value > 0)
+      : [{ name: "Sin datos", value: 1, color: "#334155" }];
 
   const totalAlerts = Number(performance.total_alerts_triggered ?? alerts.length);
   const alertsPerMinute = calculateAlertsPerMinute(alerts);
@@ -301,222 +354,327 @@ export default function TelemetriaPage() {
   const totalTokens = Object.values(tokenTotalsByLabel).reduce((sum, tokens) => sum + Number(tokens || 0), 0);
   const totalTokenCost = (totalTokens / 1000) * COST_PER_1K_TOKENS_USD;
   const engineStatus = data.metrics?.status ?? "UNKNOWN";
-  const lastUpdate = data.metrics?.last_update ? formatMadridTime(data.metrics.last_update) : "Sin actualización";
+  const isOperative = engineStatus === "COMPLETED" || engineStatus === "RUNNING";
+  const lastUpdate = data.metrics?.last_update ? formatRelativeTime(data.metrics.last_update) : "Sin actualización";
   const tokenUnitLabel = `${formatCurrency(COST_PER_1K_TOKENS_USD)} / 1k tokens`;
 
   return (
     <div className="min-h-screen bg-black px-6 py-10 lg:px-12">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
-            <Badge color={engineStatus === "COMPLETED" ? "green" : "orange"} size="xs">
-              Motor {engineStatus === "COMPLETED" ? "Operativo" : engineStatus}
-            </Badge>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white lg:text-4xl">Telemetría SOC</h1>
-              <Text className="mt-2 max-w-2xl text-sm text-zinc-400">
-                Monitor de latencia operativa y costes estimados de tokens.
-              </Text>
+      <div className="mx-auto flex max-w-7xl flex-col gap-10">
+        {/* ===== HERO ===== */}
+        <motion.header
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+        >
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
+              <span className="relative flex h-2 w-2">
+                <span
+                  className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    isOperative ? "animate-ping bg-green-400" : "bg-red-400"
+                  }`}
+                />
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${isOperative ? "bg-green-500" : "bg-red-500"}`} />
+              </span>
+              <ShinyText className="text-[11px] font-bold uppercase tracking-[0.3em]">
+                {isOperative ? "Motor operativo" : `Motor ${engineStatus}`}
+              </ShinyText>
             </div>
+
+            <h1 className="text-5xl font-black tracking-tighter text-white lg:text-7xl">
+              TELEMETRÍA SOC
+            </h1>
+            <p className="max-w-2xl text-base text-zinc-400">
+              Monitor en tiempo real de latencia, tráfico y coste de inferencia. Polling cada {(POLL_INTERVAL_MS / 1000).toFixed(0)}s ·
+              ventana de {formatNumber(observationCycles)} ciclos.
+            </p>
           </div>
-          <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-4 text-right">
-            <Text className="text-[11px] uppercase tracking-[0.25em] text-zinc-400">Última actualización</Text>
-            <p className="mt-1 font-mono text-sm text-white">{lastUpdate}</p>
-          </div>
-        </header>
+
+          <Magnetic strength={0.18}>
+            <div className="rounded-2xl border border-hyper-accent/30 bg-hyper-accent/5 px-5 py-4 text-right shadow-[0_0_30px_rgba(209,132,0,0.15)]">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-hyper-accent">Última actualización</p>
+              <p className="mt-2 font-mono text-2xl font-bold text-white">{lastUpdate}</p>
+            </div>
+          </Magnetic>
+        </motion.header>
 
         {error ? (
-          <Card className="border border-red-500/20 bg-red-500/5 ring-0">
-            <Text className="text-red-300">{error}</Text>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 backdrop-blur-sm"
+          >
+            <p className="text-sm text-red-300">{error}</p>
+          </motion.div>
         ) : null}
 
-        <Card className="border border-white/5 bg-white/5 ring-0">
-          <Text className="text-sm text-zinc-400">
-            Métricas analíticas basadas en el histórico acumulado del motor.
-          </Text>
-        </Card>
-
-        <Card className="border border-hyper-border bg-hyper-surface ring-0">
-          <div className="flex flex-col gap-2 border-b border-white/5 pb-5">
-            <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Rendimiento Histórico</Text>
-            <h2 className="text-2xl font-semibold text-white">KPIs operativos</h2>
-            <Text className="text-sm text-zinc-400">Ventana de Observación: {formatNumber(observationCycles)} ciclos.</Text>
+        {/* ===== SECTION 01 · KPIs ===== */}
+        <section className="space-y-6">
+          <div className="flex items-baseline gap-4">
+            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-hyper-accent">· 01 ·</span>
+            <h2 className="text-2xl font-bold text-white">KPIs operativos</h2>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-              <Text className="text-zinc-400">Total Alertas</Text>
-              <Metric className="mt-3 text-white">{formatNumber(totalAlerts)}</Metric>
-              <Text className="mt-2 text-xs text-zinc-400">Acumuladas por el motor.</Text>
-            </div>
-            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-              <Text className="text-zinc-400">Alertas/Minuto</Text>
-              <Metric className="mt-3 text-white">{alertsPerMinute > 0 ? alertsPerMinute.toFixed(2) : "--"}</Metric>
-              <Text className="mt-2 text-xs text-zinc-400">Estimado desde timestamps.</Text>
-            </div>
-            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-              <Text className="text-zinc-400">Reducción de Ruido</Text>
-              <Metric className="mt-3 text-white">{compressionRate.toFixed(2)}%</Metric>
-              <Text className="mt-2 text-xs text-zinc-400">Compresión reportada por el motor.</Text>
-            </div>
-            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-              <Text className="text-zinc-400">Latencia Media</Text>
-              <Metric className="mt-3 text-white">{avgLatency.toFixed(2)} ms</Metric>
-              <Text className="mt-2 text-xs text-zinc-400">Promedio en la ventana visible.</Text>
-            </div>
-            <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-              <Text className="text-zinc-400">Volumen Procesado</Text>
-              <Metric className="mt-3 text-white">{formatNumber(dataVolume)}</Metric>
-              <Text className="mt-2 text-xs text-zinc-400">Suma de tráfico normal + anómalo.</Text>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <KpiCard
+              icon={<ShieldCheck className="h-5 w-5" />}
+              label="Total Alertas"
+              target={totalAlerts}
+              caption="Acumuladas por el motor."
+              index={0}
+            />
+            <KpiCard
+              icon={<Activity className="h-5 w-5" />}
+              label="Alertas/Minuto"
+              target={alertsPerMinute}
+              format="decimal2"
+              caption="Estimado desde timestamps."
+              index={1}
+            />
+            <KpiCard
+              icon={<Layers className="h-5 w-5" />}
+              label="Reducción de Ruido"
+              target={compressionRate}
+              suffix="%"
+              format="decimal2"
+              caption="Compresión reportada."
+              index={2}
+            />
+            <KpiCard
+              icon={<Gauge className="h-5 w-5" />}
+              label="Latencia Media"
+              target={avgLatency}
+              suffix=" ms"
+              format="decimal2"
+              caption="Promedio en ventana visible."
+              index={3}
+            />
+            <KpiCard
+              icon={<Database className="h-5 w-5" />}
+              label="Volumen Procesado"
+              target={dataVolume}
+              caption="Tráfico normal + anómalo."
+              index={4}
+            />
           </div>
-        </Card>
+        </section>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="border border-hyper-border bg-hyper-surface ring-0">
-            <div className="flex flex-col gap-2 border-b border-white/5 pb-5">
-              <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Latencia vs Tiempo</Text>
-              <h2 className="text-2xl font-semibold text-white">Histórico reciente</h2>
-              <Text className="text-sm text-zinc-400">Ventana de Observación: {formatNumber(observationCycles)} ciclos.</Text>
-            </div>
+        {/* ===== SECTION 02 · Latencia + Protocolos ===== */}
+        <section className="space-y-6">
+          <div className="flex items-baseline gap-4">
+            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-hyper-accent">· 02 ·</span>
+            <h2 className="text-2xl font-bold text-white">Comportamiento del motor</h2>
+          </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {HISTORY_RANGE_OPTIONS.map((option) => {
-                const active = historyRange === option;
-                const label = option === "all" ? "Todo el histórico" : `Últimas ${option}`;
-
-                return (
-                  <button
-                    key={String(option)}
-                    type="button"
-                    onClick={() => setHistoryRange(option)}
-                    className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-200 ${
-                      active
-                        ? "border-hyper-accent bg-hyper-accent/20 text-white shadow-[0_0_18px_rgba(249,115,22,0.25)]"
-                        : "border-white/10 bg-black/40 text-zinc-400 hover:border-hyper-accent/40 hover:text-white"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-6 overflow-x-auto">
-              <div className={`h-80 w-full ${historyRange === "all" ? "min-w-[2000px]" : ""}`}>
-                {isClient ? (
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <LineChart data={latencyChartData}>
-                      <XAxis dataKey="tiempo" hide />
-                      <YAxis hide />
-                      <Tooltip
-                        cursor={{ stroke: "rgba(255,255,255,0.08)" }}
-                        contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "12px" }}
-                        itemStyle={{ color: "#fff" }}
-                        formatter={(value: any) => [`${Number(value).toFixed(2)} ms`, "Latencia"]}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="latencia_ms"
-                        stroke="#f97316"
-                        strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full w-full rounded-xl border border-white/5 bg-black/30" />
-                )}
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border border-hyper-border bg-hyper-surface ring-0">
-            <div className="flex flex-col gap-2 border-b border-white/5 pb-5">
-              <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Distribución de Protocolos</Text>
-              <h2 className="text-2xl font-semibold text-white">Donut de Protocolos</h2>
-              <Text className="text-sm text-zinc-400">Conteo sobre alertas recibidas.</Text>
-            </div>
-
-            <div className="mt-6 h-80 w-full min-w-0 relative">
-              {isClient ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <PieChart>
-                    <Pie
-                      data={protocolPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={62}
-                      outerRadius={96}
-                      paddingAngle={6}
-                      dataKey="value"
-                      stroke="none"
-                      cornerRadius={6}
-                      isAnimationActive={false}
-                    >
-                      {protocolPieData.map((entry) => (
-                        <Cell key={entry.name} fill={(entry as any).color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "12px" }}
-                      itemStyle={{ color: "#fff" }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full w-full rounded-xl border border-white/5 bg-black/30" />
-              )}
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-mono text-white">{formatNumber(protocolTotal)}</span>
-                <span className="text-[9px] text-zinc-400 uppercase tracking-widest mt-1">Eventos</span>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {protocolChartData.map((entry) => (
-                <div key={entry.name} className="flex items-center justify-between rounded-xl border border-white/5 bg-black/40 px-3 py-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                    <span className="text-zinc-300">{entry.name}</span>
-                  </div>
-                  <span className="font-mono text-white">{entry.value}</span>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <TiltedCard
+              maxTilt={4}
+              perspective={1400}
+              scale={1.01}
+              className="relative overflow-hidden rounded-2xl border border-hyper-border bg-hyper-surface p-6"
+            >
+              <div className={dotMeshOverlayClass} />
+              <div className="relative">
+                <div className="flex flex-col gap-2 border-b border-white/5 pb-4">
+                  <span className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Latencia vs Tiempo</span>
+                  <h3 className="text-xl font-bold text-white">Histórico reciente</h3>
+                  <p className="text-sm text-zinc-400">{formatNumber(observationCycles)} ciclos analizados.</p>
                 </div>
-              ))}
-            </div>
-          </Card>
 
-          <Card className="border border-hyper-border bg-hyper-surface ring-0">
-            <div className="flex flex-col gap-2 border-b border-white/5 pb-5">
-              <Text className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Costes de Tokens</Text>
-              <h2 className="text-2xl font-semibold text-white">Estimación operativa</h2>
-              <Text className="text-sm text-zinc-400">Modelo mock: {tokenUnitLabel}.</Text>
-            </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {HISTORY_RANGE_OPTIONS.map((option) => {
+                    const active = historyRange === option;
+                    const label = option === "all" ? "Todo el histórico" : `Últimas ${option}`;
+                    return (
+                      <Magnetic key={String(option)} strength={0.22}>
+                        <button
+                          type="button"
+                          onClick={() => setHistoryRange(option)}
+                          className={`rounded-full border px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-200 ${
+                            active
+                              ? "border-hyper-accent bg-hyper-accent/20 text-white shadow-[0_0_18px_rgba(209,132,0,0.35)]"
+                              : "border-white/10 bg-black/40 text-zinc-300 hover:border-hyper-accent/40 hover:text-white"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      </Magnetic>
+                    );
+                  })}
+                </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-                <Text className="text-zinc-400">Tokens totales</Text>
-                <Metric className="mt-3 text-white">{formatNumber(totalTokens)}</Metric>
+                <div className="mt-6 overflow-x-auto">
+                  <div className={`h-80 w-full ${historyRange === "all" ? "min-w-[2000px]" : ""}`}>
+                    {isClient ? (
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <LineChart data={latencyChartData}>
+                          <XAxis dataKey="tiempo" hide />
+                          <YAxis hide />
+                          <Tooltip
+                            cursor={{ stroke: "rgba(209,132,0,0.4)", strokeDasharray: "3 3" }}
+                            contentStyle={{
+                              backgroundColor: "#09090b",
+                              borderColor: "#D18400",
+                              borderRadius: "10px",
+                              boxShadow: "0 0 24px rgba(209,132,0,0.25)",
+                            }}
+                            itemStyle={{ color: "#fff", fontWeight: 600 }}
+                            labelStyle={{ color: "#D18400", fontWeight: 700 }}
+                            labelFormatter={(label: any) => formatRelativeWindow(String(label))}
+                            formatter={(value: any) => [`${Number(value).toFixed(2)} ms`, "Latencia"]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="latencia_ms"
+                            stroke="#D18400"
+                            strokeWidth={2.5}
+                            dot={false}
+                            isAnimationActive={false}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full w-full rounded-xl border border-white/5 bg-black/30" />
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-black/40 p-5">
-                <Text className="text-zinc-400">Coste estimado</Text>
-                <Metric className="mt-3 text-white">{formatCurrency(totalTokenCost)}</Metric>
+            </TiltedCard>
+
+            <TiltedCard
+              maxTilt={4}
+              perspective={1400}
+              scale={1.01}
+              className="relative overflow-hidden rounded-2xl border border-hyper-border bg-hyper-surface p-6"
+            >
+              <div className={dotMeshOverlayClass} />
+              <div className="relative">
+                <div className="flex flex-col gap-2 border-b border-white/5 pb-4">
+                  <span className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Distribución</span>
+                  <h3 className="text-xl font-bold text-white">Protocolos de alerta</h3>
+                  <p className="text-sm text-zinc-400">Conteo sobre alertas recibidas.</p>
+                </div>
+
+                <div className="relative mt-6 h-80 w-full">
+                  {isClient ? (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                      <PieChart>
+                        <Pie
+                          data={protocolPieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={68}
+                          outerRadius={104}
+                          paddingAngle={6}
+                          dataKey="value"
+                          stroke="none"
+                          cornerRadius={6}
+                          isAnimationActive={false}
+                        >
+                          {protocolPieData.map((entry) => (
+                            <Cell key={entry.name} fill={(entry as any).color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#09090b",
+                            borderColor: "#D18400",
+                            borderRadius: "10px",
+                            boxShadow: "0 0 24px rgba(209,132,0,0.25)",
+                          }}
+                          itemStyle={{ color: "#fff", fontWeight: 600 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full w-full rounded-xl border border-white/5 bg-black/30" />
+                  )}
+
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-mono text-4xl font-black text-white tabular-nums drop-shadow-[0_0_18px_rgba(209,132,0,0.4)]">
+                      {formatNumber(protocolTotal)}
+                    </span>
+                    <span className="mt-1 text-[10px] uppercase tracking-widest text-zinc-400">Eventos</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {protocolChartData.map((entry) => (
+                    <div
+                      key={entry.name}
+                      className="flex items-center justify-between rounded-xl border border-white/5 bg-black/40 px-3 py-2 text-sm transition-colors hover:border-hyper-accent/40"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: entry.color, boxShadow: `0 0 8px ${entry.color}` }}
+                        />
+                        <span className="font-bold text-white">{entry.name}</span>
+                      </div>
+                      <span className="font-mono tabular-nums text-white">{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TiltedCard>
+          </div>
+        </section>
+
+        {/* ===== SECTION 03 · Tokens ===== */}
+        <section className="space-y-6">
+          <div className="flex items-baseline gap-4">
+            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-hyper-accent">· 03 ·</span>
+            <h2 className="text-2xl font-bold text-white">Coste de inferencia</h2>
+          </div>
+
+          <TiltedCard
+            maxTilt={3}
+            perspective={1600}
+            scale={1.005}
+            className="relative overflow-hidden rounded-2xl border border-hyper-border bg-hyper-surface p-6"
+          >
+            <div className={dotMeshOverlayClass} />
+            <div className="relative">
+              <div className="flex flex-col gap-2 border-b border-white/5 pb-4">
+                <span className="text-[11px] uppercase tracking-[0.25em] text-hyper-accent">Tokens · Estimación</span>
+                <h3 className="text-xl font-bold text-white">Coste por tipo de alerta</h3>
+                <p className="text-sm text-zinc-400">Modelo mock · {tokenUnitLabel}.</p>
+              </div>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <SpotlightCard className="rounded-2xl border border-white/5 bg-black/40 p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-[0.25em] text-zinc-400">Tokens totales</span>
+                    <Zap className="h-5 w-5 text-hyper-accent" />
+                  </div>
+                  <p className="mt-4 font-mono text-4xl font-black text-white tabular-nums drop-shadow-[0_0_18px_rgba(209,132,0,0.35)]">
+                    {formatNumber(totalTokens)}
+                  </p>
+                </SpotlightCard>
+                <SpotlightCard className="rounded-2xl border border-white/5 bg-black/40 p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-[0.25em] text-zinc-400">Coste estimado</span>
+                    <Zap className="h-5 w-5 text-hyper-accent" />
+                  </div>
+                  <p className="mt-4 font-mono text-4xl font-black text-white tabular-nums drop-shadow-[0_0_18px_rgba(209,132,0,0.35)]">
+                    {formatCurrency(totalTokenCost)}
+                  </p>
+                </SpotlightCard>
+              </div>
+
+              <div className="mt-6">
+                <p className="text-xs uppercase tracking-[0.25em] text-zinc-400">Top costes por tipo</p>
+                <BarList
+                  data={tokenCostItems}
+                  className="mt-3"
+                  valueFormatter={(value) => formatCurrency(Number(value))}
+                />
               </div>
             </div>
-
-            <div className="mt-6">
-              <Text className="text-xs uppercase tracking-[0.25em] text-zinc-400">Top costes por tipo</Text>
-              <BarList
-                data={tokenCostItems}
-                className="mt-3"
-                valueFormatter={(value) => formatCurrency(Number(value))}
-              />
-            </div>
-          </Card>
-        </div>
+          </TiltedCard>
+        </section>
       </div>
     </div>
   );
