@@ -1,536 +1,231 @@
 {
-    "last_update": "2026-04-02T18:57:39Z",
+    "last_update": "2026-06-14T17:09:24Z",
     "performance": {
-        "windows_processed": 86,
-        "total_flows_analyzed": 40766,
-        "total_alerts_triggered": 71,
-        "avg_latency_ms": 0.76,
-        "compression_rate_percent": 99.8258,
+        "windows_processed": 36,
+        "total_flows_analyzed": 2875,
+        "total_alerts_triggered": 26,
+        "avg_latency_ms": 0.54,
+        "compression_rate_percent": 99.0957,
         "traffic_history": [
             {
-                "tiempo": "WIN_23737018",
-                "Tr\u00e1fico Normal": 133,
-                "Tr\u00e1fico An\u00f3malo": 23
-            },
-            {
-                "tiempo": "WIN_23737019",
-                "Tr\u00e1fico Normal": 998,
-                "Tr\u00e1fico An\u00f3malo": 158
-            },
-            {
-                "tiempo": "WIN_23737020",
-                "Tr\u00e1fico Normal": 380,
-                "Tr\u00e1fico An\u00f3malo": 8
-            },
-            {
-                "tiempo": "WIN_23737037",
-                "Tr\u00e1fico Normal": 239,
-                "Tr\u00e1fico An\u00f3malo": 11
-            },
-            {
-                "tiempo": "WIN_23737038",
-                "Tr\u00e1fico Normal": 1159,
-                "Tr\u00e1fico An\u00f3malo": 86
-            },
-            {
-                "tiempo": "WIN_23737039",
-                "Tr\u00e1fico Normal": 230,
-                "Tr\u00e1fico An\u00f3malo": 20
-            },
-            {
-                "tiempo": "WIN_23737040",
-                "Tr\u00e1fico Normal": 10,
-                "Tr\u00e1fico An\u00f3malo": 4
-            },
-            {
-                "tiempo": "WIN_23737051",
-                "Tr\u00e1fico Normal": 170,
-                "Tr\u00e1fico An\u00f3malo": 6
-            },
-            {
-                "tiempo": "WIN_23737052",
-                "Tr\u00e1fico Normal": 1,
+                "tiempo": "WIN_23666666",
+                "Tr\u00e1fico Normal": 8,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737055",
-                "Tr\u00e1fico Normal": 4,
-                "Tr\u00e1fico An\u00f3malo": 2
+                "tiempo": "WIN_23666667",
+                "Tr\u00e1fico Normal": 22,
+                "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737056",
-                "Tr\u00e1fico Normal": 1390,
+                "tiempo": "WIN_23666668",
+                "Tr\u00e1fico Normal": 16,
+                "Tr\u00e1fico An\u00f3malo": 3
+            },
+            {
+                "tiempo": "WIN_23666669",
+                "Tr\u00e1fico Normal": 22,
+                "Tr\u00e1fico An\u00f3malo": 3
+            },
+            {
+                "tiempo": "WIN_23666670",
+                "Tr\u00e1fico Normal": 19,
+                "Tr\u00e1fico An\u00f3malo": 3
+            },
+            {
+                "tiempo": "WIN_23666671",
+                "Tr\u00e1fico Normal": 19,
+                "Tr\u00e1fico An\u00f3malo": 3
+            },
+            {
+                "tiempo": "WIN_23666672",
+                "Tr\u00e1fico Normal": 18,
+                "Tr\u00e1fico An\u00f3malo": 3
+            },
+            {
+                "tiempo": "WIN_23666673",
+                "Tr\u00e1fico Normal": 24,
+                "Tr\u00e1fico An\u00f3malo": 3
+            },
+            {
+                "tiempo": "WIN_23666674",
+                "Tr\u00e1fico Normal": 17,
+                "Tr\u00e1fico An\u00f3malo": 135
+            },
+            {
+                "tiempo": "WIN_23666675",
+                "Tr\u00e1fico Normal": 24,
                 "Tr\u00e1fico An\u00f3malo": 182
             },
             {
-                "tiempo": "WIN_23737057",
-                "Tr\u00e1fico Normal": 420,
-                "Tr\u00e1fico An\u00f3malo": 6
+                "tiempo": "WIN_23666676",
+                "Tr\u00e1fico Normal": 15,
+                "Tr\u00e1fico An\u00f3malo": 177
             },
             {
-                "tiempo": "WIN_23737084",
-                "Tr\u00e1fico Normal": 66,
-                "Tr\u00e1fico An\u00f3malo": 6
+                "tiempo": "WIN_23666677",
+                "Tr\u00e1fico Normal": 23,
+                "Tr\u00e1fico An\u00f3malo": 178
             },
             {
-                "tiempo": "WIN_23737085",
-                "Tr\u00e1fico Normal": 1239,
-                "Tr\u00e1fico An\u00f3malo": 130
+                "tiempo": "WIN_23666678",
+                "Tr\u00e1fico Normal": 21,
+                "Tr\u00e1fico An\u00f3malo": 180
             },
             {
-                "tiempo": "WIN_23737086",
-                "Tr\u00e1fico Normal": 435,
-                "Tr\u00e1fico An\u00f3malo": 16
+                "tiempo": "WIN_23666679",
+                "Tr\u00e1fico Normal": 19,
+                "Tr\u00e1fico An\u00f3malo": 185
             },
             {
-                "tiempo": "WIN_23737095",
-                "Tr\u00e1fico Normal": 62,
-                "Tr\u00e1fico An\u00f3malo": 16
+                "tiempo": "WIN_23666680",
+                "Tr\u00e1fico Normal": 24,
+                "Tr\u00e1fico An\u00f3malo": 37
             },
             {
-                "tiempo": "WIN_23737096",
-                "Tr\u00e1fico Normal": 1167,
-                "Tr\u00e1fico An\u00f3malo": 169
-            },
-            {
-                "tiempo": "WIN_23737097",
-                "Tr\u00e1fico Normal": 240,
-                "Tr\u00e1fico An\u00f3malo": 12
-            },
-            {
-                "tiempo": "WIN_23737098",
-                "Tr\u00e1fico Normal": 10,
+                "tiempo": "WIN_23666681",
+                "Tr\u00e1fico Normal": 16,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737159",
-                "Tr\u00e1fico Normal": 40,
-                "Tr\u00e1fico An\u00f3malo": 1
-            },
-            {
-                "tiempo": "WIN_23737160",
-                "Tr\u00e1fico Normal": 1275,
-                "Tr\u00e1fico An\u00f3malo": 284
-            },
-            {
-                "tiempo": "WIN_23737161",
-                "Tr\u00e1fico Normal": 229,
-                "Tr\u00e1fico An\u00f3malo": 6
-            },
-            {
-                "tiempo": "WIN_23737162",
-                "Tr\u00e1fico Normal": 17,
+                "tiempo": "WIN_23666682",
+                "Tr\u00e1fico Normal": 20,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737217",
-                "Tr\u00e1fico Normal": 0,
-                "Tr\u00e1fico An\u00f3malo": 1
-            },
-            {
-                "tiempo": "WIN_23737218",
-                "Tr\u00e1fico Normal": 242,
-                "Tr\u00e1fico An\u00f3malo": 25
-            },
-            {
-                "tiempo": "WIN_23737219",
-                "Tr\u00e1fico Normal": 1053,
-                "Tr\u00e1fico An\u00f3malo": 92
-            },
-            {
-                "tiempo": "WIN_23737220",
-                "Tr\u00e1fico Normal": 350,
-                "Tr\u00e1fico An\u00f3malo": 30
-            },
-            {
-                "tiempo": "WIN_23737221",
-                "Tr\u00e1fico Normal": 10,
+                "tiempo": "WIN_23666683",
+                "Tr\u00e1fico Normal": 20,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737222",
-                "Tr\u00e1fico Normal": 92,
-                "Tr\u00e1fico An\u00f3malo": 10
-            },
-            {
-                "tiempo": "WIN_23737223",
-                "Tr\u00e1fico Normal": 1250,
-                "Tr\u00e1fico An\u00f3malo": 122
-            },
-            {
-                "tiempo": "WIN_23737224",
-                "Tr\u00e1fico Normal": 260,
+                "tiempo": "WIN_23666684",
+                "Tr\u00e1fico Normal": 21,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737237",
-                "Tr\u00e1fico Normal": 153,
-                "Tr\u00e1fico An\u00f3malo": 18
-            },
-            {
-                "tiempo": "WIN_23737238",
-                "Tr\u00e1fico Normal": 221,
-                "Tr\u00e1fico An\u00f3malo": 26
-            },
-            {
-                "tiempo": "WIN_23737239",
-                "Tr\u00e1fico Normal": 30,
+                "tiempo": "WIN_23666685",
+                "Tr\u00e1fico Normal": 20,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737281",
-                "Tr\u00e1fico Normal": 44,
-                "Tr\u00e1fico An\u00f3malo": 1
-            },
-            {
-                "tiempo": "WIN_23737282",
-                "Tr\u00e1fico Normal": 1040,
-                "Tr\u00e1fico An\u00f3malo": 94
-            },
-            {
-                "tiempo": "WIN_23737283",
-                "Tr\u00e1fico Normal": 230,
-                "Tr\u00e1fico An\u00f3malo": 12
-            },
-            {
-                "tiempo": "WIN_23737284",
+                "tiempo": "WIN_23666686",
                 "Tr\u00e1fico Normal": 12,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737323",
-                "Tr\u00e1fico Normal": 123,
-                "Tr\u00e1fico An\u00f3malo": 13
-            },
-            {
-                "tiempo": "WIN_23737324",
-                "Tr\u00e1fico Normal": 1386,
-                "Tr\u00e1fico An\u00f3malo": 150
-            },
-            {
-                "tiempo": "WIN_23737325",
-                "Tr\u00e1fico Normal": 307,
-                "Tr\u00e1fico An\u00f3malo": 6
-            },
-            {
-                "tiempo": "WIN_23737326",
-                "Tr\u00e1fico Normal": 10,
+                "tiempo": "WIN_23666666",
+                "Tr\u00e1fico Normal": 8,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737327",
-                "Tr\u00e1fico Normal": 107,
-                "Tr\u00e1fico An\u00f3malo": 18
-            },
-            {
-                "tiempo": "WIN_23737328",
-                "Tr\u00e1fico Normal": 282,
-                "Tr\u00e1fico An\u00f3malo": 14
-            },
-            {
-                "tiempo": "WIN_23737352",
-                "Tr\u00e1fico Normal": 139,
-                "Tr\u00e1fico An\u00f3malo": 7
-            },
-            {
-                "tiempo": "WIN_23737353",
-                "Tr\u00e1fico Normal": 1287,
-                "Tr\u00e1fico An\u00f3malo": 64
-            },
-            {
-                "tiempo": "WIN_23737354",
-                "Tr\u00e1fico Normal": 310,
-                "Tr\u00e1fico An\u00f3malo": 12
-            },
-            {
-                "tiempo": "WIN_23737366",
-                "Tr\u00e1fico Normal": 137,
-                "Tr\u00e1fico An\u00f3malo": 9
-            },
-            {
-                "tiempo": "WIN_23737367",
-                "Tr\u00e1fico Normal": 1200,
-                "Tr\u00e1fico An\u00f3malo": 102
-            },
-            {
-                "tiempo": "WIN_23737368",
-                "Tr\u00e1fico Normal": 270,
-                "Tr\u00e1fico An\u00f3malo": 22
-            },
-            {
-                "tiempo": "WIN_23737369",
-                "Tr\u00e1fico Normal": 157,
-                "Tr\u00e1fico An\u00f3malo": 36
-            },
-            {
-                "tiempo": "WIN_23737370",
-                "Tr\u00e1fico Normal": 1159,
-                "Tr\u00e1fico An\u00f3malo": 227
-            },
-            {
-                "tiempo": "WIN_23737371",
-                "Tr\u00e1fico Normal": 300,
-                "Tr\u00e1fico An\u00f3malo": 26
-            },
-            {
-                "tiempo": "WIN_23737372",
-                "Tr\u00e1fico Normal": 10,
+                "tiempo": "WIN_23666667",
+                "Tr\u00e1fico Normal": 22,
                 "Tr\u00e1fico An\u00f3malo": 0
             },
             {
-                "tiempo": "WIN_23737394",
-                "Tr\u00e1fico Normal": 94,
-                "Tr\u00e1fico An\u00f3malo": 1
+                "tiempo": "WIN_23666668",
+                "Tr\u00e1fico Normal": 16,
+                "Tr\u00e1fico An\u00f3malo": 3
             },
             {
-                "tiempo": "WIN_23737395",
-                "Tr\u00e1fico Normal": 1255,
-                "Tr\u00e1fico An\u00f3malo": 63
+                "tiempo": "WIN_23666669",
+                "Tr\u00e1fico Normal": 22,
+                "Tr\u00e1fico An\u00f3malo": 3
             },
             {
-                "tiempo": "WIN_23737396",
-                "Tr\u00e1fico Normal": 332,
-                "Tr\u00e1fico An\u00f3malo": 0
+                "tiempo": "WIN_23666670",
+                "Tr\u00e1fico Normal": 19,
+                "Tr\u00e1fico An\u00f3malo": 3
             },
             {
-                "tiempo": "WIN_23737411",
-                "Tr\u00e1fico Normal": 38,
-                "Tr\u00e1fico An\u00f3malo": 5
+                "tiempo": "WIN_23666671",
+                "Tr\u00e1fico Normal": 19,
+                "Tr\u00e1fico An\u00f3malo": 3
             },
             {
-                "tiempo": "WIN_23737412",
-                "Tr\u00e1fico Normal": 1288,
-                "Tr\u00e1fico An\u00f3malo": 139
+                "tiempo": "WIN_23666672",
+                "Tr\u00e1fico Normal": 18,
+                "Tr\u00e1fico An\u00f3malo": 3
             },
             {
-                "tiempo": "WIN_23737413",
-                "Tr\u00e1fico Normal": 380,
-                "Tr\u00e1fico An\u00f3malo": 46
+                "tiempo": "WIN_23666673",
+                "Tr\u00e1fico Normal": 24,
+                "Tr\u00e1fico An\u00f3malo": 3
             },
             {
-                "tiempo": "WIN_23737414",
-                "Tr\u00e1fico Normal": 67,
-                "Tr\u00e1fico An\u00f3malo": 4
+                "tiempo": "WIN_23666674",
+                "Tr\u00e1fico Normal": 17,
+                "Tr\u00e1fico An\u00f3malo": 135
             },
             {
-                "tiempo": "WIN_23737415",
-                "Tr\u00e1fico Normal": 1214,
-                "Tr\u00e1fico An\u00f3malo": 121
+                "tiempo": "WIN_23666675",
+                "Tr\u00e1fico Normal": 24,
+                "Tr\u00e1fico An\u00f3malo": 182
             },
             {
-                "tiempo": "WIN_23737416",
-                "Tr\u00e1fico Normal": 327,
-                "Tr\u00e1fico An\u00f3malo": 4
+                "tiempo": "WIN_23666676",
+                "Tr\u00e1fico Normal": 15,
+                "Tr\u00e1fico An\u00f3malo": 177
             },
             {
-                "tiempo": "WIN_23737420",
-                "Tr\u00e1fico Normal": 151,
-                "Tr\u00e1fico An\u00f3malo": 20
+                "tiempo": "WIN_23666677",
+                "Tr\u00e1fico Normal": 23,
+                "Tr\u00e1fico An\u00f3malo": 178
             },
             {
-                "tiempo": "WIN_23737421",
-                "Tr\u00e1fico Normal": 1396,
-                "Tr\u00e1fico An\u00f3malo": 150
+                "tiempo": "WIN_23666678",
+                "Tr\u00e1fico Normal": 21,
+                "Tr\u00e1fico An\u00f3malo": 180
             },
             {
-                "tiempo": "WIN_23737422",
-                "Tr\u00e1fico Normal": 410,
-                "Tr\u00e1fico An\u00f3malo": 4
+                "tiempo": "WIN_23666679",
+                "Tr\u00e1fico Normal": 19,
+                "Tr\u00e1fico An\u00f3malo": 185
             },
             {
-                "tiempo": "WIN_23737444",
-                "Tr\u00e1fico Normal": 35,
-                "Tr\u00e1fico An\u00f3malo": 6
-            },
-            {
-                "tiempo": "WIN_23737445",
-                "Tr\u00e1fico Normal": 1098,
-                "Tr\u00e1fico An\u00f3malo": 176
-            },
-            {
-                "tiempo": "WIN_23737446",
-                "Tr\u00e1fico Normal": 366,
-                "Tr\u00e1fico An\u00f3malo": 20
-            },
-            {
-                "tiempo": "WIN_23737447",
-                "Tr\u00e1fico Normal": 3,
-                "Tr\u00e1fico An\u00f3malo": 0
-            },
-            {
-                "tiempo": "WIN_23737458",
-                "Tr\u00e1fico Normal": 83,
-                "Tr\u00e1fico An\u00f3malo": 11
-            },
-            {
-                "tiempo": "WIN_23737459",
-                "Tr\u00e1fico Normal": 1341,
-                "Tr\u00e1fico An\u00f3malo": 106
-            },
-            {
-                "tiempo": "WIN_23737460",
-                "Tr\u00e1fico Normal": 349,
-                "Tr\u00e1fico An\u00f3malo": 6
-            },
-            {
-                "tiempo": "WIN_23737461",
-                "Tr\u00e1fico Normal": 1,
-                "Tr\u00e1fico An\u00f3malo": 0
-            },
-            {
-                "tiempo": "WIN_23737506",
-                "Tr\u00e1fico Normal": 30,
-                "Tr\u00e1fico An\u00f3malo": 0
-            },
-            {
-                "tiempo": "WIN_23737571",
-                "Tr\u00e1fico Normal": 117,
-                "Tr\u00e1fico An\u00f3malo": 15
-            },
-            {
-                "tiempo": "WIN_23737572",
-                "Tr\u00e1fico Normal": 1262,
-                "Tr\u00e1fico An\u00f3malo": 190
-            },
-            {
-                "tiempo": "WIN_23737573",
-                "Tr\u00e1fico Normal": 480,
-                "Tr\u00e1fico An\u00f3malo": 22
-            },
-            {
-                "tiempo": "WIN_23737574",
-                "Tr\u00e1fico Normal": 10,
-                "Tr\u00e1fico An\u00f3malo": 0
-            },
-            {
-                "tiempo": "WIN_23737592",
-                "Tr\u00e1fico Normal": 42,
-                "Tr\u00e1fico An\u00f3malo": 2
-            },
-            {
-                "tiempo": "WIN_23737593",
-                "Tr\u00e1fico Normal": 1206,
-                "Tr\u00e1fico An\u00f3malo": 112
-            },
-            {
-                "tiempo": "WIN_23737594",
-                "Tr\u00e1fico Normal": 347,
-                "Tr\u00e1fico An\u00f3malo": 18
-            },
-            {
-                "tiempo": "WIN_23737595",
-                "Tr\u00e1fico Normal": 13,
-                "Tr\u00e1fico An\u00f3malo": 0
-            },
-            {
-                "tiempo": "WIN_23737606",
-                "Tr\u00e1fico Normal": 0,
-                "Tr\u00e1fico An\u00f3malo": 2
-            },
-            {
-                "tiempo": "WIN_23737607",
-                "Tr\u00e1fico Normal": 133,
-                "Tr\u00e1fico An\u00f3malo": 20
-            },
-            {
-                "tiempo": "WIN_23737608",
-                "Tr\u00e1fico Normal": 1130,
-                "Tr\u00e1fico An\u00f3malo": 137
-            },
-            {
-                "tiempo": "WIN_23737608",
-                "Tr\u00e1fico Normal": 1130,
-                "Tr\u00e1fico An\u00f3malo": 137
+                "tiempo": "WIN_23666680",
+                "Tr\u00e1fico Normal": 24,
+                "Tr\u00e1fico An\u00f3malo": 37
             }
         ],
         "latency_history_ms": [
-            1.1649,
-            0.5136,
+            1.8477,
+            0.4177,
+            0.3338,
+            0.3579,
+            0.3707,
+            0.4566,
+            0.2568,
+            0.2615,
+            0.2699,
+            0.2873,
+            0.3057,
+            0.2961,
+            0.3016,
+            0.2921,
+            1.0965,
+            0.3359,
+            0.2809,
             0.4182,
-            0.4234,
-            0.4609,
+            0.3266,
+            0.8271,
+            0.2558,
+            0.2353,
+            0.2718,
+            0.6354,
+            0.6835,
+            0.2594,
+            0.4699,
+            0.2582,
+            0.3834,
+            0.5691,
+            1.0316,
+            0.304,
             0.2933,
-            0.2484,
-            0.2937,
-            0.3309,
-            0.3872,
-            0.4959,
-            0.3994,
-            0.2789,
-            2.1417,
-            0.3953,
-            1.4403,
-            1.307,
-            0.3123,
-            1.5645,
-            0.2768,
-            0.9356,
-            0.4573,
-            0.3273,
-            0.6151,
-            0.6471,
-            0.5841,
-            0.3788,
-            0.2944,
-            0.4692,
-            0.6137,
-            0.4172,
-            0.3281,
-            0.3107,
-            0.2546,
-            0.3321,
-            0.463,
-            0.9654,
-            0.3765,
-            0.3035,
-            0.6714,
-            0.7143,
-            0.2935,
-            0.3419,
-            0.3912,
-            0.5286,
-            1.4188,
-            0.3529,
-            1.174,
-            0.3767,
-            3.1624,
-            0.4976,
-            1.0178,
-            0.3693,
-            0.6235,
-            0.3598,
-            0.9201,
-            0.8023,
-            0.685,
-            1.3289,
-            0.9203,
-            1.7087,
-            1.2884,
-            0.8423,
-            0.8628,
-            0.8516,
-            0.3626,
-            0.2894,
-            0.6239,
-            4.0586,
-            0.4168,
-            0.5977,
-            1.1389,
-            0.4919,
-            0.6034,
-            0.355,
-            0.8714,
-            1.4229,
-            1.0591,
-            0.3052,
-            1.9553,
-            1.8752,
-            0.6349,
-            0.3073,
-            0.253,
-            1.3096,
-            1.9643
+            0.412,
+            1.255,
+            2.9004
         ]
     },
-    "status": "STOPPED"
+    "status": "RUNNING"
 }

@@ -25,7 +25,9 @@ except Exception:
     _IP_INTEL = None
 
 # Configuración de rutas
-DATASET_PATH = BASE_DIR / "data" / "NF-UNSW-NB15-v3.csv"
+SOURCE_1 = "NF-UNSW-NB15-v3.csv"
+SOURCE_2 = "ASTOLE_Scenario_Dataset.csv"
+DATASET_PATH = BASE_DIR / "data" / SOURCE_2 
 OUTPUT_ALERTS = BASE_DIR / "docs" / "samples" / "live_alerts.json"
 OUTPUT_METRICS = BASE_DIR / "docs" / "samples" / "system_metrics.json"
 MAX_HISTORY_ITEMS = 1000

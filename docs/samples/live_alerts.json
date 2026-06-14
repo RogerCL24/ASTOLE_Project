@@ -1,1777 +1,1120 @@
 [
     {
-        "alert_id": "AST-WIN_23737018-1424221134387",
-        "timestamp": "2015-02-18T00:58:54Z",
+        "alert_id": "AST-WIN_23666668-1420000126594",
+        "timestamp": "2014-12-31T04:28:46Z",
         "gnn_metadata": {
-            "label_multiclase": "Backdoor",
-            "binary_attack": 1,
-            "confidence_score": 0.93
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.12",
-            "src_port": 58920,
-            "dst_port": 520,
-            "protocol": 17,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 1064,
-            "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 0
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737019-1424221140129",
-        "timestamp": "2015-02-18T00:59:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Backdoor",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.19",
-            "src_port": 20171,
-            "dst_port": 179,
-            "protocol": 6,
-            "l7_proto": 13.0
-        },
-        "technical_details": {
-            "duration_ms": 405,
-            "in_bytes": 966,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737020-1424221224675",
-        "timestamp": "2015-02-18T01:00:24Z",
-        "gnn_metadata": {
-            "label_multiclase": "Backdoor",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.17",
-            "src_port": 47033,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 76,
-            "in_bytes": 9,
-            "out_bytes": 65,
-            "tcp_flags": 16,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737037-1424222269200",
-        "timestamp": "2015-02-18T01:17:49Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.17",
-            "src_port": 3134,
-            "dst_port": 25,
-            "protocol": 6,
-            "l7_proto": 3.0
-        },
-        "technical_details": {
-            "duration_ms": 774,
-            "in_bytes": 11822,
-            "out_bytes": 1856,
-            "tcp_flags": 27,
-            "in_pkts": 26,
-            "out_pkts": 20
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737038-1424222280494",
-        "timestamp": "2015-02-18T01:18:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.99
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.17",
-            "src_port": 54147,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 287,
-            "in_bytes": 2232,
-            "out_bytes": 2332,
-            "tcp_flags": 19,
-            "in_pkts": 12,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737039-1424222347008",
-        "timestamp": "2015-02-18T01:19:07Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.11",
-            "src_port": 44025,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 41,
-            "in_bytes": 3,
-            "out_bytes": 116,
-            "tcp_flags": 16,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737040-1424222400026",
-        "timestamp": "2015-02-18T01:20:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
+            "label_multiclase": "Reconnaissance",
             "binary_attack": 1,
             "confidence_score": 0.98
         },
         "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.19",
-            "src_port": 55586,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 114,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737051-1424223107493",
-        "timestamp": "2015-02-18T01:31:47Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.92
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.12",
-            "src_port": 2182,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 48,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737055-1424223359580",
-        "timestamp": "2015-02-18T01:35:59Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.18",
-            "src_port": 50980,
-            "dst_port": 25,
-            "protocol": 6,
-            "l7_proto": 3.0
-        },
-        "technical_details": {
-            "duration_ms": 2126,
-            "in_bytes": 3092,
-            "out_bytes": 1776,
-            "tcp_flags": 27,
-            "in_pkts": 22,
-            "out_pkts": 20
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737056-1424223361015",
-        "timestamp": "2015-02-18T01:36:01Z",
-        "gnn_metadata": {
-            "label_multiclase": "Generic",
-            "binary_attack": 1,
-            "confidence_score": 0.92
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
+            "src_ip": "185.22.172.5",
             "dst_ip": "149.171.126.16",
-            "src_port": 39453,
-            "dst_port": 7937,
+            "src_port": 42857,
+            "dst_port": 22,
             "protocol": 6,
             "l7_proto": 0.0
         },
         "technical_details": {
-            "duration_ms": 568,
-            "in_bytes": 1256,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "lv",
+                "country_name": "Latvia",
+                "isp": "AS42532 SIA Veesp",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
         }
     },
     {
-        "alert_id": "AST-WIN_23737057-1424223459641",
-        "timestamp": "2015-02-18T01:37:39Z",
+        "alert_id": "AST-WIN_23666669-1420000189169",
+        "timestamp": "2014-12-31T04:29:49Z",
         "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.13",
-            "src_port": 9532,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 37,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737084-1424225097763",
-        "timestamp": "2015-02-18T02:04:57Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
+            "label_multiclase": "Reconnaissance",
             "binary_attack": 1,
             "confidence_score": 0.96
         },
         "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.15",
-            "src_port": 4170,
-            "dst_port": 1723,
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 41725,
+            "dst_port": 22,
             "protocol": 6,
-            "l7_proto": 115.0
+            "l7_proto": 0.0
         },
         "technical_details": {
-            "duration_ms": 427,
-            "in_bytes": 744,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
         }
     },
     {
-        "alert_id": "AST-WIN_23737085-1424225100111",
-        "timestamp": "2015-02-18T02:05:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.15",
-            "src_port": 26143,
-            "dst_port": 1723,
-            "protocol": 6,
-            "l7_proto": 115.0
-        },
-        "technical_details": {
-            "duration_ms": 668,
-            "in_bytes": 744,
-            "out_bytes": 336,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737086-1424225192363",
-        "timestamp": "2015-02-18T02:06:32Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.18",
-            "src_port": 31905,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 104,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737095-1424225756225",
-        "timestamp": "2015-02-18T02:15:56Z",
-        "gnn_metadata": {
-            "label_multiclase": "Analysis",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.11",
-            "src_port": 65165,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 824,
-            "in_bytes": 790,
-            "out_bytes": 1076,
-            "tcp_flags": 27,
-            "in_pkts": 10,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737096-1424225760141",
-        "timestamp": "2015-02-18T02:16:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Analysis",
-            "binary_attack": 1,
-            "confidence_score": 0.93
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.11",
-            "src_port": 57805,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 1125,
-            "in_bytes": 788,
-            "out_bytes": 1276,
-            "tcp_flags": 27,
-            "in_pkts": 10,
-            "out_pkts": 10
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737097-1424225866358",
-        "timestamp": "2015-02-18T02:17:46Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.18",
-            "src_port": 48140,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 146,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737159-1424229599509",
-        "timestamp": "2015-02-18T03:19:59Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.13",
-            "src_port": 41674,
-            "dst_port": 25,
-            "protocol": 6,
-            "l7_proto": 3.0
-        },
-        "technical_details": {
-            "duration_ms": 1033,
-            "in_bytes": 94022,
-            "out_bytes": 2218,
-            "tcp_flags": 27,
-            "in_pkts": 88,
-            "out_pkts": 30
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737160-1424229601538",
-        "timestamp": "2015-02-18T03:20:01Z",
+        "alert_id": "AST-WIN_23666670-1420000244136",
+        "timestamp": "2014-12-31T04:30:44Z",
         "gnn_metadata": {
             "label_multiclase": "Reconnaissance",
             "binary_attack": 1,
             "confidence_score": 0.93
         },
         "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.11",
-            "src_port": 2523,
-            "dst_port": 111,
-            "protocol": 17,
-            "l7_proto": 11.0
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 46859,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
         },
         "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 168,
-            "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 0
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
         }
     },
     {
-        "alert_id": "AST-WIN_23737161-1424229714051",
-        "timestamp": "2015-02-18T03:21:54Z",
+        "alert_id": "AST-WIN_23666671-1420000308886",
+        "timestamp": "2014-12-31T04:31:48Z",
         "gnn_metadata": {
-            "label_multiclase": "Exploits",
+            "label_multiclase": "Reconnaissance",
             "binary_attack": 1,
-            "confidence_score": 0.95
+            "confidence_score": 0.94
         },
         "network_data": {
-            "src_ip": "175.45.176.0",
+            "src_ip": "64.233.160.10",
             "dst_ip": "149.171.126.16",
-            "src_port": 60512,
-            "dst_port": 21,
+            "src_port": 49912,
+            "dst_port": 22,
             "protocol": 6,
-            "l7_proto": 1.0
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666672-1420000361519",
+        "timestamp": "2014-12-31T04:32:41Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.93
+        },
+        "network_data": {
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 46703,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666673-1420000429085",
+        "timestamp": "2014-12-31T04:33:49Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.97
+        },
+        "network_data": {
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 42423,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666674-1420000480040",
+        "timestamp": "2014-12-31T04:34:40Z",
+        "gnn_metadata": {
+            "label_multiclase": "Fuzzers",
+            "binary_attack": 1,
+            "confidence_score": 0.98
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.16",
+            "src_port": 58107,
+            "dst_port": 1,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 5,
+            "in_bytes": 44,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 1,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666675-1420000531358",
+        "timestamp": "2014-12-31T04:35:31Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.93
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 61647,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
         },
         "technical_details": {
             "duration_ms": 50,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737217-1424233067145",
-        "timestamp": "2015-02-18T04:17:47Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.11",
-            "src_port": 137,
-            "dst_port": 137,
-            "protocol": 17,
-            "l7_proto": 10.0
-        },
-        "technical_details": {
-            "duration_ms": 120259,
-            "in_bytes": 16068,
+            "in_bytes": 1500,
             "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 206,
+            "tcp_flags": 2,
+            "in_pkts": 20,
             "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
         }
     },
     {
-        "alert_id": "AST-WIN_23737218-1424233128291",
-        "timestamp": "2015-02-18T04:18:48Z",
-        "gnn_metadata": {
-            "label_multiclase": "Reconnaissance",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.16",
-            "src_port": 48891,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 843,
-            "in_bytes": 850,
-            "out_bytes": 1282,
-            "tcp_flags": 27,
-            "in_pkts": 10,
-            "out_pkts": 10
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737219-1424233140060",
-        "timestamp": "2015-02-18T04:19:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Generic",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.14",
-            "src_port": 33237,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 786,
-            "in_bytes": 1758,
-            "out_bytes": 65128,
-            "tcp_flags": 27,
-            "in_pkts": 16,
-            "out_pkts": 54
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737220-1424233202539",
-        "timestamp": "2015-02-18T04:20:02Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.92
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.18",
-            "src_port": 16666,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 101,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737222-1424233376004",
-        "timestamp": "2015-02-18T04:22:56Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.11",
-            "src_port": 59367,
-            "dst_port": 8800,
-            "protocol": 6,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 619,
-            "in_bytes": 780,
-            "out_bytes": 400,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737223-1424233380003",
-        "timestamp": "2015-02-18T04:23:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.99
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.16",
-            "src_port": 20654,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 300,
-            "in_bytes": 826,
-            "out_bytes": 1140,
-            "tcp_flags": 27,
-            "in_pkts": 10,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737237-1424234272949",
-        "timestamp": "2015-02-18T04:37:52Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.99
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.15",
-            "src_port": 44479,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 962,
-            "in_bytes": 554,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737238-1424234280343",
-        "timestamp": "2015-02-18T04:38:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.15",
-            "src_port": 40981,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 796,
-            "in_bytes": 492,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737281-1424236919611",
-        "timestamp": "2015-02-18T05:21:59Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.17",
-            "src_port": 41591,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 540,
-            "in_bytes": 1064,
-            "out_bytes": 49370,
-            "tcp_flags": 27,
-            "in_pkts": 16,
-            "out_pkts": 44
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737282-1424236920010",
-        "timestamp": "2015-02-18T05:22:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.14",
-            "src_port": 2842,
-            "dst_port": 25,
-            "protocol": 6,
-            "l7_proto": 3.0
-        },
-        "technical_details": {
-            "duration_ms": 996,
-            "in_bytes": 4410,
-            "out_bytes": 1614,
-            "tcp_flags": 27,
-            "in_pkts": 24,
-            "out_pkts": 20
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737283-1424236988162",
-        "timestamp": "2015-02-18T05:23:08Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.93
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.17",
-            "src_port": 19487,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 109,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737323-1424239434491",
-        "timestamp": "2015-02-18T06:03:54Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.99
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.16",
-            "src_port": 41363,
-            "dst_port": 179,
-            "protocol": 6,
-            "l7_proto": 13.0
-        },
-        "technical_details": {
-            "duration_ms": 742,
-            "in_bytes": 762,
-            "out_bytes": 544,
-            "tcp_flags": 19,
-            "in_pkts": 14,
-            "out_pkts": 10
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737324-1424239440029",
-        "timestamp": "2015-02-18T06:04:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.92
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.16",
-            "src_port": 1166,
-            "dst_port": 179,
-            "protocol": 6,
-            "l7_proto": 13.0
-        },
-        "technical_details": {
-            "duration_ms": 1010,
-            "in_bytes": 762,
-            "out_bytes": 544,
-            "tcp_flags": 19,
-            "in_pkts": 14,
-            "out_pkts": 10
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737325-1424239523955",
-        "timestamp": "2015-02-18T06:05:23Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.19",
-            "src_port": 31340,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 57,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737327-1424239679369",
-        "timestamp": "2015-02-18T06:07:59Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.99
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.12",
-            "src_port": 28209,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 3285,
-            "in_bytes": 541,
-            "out_bytes": 698,
-            "tcp_flags": 24,
-            "in_pkts": 11,
-            "out_pkts": 9
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737328-1424239688018",
-        "timestamp": "2015-02-18T06:08:08Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.18",
-            "src_port": 42348,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 131,
-            "in_bytes": 9,
-            "out_bytes": 116,
-            "tcp_flags": 16,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737352-1424241173530",
-        "timestamp": "2015-02-18T06:32:53Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.16",
-            "src_port": 37509,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 238,
-            "in_bytes": 1012,
-            "out_bytes": 1056,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737353-1424241180558",
-        "timestamp": "2015-02-18T06:33:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Shellcode",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.16",
-            "src_port": 62466,
-            "dst_port": 17417,
-            "protocol": 6,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 207,
-            "in_bytes": 708,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737354-1424241286593",
-        "timestamp": "2015-02-18T06:34:46Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.16",
-            "src_port": 38199,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 28,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737366-1424242013759",
-        "timestamp": "2015-02-18T06:46:53Z",
-        "gnn_metadata": {
-            "label_multiclase": "Reconnaissance",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.16",
-            "src_port": 35868,
-            "dst_port": 520,
-            "protocol": 17,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 104,
-            "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 0
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737367-1424242021216",
-        "timestamp": "2015-02-18T06:47:01Z",
-        "gnn_metadata": {
-            "label_multiclase": "Backdoor",
-            "binary_attack": 1,
-            "confidence_score": 0.94
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.19",
-            "src_port": 39999,
-            "dst_port": 2140,
-            "protocol": 17,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 145,
-            "in_bytes": 60,
-            "out_bytes": 140,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 2
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737368-1424242108103",
-        "timestamp": "2015-02-18T06:48:28Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.92
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.12",
-            "src_port": 33346,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 97,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737369-1424242192557",
-        "timestamp": "2015-02-18T06:49:52Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.16",
-            "src_port": 43944,
-            "dst_port": 8088,
-            "protocol": 6,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 754,
-            "in_bytes": 160,
-            "out_bytes": 80,
-            "tcp_flags": 18,
-            "in_pkts": 4,
-            "out_pkts": 2
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737370-1424242200223",
-        "timestamp": "2015-02-18T06:50:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.16",
-            "src_port": 43156,
-            "dst_port": 8088,
-            "protocol": 6,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 336,
-            "in_bytes": 160,
-            "out_bytes": 80,
-            "tcp_flags": 18,
-            "in_pkts": 4,
-            "out_pkts": 2
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737371-1424242261540",
-        "timestamp": "2015-02-18T06:51:01Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.18",
-            "src_port": 38917,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 122,
-            "in_bytes": 9,
-            "out_bytes": 74,
-            "tcp_flags": 16,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737394-1424243697486",
-        "timestamp": "2015-02-18T07:14:57Z",
-        "gnn_metadata": {
-            "label_multiclase": "DoS",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.19",
-            "src_port": 42337,
-            "dst_port": 53,
-            "protocol": 17,
-            "l7_proto": 5.0
-        },
-        "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 116,
-            "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 0
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737395-1424243700959",
-        "timestamp": "2015-02-18T07:15:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.18",
-            "src_port": 52009,
-            "dst_port": 25,
-            "protocol": 6,
-            "l7_proto": 3.0
-        },
-        "technical_details": {
-            "duration_ms": 965,
-            "in_bytes": 45416,
-            "out_bytes": 1850,
-            "tcp_flags": 27,
-            "in_pkts": 52,
-            "out_pkts": 24
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737411-1424244719107",
-        "timestamp": "2015-02-18T07:31:59Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.94
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.11",
-            "src_port": 2491,
-            "dst_port": 179,
-            "protocol": 6,
-            "l7_proto": 13.0
-        },
-        "technical_details": {
-            "duration_ms": 442,
-            "in_bytes": 522,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737412-1424244720129",
-        "timestamp": "2015-02-18T07:32:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.93
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.11",
-            "src_port": 56696,
-            "dst_port": 179,
-            "protocol": 6,
-            "l7_proto": 13.0
-        },
-        "technical_details": {
-            "duration_ms": 356,
-            "in_bytes": 522,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737413-1424244781081",
-        "timestamp": "2015-02-18T07:33:01Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.17",
-            "src_port": 30455,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 74,
-            "in_bytes": 9,
-            "out_bytes": 74,
-            "tcp_flags": 16,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737414-1424244898204",
-        "timestamp": "2015-02-18T07:34:58Z",
-        "gnn_metadata": {
-            "label_multiclase": "Reconnaissance",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.10",
-            "src_port": 33878,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 615,
-            "in_bytes": 818,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737415-1424244900970",
-        "timestamp": "2015-02-18T07:35:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Generic",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.15",
-            "src_port": 47439,
-            "dst_port": 53,
-            "protocol": 17,
-            "l7_proto": 5.0
-        },
-        "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 114,
-            "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 0
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737416-1424245019917",
-        "timestamp": "2015-02-18T07:36:59Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.94
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.13",
-            "src_port": 54306,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 71,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737420-1424245253437",
-        "timestamp": "2015-02-18T07:40:53Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.93
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.11",
-            "src_port": 2025,
-            "dst_port": 1723,
-            "protocol": 6,
-            "l7_proto": 115.0
-        },
-        "technical_details": {
-            "duration_ms": 941,
-            "in_bytes": 744,
-            "out_bytes": 336,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737421-1424245260292",
-        "timestamp": "2015-02-18T07:41:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Reconnaissance",
-            "binary_attack": 1,
-            "confidence_score": 0.94
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.14",
-            "src_port": 56908,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 422,
-            "in_bytes": 886,
-            "out_bytes": 256,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 6
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737422-1424245336932",
-        "timestamp": "2015-02-18T07:42:16Z",
-        "gnn_metadata": {
-            "label_multiclase": "Fuzzers",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.16",
-            "src_port": 13240,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 86,
-            "in_bytes": 9,
-            "out_bytes": 74,
-            "tcp_flags": 16,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737444-1424246698635",
-        "timestamp": "2015-02-18T08:04:58Z",
-        "gnn_metadata": {
-            "label_multiclase": "Reconnaissance",
-            "binary_attack": 1,
-            "confidence_score": 0.94
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.14",
-            "src_port": 62621,
-            "dst_port": 1723,
-            "protocol": 6,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 745,
-            "in_bytes": 2504,
-            "out_bytes": 336,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737445-1424246700677",
-        "timestamp": "2015-02-18T08:05:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Generic",
-            "binary_attack": 1,
-            "confidence_score": 0.99
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.15",
-            "src_port": 47439,
-            "dst_port": 53,
-            "protocol": 17,
-            "l7_proto": 5.0
-        },
-        "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 114,
-            "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 0
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737446-1424246770056",
-        "timestamp": "2015-02-18T08:06:10Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.97
-        },
-        "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.16",
-            "src_port": 42547,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 58,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737458-1424247535379",
-        "timestamp": "2015-02-18T08:18:55Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.96
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.19",
-            "src_port": 59215,
-            "dst_port": 25,
-            "protocol": 6,
-            "l7_proto": 3.0
-        },
-        "technical_details": {
-            "duration_ms": 1854,
-            "in_bytes": 68092,
-            "out_bytes": 2012,
-            "tcp_flags": 27,
-            "in_pkts": 68,
-            "out_pkts": 26
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737459-1424247540734",
-        "timestamp": "2015-02-18T08:19:00Z",
-        "gnn_metadata": {
-            "label_multiclase": "Reconnaissance",
-            "binary_attack": 1,
-            "confidence_score": 0.99
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.12",
-            "src_port": 33699,
-            "dst_port": 111,
-            "protocol": 17,
-            "l7_proto": 11.0
-        },
-        "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 168,
-            "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 0
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737460-1424247607438",
-        "timestamp": "2015-02-18T08:20:07Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.92
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.19",
-            "src_port": 61413,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 30,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737571-1424254313585",
-        "timestamp": "2015-02-18T10:11:53Z",
-        "gnn_metadata": {
-            "label_multiclase": "Reconnaissance",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.3",
-            "dst_ip": "149.171.126.19",
-            "src_port": 19087,
-            "dst_port": 111,
-            "protocol": 6,
-            "l7_proto": 11.0
-        },
-        "technical_details": {
-            "duration_ms": 1465,
-            "in_bytes": 552,
-            "out_bytes": 336,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 8
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737572-1424254321116",
-        "timestamp": "2015-02-18T10:12:01Z",
-        "gnn_metadata": {
-            "label_multiclase": "Reconnaissance",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.11",
-            "src_port": 37109,
-            "dst_port": 514,
-            "protocol": 17,
-            "l7_proto": 17.0
-        },
-        "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 904,
-            "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
-            "out_pkts": 0
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737573-1424254387340",
-        "timestamp": "2015-02-18T10:13:07Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.10",
-            "src_port": 6179,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 130,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737592-1424255578940",
-        "timestamp": "2015-02-18T10:32:58Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.95
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.19",
-            "src_port": 12532,
-            "dst_port": 119,
-            "protocol": 6,
-            "l7_proto": 0.0
-        },
-        "technical_details": {
-            "duration_ms": 322,
-            "in_bytes": 4588,
-            "out_bytes": 606,
-            "tcp_flags": 19,
-            "in_pkts": 14,
-            "out_pkts": 10
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737593-1424255581192",
-        "timestamp": "2015-02-18T10:33:01Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.98
-        },
-        "network_data": {
-            "src_ip": "175.45.176.1",
-            "dst_ip": "149.171.126.12",
-            "src_port": 30339,
-            "dst_port": 80,
-            "protocol": 6,
-            "l7_proto": 7.0
-        },
-        "technical_details": {
-            "duration_ms": 284,
-            "in_bytes": 1312,
-            "out_bytes": 3874,
-            "tcp_flags": 27,
-            "in_pkts": 12,
-            "out_pkts": 10
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737594-1424255661051",
-        "timestamp": "2015-02-18T10:34:21Z",
-        "gnn_metadata": {
-            "label_multiclase": "Exploits",
-            "binary_attack": 1,
-            "confidence_score": 0.93
-        },
-        "network_data": {
-            "src_ip": "175.45.176.2",
-            "dst_ip": "149.171.126.11",
-            "src_port": 32619,
-            "dst_port": 21,
-            "protocol": 6,
-            "l7_proto": 1.0
-        },
-        "technical_details": {
-            "duration_ms": 34,
-            "in_bytes": 9,
-            "out_bytes": 108,
-            "tcp_flags": 24,
-            "in_pkts": 1,
-            "out_pkts": 1
-        }
-    },
-    {
-        "alert_id": "AST-WIN_23737606-1424256416017",
-        "timestamp": "2015-02-18T10:46:56Z",
+        "alert_id": "AST-WIN_23666676-1420000595600",
+        "timestamp": "2014-12-31T04:36:35Z",
         "gnn_metadata": {
             "label_multiclase": "DoS",
             "binary_attack": 1,
             "confidence_score": 0.94
         },
         "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.10",
-            "src_port": 38624,
-            "dst_port": 548,
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63818,
+            "dst_port": 3306,
             "protocol": 6,
-            "l7_proto": 97.0
+            "l7_proto": 0.0
         },
         "technical_details": {
-            "duration_ms": 120855,
-            "in_bytes": 438648,
-            "out_bytes": 27360,
-            "tcp_flags": 16,
-            "in_pkts": 1176,
-            "out_pkts": 684
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
         }
     },
     {
-        "alert_id": "AST-WIN_23737607-1424256473259",
-        "timestamp": "2015-02-18T10:47:53Z",
+        "alert_id": "AST-WIN_23666677-1420000631820",
+        "timestamp": "2014-12-31T04:37:11Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.96
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 64291,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666678-1420000711159",
+        "timestamp": "2014-12-31T04:38:31Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.95
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63328,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666679-1420000752577",
+        "timestamp": "2014-12-31T04:39:12Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.94
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63359,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666680-1420000808424",
+        "timestamp": "2014-12-31T04:40:08Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.96
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63784,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666668-1420000126594",
+        "timestamp": "2014-12-31T04:28:46Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.97
+        },
+        "network_data": {
+            "src_ip": "185.22.172.5",
+            "dst_ip": "149.171.126.16",
+            "src_port": 42857,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "lv",
+                "country_name": "Latvia",
+                "isp": "AS42532 SIA Veesp",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666669-1420000189169",
+        "timestamp": "2014-12-31T04:29:49Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.97
+        },
+        "network_data": {
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 41725,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666670-1420000244136",
+        "timestamp": "2014-12-31T04:30:44Z",
         "gnn_metadata": {
             "label_multiclase": "Reconnaissance",
             "binary_attack": 1,
             "confidence_score": 0.98
         },
         "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.10",
-            "src_port": 51466,
-            "dst_port": 111,
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 46859,
+            "dst_port": 22,
             "protocol": 6,
-            "l7_proto": 11.0
+            "l7_proto": 0.0
         },
         "technical_details": {
-            "duration_ms": 1605,
-            "in_bytes": 552,
-            "out_bytes": 336,
-            "tcp_flags": 19,
-            "in_pkts": 10,
-            "out_pkts": 8
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
         }
     },
     {
-        "alert_id": "AST-WIN_23737608-1424256481508",
-        "timestamp": "2015-02-18T10:48:01Z",
+        "alert_id": "AST-WIN_23666671-1420000308886",
+        "timestamp": "2014-12-31T04:31:48Z",
         "gnn_metadata": {
-            "label_multiclase": "Exploits",
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.93
+        },
+        "network_data": {
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 49912,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666672-1420000361519",
+        "timestamp": "2014-12-31T04:32:41Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.94
+        },
+        "network_data": {
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 46703,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666673-1420000429085",
+        "timestamp": "2014-12-31T04:33:49Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.92
+        },
+        "network_data": {
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 42423,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666674-1420000480040",
+        "timestamp": "2014-12-31T04:34:40Z",
+        "gnn_metadata": {
+            "label_multiclase": "Fuzzers",
+            "binary_attack": 1,
+            "confidence_score": 0.99
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.16",
+            "src_port": 58107,
+            "dst_port": 1,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 5,
+            "in_bytes": 44,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 1,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666675-1420000531358",
+        "timestamp": "2014-12-31T04:35:31Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.99
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 61647,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666676-1420000595600",
+        "timestamp": "2014-12-31T04:36:35Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.97
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63818,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666677-1420000631820",
+        "timestamp": "2014-12-31T04:37:11Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
             "binary_attack": 1,
             "confidence_score": 0.96
         },
         "network_data": {
-            "src_ip": "175.45.176.0",
-            "dst_ip": "149.171.126.13",
-            "src_port": 64170,
-            "dst_port": 520,
-            "protocol": 17,
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 64291,
+            "dst_port": 3306,
+            "protocol": 6,
             "l7_proto": 0.0
         },
         "technical_details": {
-            "duration_ms": 0,
-            "in_bytes": 104,
+            "duration_ms": 50,
+            "in_bytes": 1500,
             "out_bytes": 0,
-            "tcp_flags": 0,
-            "in_pkts": 2,
+            "tcp_flags": 2,
+            "in_pkts": 20,
             "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666678-1420000711159",
+        "timestamp": "2014-12-31T04:38:31Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.94
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63328,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666679-1420000752577",
+        "timestamp": "2014-12-31T04:39:12Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.96
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63359,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_23666680-1420000808424",
+        "timestamp": "2014-12-31T04:40:08Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.98
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63784,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
         }
     }
 ]
