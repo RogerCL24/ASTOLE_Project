@@ -2,10 +2,10 @@
 Proyecto para la asignatura PAE - 2026.
 
 ## Equipo
-- Ingeniero 1: Data & Ingestion
-- Ingeniero 2: AI Core & Agents
-- Ingeniero 3: RAG & Memory
-- Ingeniero 4: UI & Telemetry
+- Ingeniero 1: Data & Ingestion - Roger Cot Londres
+- Ingeniero 2: AI Core & Agents - Sergio Shmyhelskyy Yaskevich
+- Ingeniero 3: RAG & Memory - Andrea Blanco Márquez
+- Ingeniero 4: UI & Telemetry - Salma Rouiess Chelahbi
 
 ## Estructura (diagrama)
 
