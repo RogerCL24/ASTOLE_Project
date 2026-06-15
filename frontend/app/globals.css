@@ -1,43 +1,104 @@
 @import "tailwindcss";
 @source "../node_modules/@tremor/react";
 
-:root {
-  /* Paleta inspirada en Hypergraph / Deep Tech */
-  --color-hyper-bg: #09090b;       /* Fondo principal (zinc-950) */
-  --color-hyper-surface: rgb(24 24 27 / 0.95);  /* Fondo de las tarjetas (zinc-900/95) */
-  --color-hyper-border: #1f1f22;   /* Bordes muy sutiles */
-  --color-hyper-accent: #D18400;   /* El color "vivo" */
-  --color-hyper-alert: #ff4108;
+/* ============================================================
+   MAPEO DE TOKENS → CLASES TAILWIND (Tailwind v4 @theme)
+   Esto hace que bg-hyper-bg, text-hyper-text, etc. funcionen
+   y respondan automáticamente a las variables CSS del tema.
+   ============================================================ */
+@theme inline {
+  --color-hyper-bg:       var(--color-hyper-bg);
+  --color-hyper-surface:  var(--color-hyper-surface);
+  --color-hyper-border:   var(--color-hyper-border);
+  --color-hyper-accent:   var(--color-hyper-accent);
+  --color-hyper-alert:    var(--color-hyper-alert);
+  --color-hyper-text:     var(--color-hyper-text);
+  --color-hyper-muted:    var(--color-hyper-text-muted);
 }
-
-body {
-  background-color: transparent;
-  font-weight: 600;
-  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-}
-
-/* ------------------------------------------------------------
-   Tamaño tipográfico base — sirve para ambos temas.
-   ------------------------------------------------------------ */
-.text-xs { font-size: 0.875rem !important; line-height: 1.35 !important; }
-.text-sm { font-size: 1rem    !important; line-height: 1.45 !important; }
 
 /* ============================================================
-   DARK MODE (único)
+   VARIABLES DE TEMA DUAL
+   :root = modo diurno (Paleta nítida blanca/arena para proyector)
+   .dark  = modo nocturno (Tu diseño corporativo original)
    ============================================================ */
-body { color: #ffffff; }
+:root {
+  --color-hyper-bg:       #f4f4f5;             /* Fondo zinc-100 nítido */
+  --color-hyper-surface:  #ffffff;              /* Cajas blancas puras impecables */
+  --color-hyper-border:   #e4e4e7;              /* Bordes zinc-200 definidos */
+  --color-hyper-accent:   #D18400;
+  --color-hyper-alert:    #ff4108;
+  --color-hyper-text:     #09090b;              /* Texto zinc-950 de alta visibilidad */
+  --color-hyper-text-muted: #52525b;            /* Texto secundario zinc-600 */
+  --color-grid-lines:     rgba(0, 0, 0, 0.06);
 
-/* Texto secundario en blanco-negrita */
+  /* FIX MAESTRO: Forzamos el vaciado del fondo gris interno de Tremor */
+  --theme-background: #ffffff !important;
+  --theme-surface: #ffffff !important;
+  --theme-text: #09090b !important;
+}
+
+.dark {
+  --color-hyper-bg:       #09090b;              /* Fondo oscuro original */
+  --color-hyper-surface:  #18181b;              /* Cajas zinc-900 */
+  --color-hyper-border:   #27272a;
+  --color-hyper-accent:   #D18400;
+  --color-hyper-alert:    #ff4108;
+  --color-hyper-text:     #ffffff;              /* Texto blanco */
+  --color-hyper-text-muted: #a1a1aa;
+  --color-grid-lines:     rgba(255, 255, 255, 0.075);
+
+  /* Núcleo interno de Tremor en Modo Noche */
+  --theme-background: #18181b !important;
+  --theme-surface: #18181b !important;
+  --theme-text: #ffffff !important;
+}
+
+/* ============================================================
+   BASE DE RENDERIZADO ASIGNADA A VARIABLES
+   ============================================================ */
+body {
+  background-color: var(--color-hyper-bg);
+  color: var(--color-hyper-text);
+  font-weight: 600;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* FIX: Obligamos a los títulos a cambiar de color (Evita el Triaje en Vivo invisible) */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-hyper-text) !important;
+  transition: color 0.3s ease;
+}
+
+/* Escalado tipográfico base */
+.text-xs { font-size: 0.875rem !important; line-height: 1.35 !important; }
+.text-sm { font-size: 1rem     !important; line-height: 1.45 !important; }
+
+/* ============================================================
+   SOBRESCRITURA DE TEXTOS FIJOS DE TAILWIND
+   ============================================================ */
 .text-zinc-100,
 .text-zinc-200,
 .text-zinc-300,
-.text-zinc-400,
-.text-zinc-500,
-.text-zinc-700 {
-  color: #ffffff !important;
-  font-weight: 600 !important;
+.text-zinc-400 {
+  color: var(--color-hyper-text) !important;
+  font-weight: 600;
 }
 
-/* Gráficos Tremor/Recharts */
-.custom-chart text { fill: #f5f5ec !important; font-size: 12px !important; font-weight: 500; }
-.custom-chart .tremor-legend-text { color: #f5f5ec !important; }
+.text-zinc-500,
+.text-zinc-700 {
+  color: var(--color-hyper-text-muted) !important;
+  font-weight: 600;
+}
+
+/* ============================================================
+   GRÁFICOS Y LEYENDAS TREMOR / RECHARTS
+   ============================================================ */
+.custom-chart text {
+  fill: var(--color-hyper-text) !important;
+  font-size: 12px !important;
+  font-weight: 600;
+}
+.custom-chart .tremor-legend-text {
+  color: var(--color-hyper-text) !important;
+}

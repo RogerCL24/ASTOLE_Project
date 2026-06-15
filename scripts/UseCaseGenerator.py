@@ -1,6 +1,7 @@
 import csv
 import random
 import os
+import time  # <--- Añadido para capturar el tiempo real actual
 
 headers = [
     "FLOW_START_MILLISECONDS", "FLOW_END_MILLISECONDS", "IPV4_SRC_ADDR", "L4_SRC_PORT",
@@ -19,24 +20,26 @@ headers = [
     "Label", "Attack"
 ]
 
-start_time_base = 1420000000000
+# FIX CRÍTICO: En lugar de un número estático, usamos el segundo actual en milisegundos.
+# Cada ejecución generará un rango de tiempo totalmente nuevo y único.
+start_time_base = int(time.time() * 1000)
 rows = []
 
 # IPs geolocalizadas reales para banderas
 es_clients = ["80.58.61.100", "80.58.61.101"]
 fr_clients = ["90.84.12.40"]
-ru_scanner = "185.22.172.5"      # Rusia
-us_scanner = "64.233.160.10"     # EE.UU.
-china_super_attacker = "113.108.16.2" # China (Súper Atacante)
+ru_scanner = "185.22.172.5"      
+us_scanner = "64.233.160.10"     
+china_super_attacker = "113.108.16.2" 
 
-target_web_server = "149.171.126.16" # Activo Crítico 1
-target_db_server = "149.171.126.30"  # Activo Crítico 2
+target_web_server = "149.171.126.16" 
+target_db_server = "149.171.126.30"  
 
-# Simulación de 20 ventanas (20 minutos de histórico)
+# Simulación de 20 ventanas (20 minutos de histórico dinámico)
 for window in range(20):
     window_start = start_time_base + (window * 60000)
     
-    # 1. Tráfico Benigno de Fondo (Siempre activo, línea base estable)
+    # 1. Tráfico Benigno de Fondo (Siempre activo)
     for _ in range(20):
         src = random.choice(es_clients + fr_clients)
         dst = target_web_server if random.random() > 0.3 else target_db_server
@@ -65,9 +68,7 @@ for window in range(20):
             ])
 
     # 3. EL SÚPER ATAQUE PROLONGADO (China - Ventanas 8 a 13)
-    # Dura 5 minutos enteros, creando una meseta enorme en la gráfica
     if 8 <= window <= 13:
-        # Barrido masivo de puertos (Fuzzing) al Servidor Web
         for dport in range(1, 120):
             rows.append([
                 int(window_start + (dport * 40)), int(window_start + (dport * 40) + 10),
@@ -77,7 +78,6 @@ for window in range(20):
                 0, 0, 0, 0, 0, 0, 0, 0,
                 1, "Fuzzers"
             ])
-        # Inundación paralela a la Base de Datos (DoS masivo)
         for _ in range(60):
             rows.append([
                 int(window_start + random.randint(0, 59000)), int(window_start + random.randint(10, 59900)),
@@ -95,4 +95,5 @@ with open(output_file, mode="w", newline="", encoding="utf-8") as f:
     writer.writerow(headers)
     writer.writerows(rows)
 
-print(f"🔥 Dataset prolongado generado en '{output_file}' ({len(rows)} filas).")
+print(f"🔥 Dataset único en el tiempo generado en '{output_file}'.")
+print("🚀 IDs de ChromaDB blindados contra duplicaciones.")

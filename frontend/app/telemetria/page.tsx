@@ -244,6 +244,7 @@ function KpiCard({ icon, label, target, suffix, format = "comma", caption, index
       ? animated.toFixed(2)
       : new Intl.NumberFormat("es-ES").format(Math.round(animated));
 
+
   return (
     <motion.div
       ref={ref}
@@ -251,16 +252,19 @@ function KpiCard({ icon, label, target, suffix, format = "comma", caption, index
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.08 }}
     >
-      <SpotlightCard className="h-full rounded-2xl border border-white/5 bg-black/40 p-5 transition-colors hover:border-hyper-accent/40">
+      {/* FIX: bg-black/40 pasa a bg-white en claro y bg-zinc-900/40 en oscuro con sombras suaves */}
+      <SpotlightCard className="h-full rounded-2xl border border-zinc-200/60 dark:border-white/5 bg-white dark:bg-zinc-900/40 p-5 transition-colors hover:border-hyper-accent/40 shadow-xs dark:shadow-none">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] uppercase tracking-[0.25em] text-zinc-400">{label}</span>
+          {/* FIX: text-zinc-400 pasa a text-zinc-500 en modo claro */}
+          <span className="text-[11px] uppercase tracking-[0.25em] text-zinc-500 dark:text-zinc-400">{label}</span>
           <span className="text-hyper-accent">{icon}</span>
         </div>
-        <div className="mt-4 font-mono text-4xl font-black text-white tabular-nums leading-none drop-shadow-[0_0_18px_rgba(209,132,0,0.35)]">
+        {/* FIX: text-white pasa a text-zinc-900 en claro */}
+        <div className="mt-4 font-mono text-4xl font-black text-zinc-900 dark:text-white tabular-nums leading-none drop-shadow-[0_0_18px_rgba(209,132,0,0.2)] dark:drop-shadow-[0_0_18px_rgba(209,132,0,0.35)]">
           {display}
           {suffix ? <span className="text-hyper-accent">{suffix}</span> : null}
         </div>
-        <p className="mt-3 text-xs text-zinc-400">{caption}</p>
+        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">{caption}</p>
       </SpotlightCard>
     </motion.div>
   );
@@ -383,10 +387,11 @@ export default function TelemetriaPage() {
               </ShinyText>
             </div>
 
-            <h1 className="text-5xl font-black tracking-tighter text-white lg:text-7xl">
+            // SUSTITUIR EN EL HEADER PRINCIPAL DE TelemetriaPage:
+            <h1 className="text-5xl font-black tracking-tighter text-zinc-900 dark:text-white lg:text-7xl">
               TELEMETRÍA SOC
             </h1>
-            <p className="max-w-2xl text-base text-zinc-400">
+            <p className="max-w-2xl text-base text-zinc-600 dark:text-zinc-400">
               Monitor en tiempo real de latencia, tráfico y coste de inferencia. Polling cada {(POLL_INTERVAL_MS / 1000).toFixed(0)}s ·
               ventana de {formatNumber(observationCycles)} ciclos.
             </p>

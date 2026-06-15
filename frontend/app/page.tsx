@@ -1288,18 +1288,20 @@ export default function Capa1Triaje() {
       </HeaderTag>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-2">
-        <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 ring-0 min-w-0">
-          <p className="text-lg text-zinc-300 uppercase tracking-wider mb-2">Alertas</p>
-          <p className="text-3xl font-mono text-white">{totalAlertsValue.toLocaleString("es-ES")}</p>
-          <p className="mt-2 text-base text-zinc-400">Eventos detectados por el motor de respuesta</p>
-        </Card>
+      {/* Tarjeta 1: Alertas */}
+      <Card className="!bg-white dark:!bg-zinc-900/50 backdrop-blur-md border border-zinc-200/60 dark:border-white/5 rounded-2xl p-6 ring-0 min-w-0 shadow-xs">
+        <p className="text-lg text-zinc-500 dark:text-zinc-300 uppercase tracking-wider mb-2">Alertas</p>
+        <p className="text-3xl font-mono text-zinc-900 dark:text-white">{totalAlertsValue.toLocaleString("es-ES")}</p>
+        <p className="mt-2 text-base text-zinc-500 dark:text-zinc-400">Eventos detectados por el motor de respuesta</p>
+      </Card>
 
-        <Card className="bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 ring-0 min-w-0">
-          <p className="text-lg text-zinc-300 uppercase tracking-wider mb-2">Reducción de Ruido</p>
-          <p className="text-3xl font-mono text-white">{Number(metrics.compression_rate_percent ?? 0).toFixed(2)}%</p>
-          <p className="mt-2 text-base text-zinc-400">Ruido eliminado frente al tráfico bruto</p>
-        </Card>
-      </div>
+      {/* Tarjeta 2: Reducción de Ruido */}
+      <Card className="!bg-white dark:!bg-zinc-900/50 backdrop-blur-md border border-zinc-200/60 dark:border-white/5 rounded-2xl p-6 ring-0 min-w-0 shadow-xs">
+        <p className="text-lg text-zinc-500 dark:text-zinc-300 uppercase tracking-wider mb-2">Reducción de Ruido</p>
+        <p className="text-3xl font-mono text-zinc-900 dark:text-white">{Number(metrics.compression_rate_percent ?? 0).toFixed(2)}%</p>
+        <p className="mt-2 text-base text-zinc-500 dark:text-zinc-400">Ruido eliminado frente al tráfico bruto</p>
+      </Card>
+    </div>
 
       <MotionGridTag
         {...(isClient
@@ -1311,11 +1313,11 @@ export default function Capa1Triaje() {
           : {})}
         className="grid grid-cols-1 gap-6 lg:grid-cols-2"
       >
-        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 lg:col-span-2 min-w-0">
+        <Card className="!bg-white dark:!bg-zinc-900/50 backdrop-blur-md border border-zinc-200/60 dark:border-white/5 rounded-2xl p-6 ring-0 lg:col-span-2 min-w-0 shadow-xs">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-white font-medium mb-1">Firma de Tráfico (Motor Ingestión)</h3>
-              <p className="text-base text-zinc-400">Ventana operativa de los últimos 20 minutos</p>
+              <h3 className="text-zinc-900 dark:text-white font-medium mb-1">Firma de Tráfico (Motor Ingestión)</h3>
+              <p className="text-base text-zinc-500 dark:text-zinc-400">Ventana operativa de los últimos 20 minutos</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
@@ -1457,11 +1459,11 @@ export default function Capa1Triaje() {
           </div>
         </Card>
 
-        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 min-w-0 h-full">
+        <Card className="!bg-white dark:!bg-zinc-900/50 backdrop-blur-md border border-zinc-200/60 dark:border-white/5 rounded-2xl p-6 ring-0 min-w-0 h-full shadow-xs">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-white font-medium text-xl">Composición de Amenazas</h3>
-              <p className="text-lg text-zinc-400">Basado en el intervalo actual</p>
+              <h3 className="text-zinc-900 dark:text-white font-medium text-xl">Composición de Amenazas</h3>
+              <p className="text-lg text-zinc-500 dark:text-zinc-400">Basado en el intervalo actual</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge color="orange" size="xs" className="text-base px-2.5 py-1.5">Donut</Badge>
@@ -1579,11 +1581,11 @@ export default function Capa1Triaje() {
           </div>
         </Card>
 
-        <Card className="bg-black/40 backdrop-blur-md border border-white/5 ring-0 min-w-0 h-full">
-          <div className="flex items-center justify-between gap-3 mb-4">
+        <Card className="!bg-white dark:!bg-zinc-900/50 backdrop-blur-md border border-zinc-200/60 dark:border-white/5 rounded-2xl p-6 ring-0 min-w-0 h-full shadow-xs">
+          <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <h3 className="text-white font-medium text-xl">Top Atacantes</h3>
-              <p className="text-lg text-zinc-400">IPs de origen con más alertas en la ventana actual</p>
+              <h3 className="text-zinc-900 dark:text-white font-medium text-xl">Top Atacantes</h3>
+              <p className="text-lg text-zinc-500 dark:text-zinc-400">IPs de origen con más alertas en la ventana actual</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge color="red" size="xs" className="text-base px-2.5 py-1.5">Top 5</Badge>
@@ -1602,7 +1604,7 @@ export default function Capa1Triaje() {
             {isClient ? (
               topAttackers.length > 0 ? (
                 topAttackers.map((attacker, index) => (
-                  <div key={attacker.srcIp} className="rounded-xl border border-white/5 bg-black/40 px-3 py-2">
+                  <div key={attacker.srcIp} className="rounded-xl border border-zinc-200/60 dark:border-white/5 bg-zinc-50 dark:bg-black/40 px-3 py-2">
                   <div className="flex items-center justify-between gap-3 text-xl">
                     <div className="flex flex-1 items-center gap-2 min-w-0">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-hyper-accent/10 text-sm font-semibold text-hyper-accent">
@@ -1706,7 +1708,7 @@ export default function Capa1Triaje() {
                   </div>
                 ))
               ) : (
-                <p className="text-lg text-zinc-400">Sin alertas suficientes para construir un ranking.</p>
+                <p className="text-lg text-zinc-500 dark:text-zinc-400">Sin alertas suficientes para construir un ranking.</p>
               )
             ) : (
               <p className="text-lg text-zinc-400">Cargando ranking...</p>

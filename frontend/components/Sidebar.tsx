@@ -3,7 +3,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export default function Sidebar() {
+// Recibimos isDark del layout para poder reaccionar al tema en clases dinámicas
+interface SidebarProps {
+  isDark?: boolean;
+}
+
+export default function Sidebar({ isDark = true }: SidebarProps) {
   const pathname = usePathname();
   const [status, setStatus] = useState("Cargando...");
   const [speedLabel, setSpeedLabel] = useState("1x");
@@ -22,10 +27,7 @@ export default function Sidebar() {
     const syncSpeedFromStorage = () => {
       try {
         const raw = window.localStorage.getItem(SPEED_STORAGE_KEY);
-        if (!raw) {
-          setSpeedLabel("1x");
-          return;
-        }
+        if (!raw) { setSpeedLabel("1x"); return; }
         setSpeedLabel(formatSpeedLabel(JSON.parse(raw)));
       } catch {
         setSpeedLabel("1x");
@@ -40,9 +42,7 @@ export default function Sidebar() {
     };
 
     const onStorage = (event: StorageEvent) => {
-      if (event.key === SPEED_STORAGE_KEY) {
-        syncSpeedFromStorage();
-      }
+      if (event.key === SPEED_STORAGE_KEY) syncSpeedFromStorage();
     };
 
     window.addEventListener(SPEED_EVENT_NAME, onSpeedEvent as EventListener);
@@ -58,24 +58,15 @@ export default function Sidebar() {
         const isFresh = ageMs >= 0 && ageMs <= 30_000;
 
         const engineStatus = String(data?.metrics?.status ?? "UNKNOWN").toUpperCase();
-        if (engineStatus === "STOPPED") {
-          setStatus("INACTIVO");
-          return;
-        }
-        if (engineStatus === "COMPLETED") {
-          setStatus("FINALIZADO");
-          return;
-        }
-        if (engineStatus === "RUNNING") {
-          setStatus(isFresh ? "ACTIVO" : "INACTIVO");
-          return;
-        }
-
+        if (engineStatus === "STOPPED")   { setStatus("INACTIVO");  return; }
+        if (engineStatus === "COMPLETED") { setStatus("FINALIZADO"); return; }
+        if (engineStatus === "RUNNING")   { setStatus(isFresh ? "ACTIVO" : "INACTIVO"); return; }
         setStatus(isFresh ? "ACTIVO" : "INACTIVO");
-      } catch (e) {
+      } catch {
         setStatus("OFFLINE");
       }
     };
+
     checkStatus();
     const interval = window.setInterval(checkStatus, 5000);
 
@@ -86,20 +77,41 @@ export default function Sidebar() {
     };
   }, []);
 
+  // ── Clases de enlace: activo vs inactivo, adaptadas al tema ──────────────
   const getLinkClass = (path: string) =>
-    `transition-colors flex items-center gap-3 text-lg ${pathname === path ? 'text-white font-bold' : 'text-zinc-400 hover:text-white'}`;
+    `transition-colors flex items-center gap-3 text-lg ${
+      pathname === path
+        ? 'text-hyper-text font-bold'
+        : 'text-hyper-muted hover:text-hyper-text'
+    }`;
 
+  // ── Dot indicador de sección activa ──────────────────────────────────────
   const getDotClass = (path: string) =>
-    `w-4 h-4 rounded-full transition-all ${pathname === path ? 'bg-hyper-accent shadow-[0_0_10px_#f97316]' : 'bg-zinc-700'}`;
+    `w-4 h-4 rounded-full transition-all ${
+      pathname === path
+        ? 'bg-hyper-accent shadow-[0_0_10px_#D18400]'
+        : isDark ? 'bg-zinc-700' : 'bg-zinc-300'
+    }`;
+
+  // ── Clase del ícono SVG ───────────────────────────────────────────────────
+  const getIconClass = (path: string) =>
+    `w-6 h-6 ${pathname === path ? 'text-hyper-accent' : 'text-hyper-muted'}`;
 
   return (
     <nav className="w-72 border-r border-hyper-border bg-hyper-surface p-6 flex flex-col justify-between fixed top-0 left-0 h-screen z-20">
+      
+      {/* ── Encabezado ───────────────────────────────────────────────────── */}
       <div>
         <div className="mb-10">
-          <h1 className="text-xl font-bold tracking-widest text-white uppercase">Astole</h1>
-          <p className="text-[10px] text-hyper-accent mt-1 font-mono uppercase tracking-tighter">Powered by Hypergraph</p>
+          <h1 className="text-xl font-bold tracking-widest text-hyper-text uppercase">
+            Astole
+          </h1>
+          <p className="text-[10px] text-hyper-accent mt-1 font-mono uppercase tracking-tighter">
+            Powered by Hypergraph
+          </p>
         </div>
-        
+
+        {/* ── Navegación ───────────────────────────────────────────────── */}
         <ul className="space-y-6">
           <li>
             <Link href="/" className={getLinkClass('/')}>
@@ -113,9 +125,9 @@ export default function Sidebar() {
               Chat RAG (Capa 2)
             </Link>
           </li>
-          <li className="pt-6 mt-6 border-t border-white/5">
+          <li className="pt-6 mt-6 border-t border-hyper-border">
             <Link href="/telemetria" className={getLinkClass('/telemetria')}>
-              <svg className={`w-6 h-6 ${pathname === '/telemetria' ? 'text-hyper-accent' : 'text-zinc-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={getIconClass('/telemetria')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               Telemetría & KPIs
@@ -123,7 +135,7 @@ export default function Sidebar() {
           </li>
           <li>
             <Link href="/visualizacion-3d" className={getLinkClass('/visualizacion-3d')}>
-              <svg className={`w-6 h-6 ${pathname === '/visualizacion-3d' ? 'text-hyper-accent' : 'text-zinc-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={getIconClass('/visualizacion-3d')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7L12 3L4 7M20 7L12 11M20 7V17L12 21M12 11L4 7M12 11V21M4 7V17L12 21" />
               </svg>
               Activo bajo ataque (3D)
@@ -132,23 +144,32 @@ export default function Sidebar() {
         </ul>
       </div>
 
+      {/* ── Panel de estado del motor ─────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <div className="bg-white/5 rounded-lg p-4 border border-white/5">
-          <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-2">Engine Status</p>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span
-              className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${status === 'ACTIVO' ? 'bg-green-400' : status === 'FINALIZADO' ? 'bg-amber-400' : 'bg-red-400'}`}
-            ></span>
-            <span
-              className={`relative inline-flex rounded-full h-2 w-2 ${status === 'ACTIVO' ? 'bg-green-500' : status === 'FINALIZADO' ? 'bg-amber-500' : 'bg-red-500'}`}
-            ></span>
-          </span>
-          <span className="text-[11px] font-mono">{status}</span>
-        </div>
-          <span className="text-[10px] font-mono text-zinc-400">{speedLabel}</span>
-        </div>
+        <div className="rounded-lg p-4 border border-hyper-border bg-hyper-bg/40">
+          <p className="text-[10px] text-hyper-muted uppercase tracking-widest mb-2">
+            Engine Status
+          </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    status === 'ACTIVO'    ? 'bg-green-400' :
+                    status === 'FINALIZADO' ? 'bg-amber-400' : 'bg-red-400'
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    status === 'ACTIVO'    ? 'bg-green-500' :
+                    status === 'FINALIZADO' ? 'bg-amber-500' : 'bg-red-500'
+                  }`}
+                />
+              </span>
+              <span className="text-[11px] font-mono text-hyper-text">{status}</span>
+            </div>
+            <span className="text-[10px] font-mono text-hyper-muted">{speedLabel}</span>
+          </div>
         </div>
       </div>
     </nav>

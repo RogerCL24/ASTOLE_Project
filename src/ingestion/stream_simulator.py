@@ -190,6 +190,10 @@ def simulate_stream():
                 save_system_metrics(total_count, total_flows, total_alerts, latencies, status="STOPPED")
                 return total_count, total_flows, total_alerts, latencies, start_sim_time, dropped_windows
 
+            if total_count > 0:
+                print("🔁 Reiniciando dataset para simulación infinita. Vaciando live_alerts.json...")
+                atomic_write_json(OUTPUT_ALERTS, [], indent=4)
+            
             reader = pd.read_csv(DATASET_PATH, chunksize=50000)
             chunk_index = 0
 
