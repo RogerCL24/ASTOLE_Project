@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @source "../node_modules/@tremor/react";
 
+/* Pass 1 — Asocia el variante dark: de Tailwind a la clase .dark del <html>,
+   no a prefers-color-scheme. Sin esto, dark:bg-*, dark:text-* etc. ignoran
+   el toggle de clase y responden solo a la preferencia del sistema operativo. */
+@custom-variant dark (&:is(.dark *));
+
 /* ============================================================
    MAPEO DE TOKENS → CLASES TAILWIND (Tailwind v4 @theme)
    Esto hace que bg-hyper-bg, text-hyper-text, etc. funcionen
@@ -101,4 +106,34 @@ h1, h2, h3, h4, h5, h6 {
 }
 .custom-chart .tremor-legend-text {
   color: var(--color-hyper-text) !important;
+}
+
+/* ============================================================
+   MODO DIURNO — SOBRESCRITURAS DE CLASES OSCURAS HARDCODEADAS
+   Solo activo cuando <html> NO tiene la clase .dark.
+   No tocan page.tsx; la prioridad viene de la especificidad
+   compuesta (html + :not + selector) más !important.
+   ============================================================ */
+
+/* Pass 2a — text-white en spans, párrafos y botones que no son headings */
+html:not(.dark) .text-white {
+  color: var(--color-hyper-text) !important;
+}
+
+/* Pass 2b — bordes border-white/* (border-white/5, /10, /20…) son invisibles
+   en fondo claro; los reemplazamos por el borde zinc definido del tema */
+html:not(.dark) [class*="border-white"] {
+  border-color: var(--color-hyper-border) !important;
+}
+
+/* Pass 3a — fondos bg-black/* (bg-black/30, /40, /90…) se ven como
+   manchas gris oscuro sobre blanco; los colapsamos a la superficie del tema */
+html:not(.dark) [class*="bg-black"] {
+  background-color: var(--color-hyper-surface) !important;
+}
+
+/* Pass 3b — bg-zinc-950/* (bg-zinc-950/10 en tarjetas de incidentes)
+   mismo problema que bg-black en modo claro */
+html:not(.dark) [class*="bg-zinc-950"] {
+  background-color: var(--color-hyper-surface) !important;
 }
