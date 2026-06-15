@@ -78,8 +78,10 @@ export default function Sidebar({ isDark = true }: SidebarProps) {
   }, []);
 
   // ── Clases de enlace: activo vs inactivo, adaptadas al tema ──────────────
+  // text-xl + whitespace-nowrap evita que los textos rompan en 2 líneas
+  // durante la animación de expansión del sidebar.
   const getLinkClass = (path: string) =>
-    `transition-colors flex items-center gap-3 text-lg ${
+    `transition-colors flex items-center gap-4 text-2xl whitespace-nowrap ${
       pathname === path
         ? 'text-hyper-text font-bold'
         : 'text-hyper-muted hover:text-hyper-text'
@@ -87,7 +89,7 @@ export default function Sidebar({ isDark = true }: SidebarProps) {
 
   // ── Dot indicador de sección activa ──────────────────────────────────────
   const getDotClass = (path: string) =>
-    `w-4 h-4 rounded-full transition-all ${
+    `w-5 h-5 rounded-full transition-all ${
       pathname === path
         ? 'bg-hyper-accent shadow-[0_0_10px_#D18400]'
         : isDark ? 'bg-zinc-700' : 'bg-zinc-300'
@@ -95,18 +97,30 @@ export default function Sidebar({ isDark = true }: SidebarProps) {
 
   // ── Clase del ícono SVG ───────────────────────────────────────────────────
   const getIconClass = (path: string) =>
-    `w-6 h-6 ${pathname === path ? 'text-hyper-accent' : 'text-hyper-muted'}`;
+    `w-7 h-7 ${pathname === path ? 'text-hyper-accent' : 'text-hyper-muted'}`;
+
+  /* Sidebar colapsado a w-20 por defecto, expandido a w-72 con hover.
+     - `group` permite que los textos hijos reaccionen a group-hover.
+     - `overflow-hidden` recorta los textos que sobresalen durante la animación.
+     - Los textos usan `opacity-0 group-hover:opacity-100` para fade-in suave;
+       el `whitespace-nowrap` en getLinkClass evita que se rompan en 2 líneas
+       mientras el ancho crece. */
+  const textFade =
+    "opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap";
 
   return (
-    <nav className="w-72 border-r border-hyper-border bg-hyper-surface p-6 flex flex-col justify-between fixed top-0 left-0 h-screen z-20">
-      
+    <nav
+      className="group w-20 hover:w-72 transition-[width] duration-300 ease-out
+                 border-r border-hyper-border bg-hyper-surface p-6 flex flex-col
+                 justify-between fixed top-0 left-0 h-screen z-20 overflow-hidden"
+    >
       {/* ── Encabezado ───────────────────────────────────────────────────── */}
       <div>
         <div className="mb-10">
-          <h1 className="text-xl font-bold tracking-widest text-hyper-text uppercase">
+          <h1 className={`text-3xl font-bold tracking-widest text-hyper-text uppercase ${textFade}`}>
             Astole
           </h1>
-          <p className="text-[10px] text-hyper-accent mt-1 font-mono uppercase tracking-tighter">
+          <p className={`text-xs text-hyper-accent mt-1 font-mono uppercase tracking-tighter ${textFade}`}>
             Powered by Hypergraph
           </p>
         </div>
@@ -116,13 +130,13 @@ export default function Sidebar({ isDark = true }: SidebarProps) {
           <li>
             <Link href="/" className={getLinkClass('/')}>
               <span className={getDotClass('/')}></span>
-              Triaje en Vivo (Capa 1)
+              <span className={textFade}>Triaje en Vivo </span>
             </Link>
           </li>
           <li>
             <Link href="/investigacion" className={getLinkClass('/investigacion')}>
               <span className={getDotClass('/investigacion')}></span>
-              Chat RAG (Capa 2)
+              <span className={textFade}>Chat RAG </span>
             </Link>
           </li>
           <li className="pt-6 mt-6 border-t border-hyper-border">
@@ -130,7 +144,7 @@ export default function Sidebar({ isDark = true }: SidebarProps) {
               <svg className={getIconClass('/telemetria')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              Telemetría & KPIs
+              <span className={textFade}>Telemetría &amp; KPIs</span>
             </Link>
           </li>
           <li>
@@ -138,7 +152,7 @@ export default function Sidebar({ isDark = true }: SidebarProps) {
               <svg className={getIconClass('/visualizacion-3d')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7L12 3L4 7M20 7L12 11M20 7V17L12 21M12 11L4 7M12 11V21M4 7V17L12 21" />
               </svg>
-              Activo bajo ataque (3D)
+              <span className={textFade}>Activo bajo ataque (3D)</span>
             </Link>
           </li>
         </ul>
@@ -147,12 +161,13 @@ export default function Sidebar({ isDark = true }: SidebarProps) {
       {/* ── Panel de estado del motor ─────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
         <div className="rounded-lg p-4 border border-hyper-border bg-hyper-bg/40">
-          <p className="text-[10px] text-hyper-muted uppercase tracking-widest mb-2">
+          <p className={`text-[10px] text-hyper-muted uppercase tracking-widest mb-2 ${textFade}`}>
             Engine Status
           </p>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
+              {/* El dot de estado queda visible siempre — único feedback cuando el menú está colapsado */}
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span
                   className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                     status === 'ACTIVO'    ? 'bg-green-400' :
@@ -166,9 +181,9 @@ export default function Sidebar({ isDark = true }: SidebarProps) {
                   }`}
                 />
               </span>
-              <span className="text-[11px] font-mono text-hyper-text">{status}</span>
+              <span className={`text-[11px] font-mono text-hyper-text ${textFade}`}>{status}</span>
             </div>
-            <span className="text-[10px] font-mono text-hyper-muted">{speedLabel}</span>
+            <span className={`text-[10px] font-mono text-hyper-muted ${textFade}`}>{speedLabel}</span>
           </div>
         </div>
       </div>

@@ -27,19 +27,24 @@
    .dark  = modo nocturno (Tu diseño corporativo original)
    ============================================================ */
 :root {
-  --color-hyper-bg:       #f4f4f5;             /* Fondo zinc-100 nítido */
-  --color-hyper-surface:  #ffffff;              /* Cajas blancas puras impecables */
-  --color-hyper-border:   #e4e4e7;              /* Bordes zinc-200 definidos */
-  --color-hyper-accent:   #D18400;
-  --color-hyper-alert:    #ff4108;
-  --color-hyper-text:     #09090b;              /* Texto zinc-950 de alta visibilidad */
-  --color-hyper-text-muted: #52525b;            /* Texto secundario zinc-600 */
+  /* Paleta "Linear-style" optimizada para proyección.
+     En proyector se pierde contraste y los XX-500/600 se "queman" al blanco.
+     Por eso los acentos viven en XX-800/900: densos como tinta, casi marrones,
+     mantienen identidad y no chillan ni en sala oscura ni en sala iluminada.
+     Linear/Notion/Stripe nunca usan negro puro para texto — fatiga. */
+  --color-hyper-bg:       #fafaf9;              /* stone-50 — cálido tipo papel */
+  --color-hyper-surface:  #ffffff;              /* Tarjetas blanco puro */
+  --color-hyper-border:   #e5e5e5;              /* neutral-200 — neutro sin azul */
+  --color-hyper-accent:   #92400e;              /* amber-800 — ámbar denso, marca */
+  --color-hyper-alert:    #7f1d1d;              /* red-900   — burgundy tinta */
+  --color-hyper-text:     #171717;              /* neutral-900 — no negro puro */
+  --color-hyper-text-muted: #525252;            /* neutral-600 */
   --color-grid-lines:     rgba(0, 0, 0, 0.06);
 
   /* FIX MAESTRO: Forzamos el vaciado del fondo gris interno de Tremor */
   --theme-background: #ffffff !important;
   --theme-surface: #ffffff !important;
-  --theme-text: #09090b !important;
+  --theme-text: #171717 !important;
 }
 
 .dark {
@@ -148,4 +153,160 @@ html:not(.dark) [class*="bg-rose-500/20"] {
   background-color: #ffe4e6 !important; /* Rosa más marcado */
   color: #9f1239 !important;            /* Texto rosa oscuro/fresa legible */
   border-color: #fda4af !important;
+}
+
+/* Badge "Crítica" sólida en investigación (capa 2) y otros bg-rose sólidos.
+   Usamos [class~=] para matchear el TOKEN COMPLETO (no captura /20 /30 etc.,
+   esos siguen su regla específica). En claro suben a rose-700 saturado para
+   sobrevivir un proyector con sala iluminada; texto blanco roto Linear-style. */
+html:not(.dark) [class~="bg-rose-400"],
+html:not(.dark) [class~="bg-rose-500"],
+html:not(.dark) [class~="bg-rose-600"] {
+  background-color: #be123c !important; /* rose-700 */
+  border-color: #be123c !important;
+  color: #fafafa !important;
+}
+html:not(.dark) [class~="bg-rose-400"] *,
+html:not(.dark) [class~="bg-rose-500"] *,
+html:not(.dark) [class~="bg-rose-600"] * {
+  color: #fafafa !important;
+}
+
+/* ============================================================
+   MODO DIURNO — PALETA "LINEAR-STYLE" PARA PROYECCIÓN
+   ------------------------------------------------------------
+   Los XX-400/500 son los que peor toleran un proyector — se queman
+   al blanco y obligan al ojo a esforzarse para leer texto adjacente.
+   Linear/Notion/Stripe los evitan en claro: viven en XX-800/900.
+   Aquí colapsamos toda la familia cálida a esas dos columnas.
+   - Severidad crítica → red-800/900     (BG #991b1b / text #7f1d1d)
+   - Severidad alta    → orange-800/900  (BG #9a3412 / text #7c2d12)
+   - Severidad media   → yellow-800/900  (BG #854d0e / text #713f12)
+                         — colapsa yellow y amber (amarillo es el peor
+                           para proyector y necesita el tono más denso)
+   - Status ACTIVO/OK  → green-800/900   (BG #166534 / text #14532d)
+   ============================================================ */
+
+/* — CRÍTICO (rojos) — */
+html:not(.dark) [class*="bg-red-400"],
+html:not(.dark) [class*="bg-red-500"],
+html:not(.dark) [class*="bg-red-600"] {
+  background-color: #991b1b !important;          /* red-800 */
+}
+html:not(.dark) [class*="border-red-400"],
+html:not(.dark) [class*="border-red-500"],
+html:not(.dark) [class*="border-red-600"] {
+  border-color: #991b1b !important;
+}
+html:not(.dark) .text-red-100,
+html:not(.dark) .text-red-200,
+html:not(.dark) .text-red-300,
+html:not(.dark) .text-red-400,
+html:not(.dark) .text-red-500 {
+  color: #7f1d1d !important;                     /* red-900 */
+}
+
+/* — ALTO (naranjas) — */
+html:not(.dark) [class*="bg-orange-300"],
+html:not(.dark) [class*="bg-orange-400"],
+html:not(.dark) [class*="bg-orange-500"],
+html:not(.dark) [class*="bg-orange-600"] {
+  background-color: #9a3412 !important;          /* orange-800 */
+}
+html:not(.dark) [class*="border-orange-300"],
+html:not(.dark) [class*="border-orange-400"],
+html:not(.dark) [class*="border-orange-500"] {
+  border-color: #9a3412 !important;
+}
+html:not(.dark) .text-orange-100,
+html:not(.dark) .text-orange-200,
+html:not(.dark) .text-orange-300,
+html:not(.dark) .text-orange-400,
+html:not(.dark) .text-orange-500,
+html:not(.dark) .text-orange-700 {
+  color: #7c2d12 !important;                     /* orange-900 */
+}
+
+/* — MEDIO (amarillos y ámbar — el amarillo es el peor para proyector,
+     por eso lo llevamos a yellow-800/900, no a amber-700) — */
+html:not(.dark) [class*="bg-yellow-100"],
+html:not(.dark) [class*="bg-yellow-200"],
+html:not(.dark) [class*="bg-yellow-300"],
+html:not(.dark) [class*="bg-yellow-400"],
+html:not(.dark) [class*="bg-yellow-500"],
+html:not(.dark) [class*="bg-amber-300"],
+html:not(.dark) [class*="bg-amber-400"],
+html:not(.dark) [class*="bg-amber-500"] {
+  background-color: #854d0e !important;          /* yellow-800 */
+}
+html:not(.dark) [class*="border-yellow-300"],
+html:not(.dark) [class*="border-yellow-400"],
+html:not(.dark) [class*="border-yellow-500"],
+html:not(.dark) [class*="border-amber-400"],
+html:not(.dark) [class*="border-amber-500"] {
+  border-color: #854d0e !important;
+}
+html:not(.dark) .text-yellow-100,
+html:not(.dark) .text-yellow-200,
+html:not(.dark) .text-yellow-300,
+html:not(.dark) .text-yellow-400,
+html:not(.dark) .text-yellow-500,
+html:not(.dark) .text-yellow-700,
+html:not(.dark) .text-amber-100,
+html:not(.dark) .text-amber-200,
+html:not(.dark) .text-amber-300,
+html:not(.dark) .text-amber-400 {
+  color: #713f12 !important;                     /* yellow-900 */
+}
+
+/* — OK / ACTIVO (verdes) — verde bosque, no menta — */
+html:not(.dark) [class*="bg-green-400"],
+html:not(.dark) [class*="bg-green-500"] {
+  background-color: #166534 !important;          /* green-800 */
+}
+html:not(.dark) .text-green-400,
+html:not(.dark) .text-green-500 {
+  color: #14532d !important;                     /* green-900 */
+}
+
+/* ============================================================
+   MODO DIURNO — TEXTO CLARO SOBRE FONDOS CÁLIDOS OPACOS
+   ------------------------------------------------------------
+   Los XX-400/500 que arriba colapsamos a fondos densos XX-800
+   necesitan texto claro para mantener legibilidad — si no, los
+   text-zinc-* y text-white internos quedan oscuros sobre oscuro
+   por las reglas de Pass 2a. Usamos blanco roto (#fafafa) en vez
+   de blanco puro: Linear-style, no vibra en proyector.
+   El selector incluye el propio elemento Y sus descendientes (*)
+   para que también sobreescriba clases de color de hijos.
+   ============================================================ */
+html:not(.dark) [class*="bg-red-400"],
+html:not(.dark) [class*="bg-red-500"],
+html:not(.dark) [class*="bg-red-600"],
+html:not(.dark) [class*="bg-red-400"] *,
+html:not(.dark) [class*="bg-red-500"] *,
+html:not(.dark) [class*="bg-red-600"] *,
+html:not(.dark) [class*="bg-orange-300"],
+html:not(.dark) [class*="bg-orange-400"],
+html:not(.dark) [class*="bg-orange-500"],
+html:not(.dark) [class*="bg-orange-600"],
+html:not(.dark) [class*="bg-orange-300"] *,
+html:not(.dark) [class*="bg-orange-400"] *,
+html:not(.dark) [class*="bg-orange-500"] *,
+html:not(.dark) [class*="bg-orange-600"] *,
+html:not(.dark) [class*="bg-yellow-300"],
+html:not(.dark) [class*="bg-yellow-400"],
+html:not(.dark) [class*="bg-yellow-500"],
+html:not(.dark) [class*="bg-amber-400"],
+html:not(.dark) [class*="bg-amber-500"],
+html:not(.dark) [class*="bg-yellow-300"] *,
+html:not(.dark) [class*="bg-yellow-400"] *,
+html:not(.dark) [class*="bg-yellow-500"] *,
+html:not(.dark) [class*="bg-amber-400"] *,
+html:not(.dark) [class*="bg-amber-500"] *,
+html:not(.dark) [class*="bg-green-400"],
+html:not(.dark) [class*="bg-green-500"],
+html:not(.dark) [class*="bg-green-400"] *,
+html:not(.dark) [class*="bg-green-500"] * {
+  color: #fafafa !important;
 }

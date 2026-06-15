@@ -95,11 +95,13 @@ export default function RootLayout({
         <SmoothScroll>
           <div className="relative z-10 flex min-h-screen bg-transparent">
             <Sidebar isDark={isDark} />
-            <main className="flex-1 ml-72 relative min-h-screen">
-              {/* Gradiente de fondo adaptativo */}
+            <main className="flex-1 ml-20 relative min-h-screen">
+              {/* Gradiente de fondo adaptativo. Reservamos solo la franja del
+                  sidebar colapsado (ml-20); el sidebar expandido por hover se
+                  superpone al contenido sin reorganizarlo. */}
               <div
                 data-radial-bg
-                className="fixed inset-0 ml-72 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#D18400]/10 via-transparent to-transparent pointer-events-none z-0"
+                className="fixed inset-0 ml-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#D18400]/10 via-transparent to-transparent pointer-events-none z-0"
               />
               {children}
             </main>

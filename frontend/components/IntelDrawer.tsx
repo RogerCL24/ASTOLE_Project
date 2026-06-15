@@ -187,7 +187,7 @@ export function IntelDrawer({ open, context, topic = null, originCountryBreakdow
 
               <SectionTitle icon={<Info className="h-4 w-4 text-zinc-200" />} title="Acción: Investigar" />
               <Callout tone="zinc">
-                El botón <span className="font-semibold text-white">Investigar con IA</span> abre la Sala de Investigación (Capa 2) y transfiere los
+                El botón <span className="font-semibold text-white">Investigar con IA</span> abre la Sala de Investigación y transfiere los
                 datos clave del incidente para comenzar el triage.
               </Callout>
             </>

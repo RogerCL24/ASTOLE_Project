@@ -3,20 +3,56 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-const ACCENT = 0xd18400;
-const ALERT = 0xff4108;
 const NUM_ATTACKERS = 8;
+
+/* Paletas duales — la escena se reconstruye cuando cambia isDark.
+   Oscuro: ámbar/rojo brillante sobre negro, glow alto, estrellas blancas.
+   Claro: tonos burnt (amber-800 / red-900) sobre papel, glow bajado,
+   estrellas grises y shield más opaco para no perderse. Linear-style. */
+const PALETTE_DARK = {
+  ACCENT: 0xd18400,
+  ALERT: 0xff4108,
+  base: 0x18181b,
+  stars: 0xffffff,
+  starsOpacity: 0.85,
+  gridSecondary: 0x27272a,
+  shieldOpacity: 0.18,
+  ambientIntensity: 0.35,
+  dirIntensity: 0.6,
+  emissiveIntensity: 0.25,
+  attackerEmissive: 1.5,
+} as const;
+
+const PALETTE_LIGHT = {
+  ACCENT: 0x92400e,        // amber-800
+  ALERT: 0x7f1d1d,         // red-900
+  base: 0x52525b,          // neutral-600 — silueta industrial sin ser negro
+  stars: 0x71717a,         // zinc-500 — puntos grises tipo polvo
+  starsOpacity: 0.4,
+  gridSecondary: 0xd4d4d4, // neutral-300
+  shieldOpacity: 0.35,     // ámbar muted necesita más opacidad sobre blanco
+  ambientIntensity: 0.7,   // más luz general
+  dirIntensity: 0.4,
+  emissiveIntensity: 0.08, // glow casi imperceptible
+  attackerEmissive: 0.5,
+} as const;
 
 export default function AttackScene({
   assetType = null,
+  isDark = true,
 }: {
   assetType?: "server" | "workstation" | "camera" | null;
+  isDark?: boolean;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+
+    const P = isDark ? PALETTE_DARK : PALETTE_LIGHT;
+    const ACCENT = P.ACCENT;
+    const ALERT = P.ALERT;
 
     const scene = new THREE.Scene();
 
@@ -44,8 +80,8 @@ export default function AttackScene({
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+    scene.add(new THREE.AmbientLight(0xffffff, P.ambientIntensity));
+    const dir = new THREE.DirectionalLight(0xffffff, P.dirIntensity);
     dir.position.set(5, 8, 5);
     scene.add(dir);
 
@@ -63,10 +99,10 @@ export default function AttackScene({
     }
     starsGeo.setAttribute("position", new THREE.BufferAttribute(starsPos, 3));
     const starsMat = new THREE.PointsMaterial({
-      color: 0xffffff,
+      color: P.stars,
       size: 0.06,
       transparent: true,
-      opacity: 0.85,
+      opacity: P.starsOpacity,
     });
     scene.add(new THREE.Points(starsGeo, starsMat));
 
@@ -75,11 +111,11 @@ export default function AttackScene({
     scene.add(serverGroup);
 
     const baseMat = new THREE.MeshStandardMaterial({
-      color: 0x18181b,
+      color: P.base,
       metalness: 0.85,
       roughness: 0.25,
       emissive: ACCENT,
-      emissiveIntensity: 0.25,
+      emissiveIntensity: P.emissiveIntensity,
     });
     const edgeMat = new THREE.LineBasicMaterial({ color: ACCENT });
     const glowMat = (opacity: number) =>
@@ -156,7 +192,7 @@ export default function AttackScene({
       new THREE.MeshBasicMaterial({
         color: ACCENT,
         transparent: true,
-        opacity: 0.18,
+        opacity: P.shieldOpacity,
         wireframe: true,
       })
     );
@@ -190,7 +226,7 @@ export default function AttackScene({
         new THREE.MeshStandardMaterial({
           color: ALERT,
           emissive: ALERT,
-          emissiveIntensity: 1.5,
+          emissiveIntensity: P.attackerEmissive,
           metalness: 0.4,
           roughness: 0.35,
         })
@@ -233,7 +269,7 @@ export default function AttackScene({
     }
 
     // ---- Ground grid ----
-    const grid = new THREE.GridHelper(40, 40, ACCENT, 0x27272a);
+    const grid = new THREE.GridHelper(40, 40, ACCENT, P.gridSecondary);
     grid.position.y = -3.5;
     scene.add(grid);
 
@@ -348,7 +384,7 @@ export default function AttackScene({
         else m?.dispose();
       });
     };
-  }, [assetType]);
+  }, [assetType, isDark]);
 
   return (
     <div

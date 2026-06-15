@@ -450,7 +450,7 @@ export default function InvestigacionConsole({
                           >
                             <div className="flex items-center justify-between gap-3">
                               <p className="text-lg font-mono font-medium text-white break-all">{id}</p>
-                              <span className="rounded-full border border-rose-500/30 bg-rose-500/15 px-2.5 py-1 text-base font-semibold text-rose-100">
+                              <span className="rounded-full border border-rose-500 bg-rose-500 px-2.5 py-1 text-base font-semibold text-white">
                                 Crítica
                               </span>
                             </div>
@@ -643,7 +643,7 @@ export default function InvestigacionConsole({
               <div className="relative flex min-h-[calc(100vh-14rem)] flex-col">
             <div className="border-b border-white/10 px-5 py-4">
               <p className="text-lg uppercase tracking-[0.25em] text-zinc-400">Chat RAG</p>
-              <h2 className="mt-2 text-xl font-semibold text-white">Asistente de Investigación (Capa 2)</h2>
+              <h2 className="mt-2 text-xl font-semibold text-white">Asistente de Investigación </h2>
               <p className="mt-1 text-lg text-zinc-400">Base de interfaz lista; backend RAG en desarrollo.</p>
             </div>
 
