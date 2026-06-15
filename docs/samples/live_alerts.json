@@ -5,7 +5,7 @@
         "gnn_metadata": {
             "label_multiclase": "Reconnaissance",
             "binary_attack": 1,
-            "confidence_score": 0.98
+            "confidence_score": 0.94
         },
         "network_data": {
             "src_ip": "185.22.172.5",
@@ -28,6 +28,522 @@
                 "country": "lv",
                 "country_name": "Latvia",
                 "isp": "AS42532 SIA Veesp",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691136-1781468163198",
+        "timestamp": "2026-06-14T20:16:03Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.96
+        },
+        "network_data": {
+            "src_ip": "185.22.172.5",
+            "dst_ip": "149.171.126.16",
+            "src_port": 49533,
+            "dst_port": 80,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "lv",
+                "country_name": "Latvia",
+                "isp": "AS42532 SIA Veesp",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691137-1781468223168",
+        "timestamp": "2026-06-14T20:17:03Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.92
+        },
+        "network_data": {
+            "src_ip": "185.22.172.5",
+            "dst_ip": "149.171.126.16",
+            "src_port": 41385,
+            "dst_port": 443,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "lv",
+                "country_name": "Latvia",
+                "isp": "AS42532 SIA Veesp",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691138-1781468283430",
+        "timestamp": "2026-06-14T20:18:03Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.94
+        },
+        "network_data": {
+            "src_ip": "185.22.172.5",
+            "dst_ip": "149.171.126.16",
+            "src_port": 41716,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "lv",
+                "country_name": "Latvia",
+                "isp": "AS42532 SIA Veesp",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691139-1781468342274",
+        "timestamp": "2026-06-14T20:19:02Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.98
+        },
+        "network_data": {
+            "src_ip": "185.22.172.5",
+            "dst_ip": "149.171.126.16",
+            "src_port": 47385,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "lv",
+                "country_name": "Latvia",
+                "isp": "AS42532 SIA Veesp",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691140-1781468402528",
+        "timestamp": "2026-06-14T20:20:02Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.98
+        },
+        "network_data": {
+            "src_ip": "64.233.160.10",
+            "dst_ip": "149.171.126.16",
+            "src_port": 44217,
+            "dst_port": 80,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "us",
+                "country_name": "United States of America",
+                "isp": "AS15169 Google LLC",
+                "type": "Data Center",
+                "usage_type": "Cloud / Datacenter",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691141-1781468463347",
+        "timestamp": "2026-06-14T20:21:03Z",
+        "gnn_metadata": {
+            "label_multiclase": "Reconnaissance",
+            "binary_attack": 1,
+            "confidence_score": 0.93
+        },
+        "network_data": {
+            "src_ip": "185.22.172.5",
+            "dst_ip": "149.171.126.16",
+            "src_port": 46333,
+            "dst_port": 22,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 500,
+            "in_bytes": 160,
+            "out_bytes": 80,
+            "tcp_flags": 18,
+            "in_pkts": 4,
+            "out_pkts": 2
+        },
+        "ip_intel": {
+            "src": {
+                "country": "lv",
+                "country_name": "Latvia",
+                "isp": "AS42532 SIA Veesp",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691142-1781468537175",
+        "timestamp": "2026-06-14T20:22:17Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.93
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 62292,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691143-1781468613374",
+        "timestamp": "2026-06-14T20:23:33Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.98
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 60597,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691144-1781468645363",
+        "timestamp": "2026-06-14T20:24:05Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.95
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 62128,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691145-1781468712154",
+        "timestamp": "2026-06-14T20:25:12Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.94
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 62549,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691146-1781468788748",
+        "timestamp": "2026-06-14T20:26:28Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.99
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 60552,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            },
+            "dst": {
+                "country": "au",
+                "country_name": "Australia",
+                "isp": "AS23859 University of New South Wales",
+                "type": "Business",
+                "usage_type": "Business",
+                "is_proxy": false
+            }
+        }
+    },
+    {
+        "alert_id": "AST-WIN_29691147-1781468832118",
+        "timestamp": "2026-06-14T20:27:12Z",
+        "gnn_metadata": {
+            "label_multiclase": "DoS",
+            "binary_attack": 1,
+            "confidence_score": 0.99
+        },
+        "network_data": {
+            "src_ip": "113.108.16.2",
+            "dst_ip": "149.171.126.30",
+            "src_port": 63945,
+            "dst_port": 3306,
+            "protocol": 6,
+            "l7_proto": 0.0
+        },
+        "technical_details": {
+            "duration_ms": 50,
+            "in_bytes": 1500,
+            "out_bytes": 0,
+            "tcp_flags": 2,
+            "in_pkts": 20,
+            "out_pkts": 0
+        },
+        "ip_intel": {
+            "src": {
+                "country": "cn",
+                "country_name": "China",
+                "isp": "AS4134 China Telecom",
                 "type": "Business",
                 "usage_type": "Business",
                 "is_proxy": false

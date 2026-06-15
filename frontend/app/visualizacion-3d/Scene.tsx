@@ -7,7 +7,11 @@ const ACCENT = 0xd18400;
 const ALERT = 0xff4108;
 const NUM_ATTACKERS = 8;
 
-export default function AttackScene() {
+export default function AttackScene({
+  assetType = null,
+}: {
+  assetType?: "server" | "workstation" | "camera" | null;
+}) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -66,38 +70,82 @@ export default function AttackScene() {
     });
     scene.add(new THREE.Points(starsGeo, starsMat));
 
-    // ---- Server core ----
+    // ---- Asset core (geometry driven by assetType prop) ----
     const serverGroup = new THREE.Group();
     scene.add(serverGroup);
 
-    const boxGeo = new THREE.BoxGeometry(2.2, 3, 2.2);
-    const boxMat = new THREE.MeshStandardMaterial({
+    const baseMat = new THREE.MeshStandardMaterial({
       color: 0x18181b,
       metalness: 0.85,
       roughness: 0.25,
       emissive: ACCENT,
       emissiveIntensity: 0.25,
     });
-    serverGroup.add(new THREE.Mesh(boxGeo, boxMat));
+    const edgeMat = new THREE.LineBasicMaterial({ color: ACCENT });
+    const glowMat = (opacity: number) =>
+      new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity });
 
-    const edges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(boxGeo),
-      new THREE.LineBasicMaterial({ color: ACCENT })
-    );
-    serverGroup.add(edges);
+    if (assetType === "workstation") {
+      // ── Secure Terminal / Workstation ──
+      const screenGeo = new THREE.BoxGeometry(3.4, 2.1, 0.18);
+      serverGroup.add(new THREE.Mesh(screenGeo, baseMat));
+      serverGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(screenGeo), edgeMat));
+      // Screen face glow
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.7), glowMat(0.22));
+      face.position.set(0, 0, 0.1);
+      serverGroup.add(face);
+      // Stand column
+      const stand = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.1, 0.25), baseMat);
+      stand.position.set(0, -1.6, 0);
+      serverGroup.add(stand);
+      // Base plate
+      const baseGeo = new THREE.BoxGeometry(2.0, 0.12, 0.7);
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      base.position.set(0, -2.2, 0.2);
+      serverGroup.add(base);
+      serverGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(baseGeo), edgeMat));
 
-    [-1, -0.2, 0.6].forEach((y) => {
-      const panel = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.8, 0.4),
-        new THREE.MeshBasicMaterial({
-          color: ACCENT,
-          transparent: true,
-          opacity: 0.35,
-        })
+    } else if (assetType === "camera") {
+      // ── CCTV Hub / IP Camera ──
+      const bodyGeo = new THREE.CylinderGeometry(0.55, 0.62, 2.4, 20);
+      const bodyMesh = new THREE.Mesh(bodyGeo, baseMat);
+      bodyMesh.rotation.z = Math.PI / 2;
+      serverGroup.add(bodyMesh);
+      serverGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeo), edgeMat));
+      // Lens dome
+      const lensGeo = new THREE.SphereGeometry(0.6, 20, 12, 0, Math.PI);
+      const lens = new THREE.Mesh(
+        lensGeo,
+        new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.45, wireframe: true })
       );
-      panel.position.set(0, y, 1.11);
-      serverGroup.add(panel);
-    });
+      lens.rotation.z = -Math.PI / 2;
+      lens.position.set(1.3, 0, 0);
+      serverGroup.add(lens);
+      // Lens cap ring
+      const capGeo = new THREE.TorusGeometry(0.6, 0.06, 8, 24);
+      const cap = new THREE.Mesh(capGeo, new THREE.MeshBasicMaterial({ color: ACCENT }));
+      cap.rotation.z = Math.PI / 2;
+      cap.position.set(1.28, 0, 0);
+      serverGroup.add(cap);
+      // Mount bracket
+      const mountGeo = new THREE.BoxGeometry(0.5, 1.3, 0.12);
+      const mount = new THREE.Mesh(mountGeo, baseMat);
+      mount.position.set(0, -1.0, 0);
+      serverGroup.add(mount);
+      serverGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(mountGeo), edgeMat));
+
+    } else {
+      // ── Default: Central Rack / Server ──
+      const boxGeo = new THREE.BoxGeometry(2.2, 3, 2.2);
+      serverGroup.add(new THREE.Mesh(boxGeo, baseMat));
+      serverGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo), edgeMat));
+      // Rack panel LEDs
+      [-1, -0.2, 0.6].forEach((y) => {
+        const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.4), glowMat(0.35));
+        panel.position.set(0, y, 1.11);
+        serverGroup.add(panel);
+      });
+    }
 
     const corePoint = new THREE.PointLight(ACCENT, 2.5, 6);
     serverGroup.add(corePoint);
@@ -300,7 +348,7 @@ export default function AttackScene() {
         else m?.dispose();
       });
     };
-  }, []);
+  }, [assetType]);
 
   return (
     <div

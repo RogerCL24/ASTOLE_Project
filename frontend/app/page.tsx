@@ -9,6 +9,17 @@ import { IPProfilePopover, type IPIntelPayload } from "../components/IPProfilePo
 import SpotlightCard from "../components/ui/SpotlightCard";
 import Magnetic from "../components/ui/Magnetic";
 import TiltedCard from "../components/ui/TiltedCard";
+import dynamic from "next/dynamic";
+const AttackScene = dynamic(() => import("./visualizacion-3d/Scene"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center">
+      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-hyper-muted">
+        Initializing render engine…
+      </span>
+    </div>
+  ),
+});
 import {
   formatPortWithService,
   getIPMetadata,
@@ -143,7 +154,7 @@ const TrafficXAxisTick = ({ x, y, payload, highlightedTickValue }: any) => {
         y={0}
         dy={16}
         textAnchor="middle"
-        fill="#e4e4e7"
+        fill="var(--color-hyper-text)"
         fontSize={15}
         fontWeight={isHighlighted ? 700 : 500}
         opacity={isHighlighted ? 1 : 0.55}
@@ -178,6 +189,22 @@ const InfoDot = ({ onClick, label }: { onClick: () => void; label: string }) => 
     i
   </button>
 );
+
+type AssetType = "server" | "workstation" | "camera";
+
+type CmdbEntry = {
+  assetType: AssetType;
+  owner: string;
+  department: string;
+  location: string;
+  registeredAt: string;
+};
+
+const CMDB_LABEL: Record<AssetType, string> = {
+  server: "Central Rack / Server",
+  workstation: "Secure Terminal / Workstation",
+  camera: "CCTV Hub / IP Camera",
+};
 
 type InfrastructureSeverity = "critical" | "high" | "medium" | "low";
 
@@ -476,10 +503,10 @@ const getAlertSeverity = (alert: any): InfrastructureSeverity => {
 };
 
 const getPortPillUi = (severity: InfrastructureSeverity) => {
-  if (severity === "critical") return "bg-rose-500/20 text-rose-200 border-rose-500/30";
-  if (severity === "high") return "bg-orange-500/20 text-orange-200 border-orange-500/30";
-  if (severity === "medium") return "bg-yellow-400/20 text-yellow-100 border-yellow-300/25";
-  return "bg-zinc-700/30 text-zinc-200 border-white/10";
+  if (severity === "critical") return "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-200 border-rose-300 dark:border-rose-500/30";
+  if (severity === "high")     return "bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-200 border-orange-300 dark:border-orange-500/30";
+  if (severity === "medium")   return "bg-yellow-100 dark:bg-yellow-400/20 text-yellow-700 dark:text-yellow-200 border-yellow-300 dark:border-yellow-300/25";
+  return "bg-zinc-100 dark:bg-zinc-700/30 text-zinc-600 dark:text-zinc-200 border-zinc-300 dark:border-white/10";
 };
 
 const getPriorityLabel = (confidenceScore: number, binaryLabel: number) => {
@@ -651,6 +678,23 @@ export default function Capa1Triaje() {
   );
   const [viewWindow, setViewWindow] = useState<5 | 20 | 60>(TRAFFIC_WINDOW_SIZE);
   const [isPaused, setIsPaused] = useState(false);
+  const [incidentSearch, setIncidentSearch] = useState("");
+  const [assetRegistry, setAssetRegistry] = useState<Record<string, CmdbEntry>>({
+    "149.171.126.16": {
+      assetType: "server",
+      owner: "Dr. Elena Rostova (R&D Director)",
+      department: "Propulsion Blueprints & ICS Logic",
+      location: "Bunker Sublevel 2 - Vault Core",
+      registeredAt: new Date().toISOString(),
+    },
+  });
+  const [cmdbModal, setCmdbModal] = useState<{ ip: string; mode: "register" | "view" } | null>(null);
+  const [cmdbForm, setCmdbForm] = useState<{
+    assetType: AssetType | null;
+    owner: string;
+    department: string;
+    location: string;
+  }>({ assetType: null, owner: "", department: "", location: "" });
 
   useEffect(() => {
     if (isPaused) return;
@@ -781,6 +825,31 @@ export default function Capa1Triaje() {
     } catch (error) {
       console.error("[ASTOLE] Failed to stop simulation", error);
     }
+  };
+
+  const openCmdbModal = (ip: string) => {
+    const existing = assetRegistry[ip];
+    setCmdbForm(
+      existing
+        ? { assetType: existing.assetType, owner: existing.owner, department: existing.department, location: existing.location }
+        : { assetType: null, owner: "", department: "", location: "" }
+    );
+    setCmdbModal({ ip, mode: existing ? "view" : "register" });
+  };
+
+  const saveCmdbEntry = () => {
+    if (!cmdbModal || !cmdbForm.assetType) return;
+    setAssetRegistry((prev) => ({
+      ...prev,
+      [cmdbModal.ip]: {
+        assetType: cmdbForm.assetType!,
+        owner: cmdbForm.owner,
+        department: cmdbForm.department,
+        location: cmdbForm.location,
+        registeredAt: new Date().toISOString(),
+      },
+    }));
+    setCmdbModal(null);
   };
 
   const speedOptions: Array<number | "MAX"> = [1, 2, 4, "MAX"];
@@ -995,7 +1064,16 @@ export default function Capa1Triaje() {
 
     return primary;
   }, [visibleAlerts]);
-  const recentAlerts = incidentFeedAlerts;
+  const recentAlerts = useMemo(() => {
+    const q = incidentSearch.trim().toLowerCase();
+    if (!q) return incidentFeedAlerts;
+    return incidentFeedAlerts.filter((alert: any) => {
+      const srcIp = String(alert?.network_data?.src_ip ?? "").toLowerCase();
+      const dstIp = String(alert?.network_data?.dst_ip ?? "").toLowerCase();
+      const attackType = getAttackType(alert).toLowerCase();
+      return srcIp.includes(q) || dstIp.includes(q) || attackType.includes(q);
+    });
+  }, [incidentFeedAlerts, incidentSearch]);
   const infrastructureAssets = buildInfrastructureAssets(alerts, visibleAlerts);
 
   const alertsByDstIp = useMemo(() => {
@@ -1389,7 +1467,7 @@ export default function Capa1Triaje() {
                     domain={[-viewWindow, 0]}
                     ticks={trafficXTicks}
                     interval="preserveStartEnd"
-                    stroke="#3f3f46"
+                    stroke="var(--color-hyper-border)"
                     fontSize={15}
                     tickLine={false}
                     axisLine={false}
@@ -1398,15 +1476,15 @@ export default function Capa1Triaje() {
                     )}
                   />
                   <YAxis
-                    stroke="#3f3f46"
+                    stroke="var(--color-hyper-border)"
                     fontSize={15}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v) => `${v}`}
-                    tick={{ fill: "#f59e0b", fontSize: 15, fontWeight: 500 }}
+                    tick={{ fill: "var(--color-hyper-accent)", fontSize: 15, fontWeight: 500 }}
                   />
                   <Tooltip
-                    cursor={{ stroke: "rgba(255,255,255,0.08)" }}
+                    cursor={{ stroke: "var(--color-grid-lines)" }}
                     content={<TrafficCustomTooltip />}
                   />
                   <Area
@@ -1419,7 +1497,7 @@ export default function Capa1Triaje() {
                     dot={false}
                     activeDot={{
                       r: 6,
-                      fill: "#09090b",
+                      fill: "var(--color-hyper-bg)",
                       stroke: "#D18400",
                       strokeWidth: 2,
                       style: {
@@ -1440,7 +1518,7 @@ export default function Capa1Triaje() {
                     dot={false}
                     activeDot={{
                       r: 6,
-                      fill: "#09090b",
+                      fill: "var(--color-hyper-bg)",
                       stroke: "#D18400",
                       strokeWidth: 2,
                       style: {
@@ -1500,8 +1578,9 @@ export default function Capa1Triaje() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#0a0a0a",
-                      borderColor: "#1f1f22",
+                      backgroundColor: "var(--color-hyper-surface)",
+                      borderColor: "var(--color-hyper-border)",
+                      color: "var(--color-hyper-text)",
                       borderRadius: "8px",
                       fontSize: "15px",
                     }}
@@ -1803,6 +1882,21 @@ export default function Capa1Triaje() {
         				>
                   {selectedAsset ? (
                     <div>
+                      {/* ── Live 3D Asset Geometry Preview ── */}
+                      <div className="relative mb-4 h-44 w-full overflow-hidden rounded-xl border border-hyper-border bg-hyper-bg">
+                        <AttackScene assetType={assetRegistry[selectedAsset.dstIp]?.assetType ?? null} />
+                        <div className="pointer-events-none absolute bottom-2 left-3 right-3 flex items-center justify-between">
+                          <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-hyper-accent/80">
+                            Live Asset Geometry
+                          </span>
+                          <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-hyper-muted">
+                            {assetRegistry[selectedAsset.dstIp]
+                              ? CMDB_LABEL[assetRegistry[selectedAsset.dstIp].assetType]
+                              : "Unregistered Vector"}
+                          </span>
+                        </div>
+                      </div>
+
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Ficha del Activo</p>
@@ -1851,6 +1945,61 @@ export default function Capa1Triaje() {
                           />
                         </div>
                       </div>
+
+                      {/* ── OPERATIONAL BLUEPRINT & CUSTODY ── */}
+                      {(() => {
+                        const entry = assetRegistry[selectedAsset.dstIp];
+                        return (
+                          <div className="mt-4 rounded-xl border border-hyper-border bg-hyper-bg p-4">
+                            <div className="mb-3 flex items-center justify-between">
+                              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-hyper-accent">
+                                🔒 OPERATIONAL BLUEPRINT &amp; CUSTODY
+                              </p>
+                              {entry && (
+                                <button
+                                  type="button"
+                                  onClick={() => openCmdbModal(selectedAsset.dstIp)}
+                                  className="text-[10px] font-semibold uppercase tracking-widest text-hyper-muted transition-colors hover:text-hyper-text"
+                                >
+                                  ⚙️ Update Matrix
+                                </button>
+                              )}
+                            </div>
+                            {entry ? (
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                                {([
+                                  { label: "CUSTODIAN",        value: entry.owner },
+                                  { label: "DEPARTMENT",       value: entry.department },
+                                  { label: "ZONE / LOCATION",  value: entry.location },
+                                  { label: "CLASSIFICATION",   value: CMDB_LABEL[entry.assetType] },
+                                ] as const).map(({ label, value }) => (
+                                  <div key={label} className="flex min-w-0 flex-col gap-0.5">
+                                    <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-hyper-muted">
+                                      {label}
+                                    </span>
+                                    <span className="break-words font-mono text-sm font-semibold leading-snug text-hyper-text">
+                                      {value || "—"}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center gap-3 py-2">
+                                <p className="text-center text-xs text-hyper-muted">
+                                  No metadata matrix deployed for this vector.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => openCmdbModal(selectedAsset.dstIp)}
+                                  className="rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-amber-400 transition-all hover:bg-amber-500/20"
+                                >
+                                  ⚠️ DEPLOY METADATA MATRIX
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       <div className="mt-6">
                         <h4 className="text-base font-semibold text-white">Vectores de Intrusión Detectados</h4>
@@ -1974,6 +2123,32 @@ export default function Capa1Triaje() {
               })}
             </div>
           </div>
+
+          {/* ── INCIDENT SEARCH BAR ── */}
+          <div className="relative">
+            <input
+              type="search"
+              placeholder="🔍 Search incidents by IP signature, vector, or protocol..."
+              value={incidentSearch}
+              onChange={(e) => setIncidentSearch(e.target.value)}
+              className="w-full rounded-xl border border-hyper-border bg-hyper-surface px-4 py-2.5 pr-10 text-base text-hyper-text placeholder:text-hyper-muted focus:outline-none focus:ring-2 focus:ring-hyper-accent/40 transition-all font-mono"
+            />
+            {incidentSearch && (
+              <button
+                type="button"
+                onClick={() => setIncidentSearch("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-hyper-muted hover:text-hyper-text transition-colors"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {incidentSearch && (
+            <p className="font-mono text-sm tracking-wider text-hyper-accent">
+              ⚡ {recentAlerts.length} active threats matching criteria
+            </p>
+          )}
 
           <div className="grid max-h-[calc(100vh-18rem)] grid-cols-1 gap-6 overflow-y-auto pr-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
             {recentAlerts.map((alerta: any, index: number) => {
@@ -2168,6 +2343,10 @@ export default function Capa1Triaje() {
               <div className="flex items-end justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-base text-zinc-400">{ui.label}</span>
+                  <span
+                    title={assetRegistry[asset.dstIp] ? `Blueprint: ${assetRegistry[asset.dstIp].owner}` : "UNMAPPED ASSET"}
+                    className={`h-2 w-2 rounded-full shrink-0 ${assetRegistry[asset.dstIp] ? "bg-emerald-400" : "bg-amber-400"}`}
+                  />
                 </div>
 							<span className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-base font-mono text-white">
 									{Number(asset.count ?? 0).toLocaleString("es-ES")}
@@ -2192,6 +2371,118 @@ export default function Capa1Triaje() {
           </div>
         </div>
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────────
+          CMDB · INFRASTRUCTURE BLUEPRINT REGISTRATION MODAL
+          z-[90] sits above the tactical modal (z-[70])
+         ───────────────────────────────────────────────────────────────── */}
+      {cmdbModal && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
+          <div className="w-full max-w-lg rounded-2xl border border-hyper-border bg-hyper-surface shadow-2xl overflow-hidden">
+
+            {/* ── Header ── */}
+            <div className="flex items-start justify-between gap-4 border-b border-hyper-border px-6 py-5">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-hyper-muted">
+                  Infrastructure Intel · Node Identification
+                </p>
+                <h2 className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-hyper-accent">
+                  🛡️ INFRASTRUCTURE BLUEPRINT – VECTOR REGISTRATION
+                </h2>
+                <p className="mt-2 font-mono text-2xl font-bold text-hyper-text">{cmdbModal.ip}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCmdbModal(null)}
+                aria-label="Close"
+                className="mt-1 rounded-full border border-hyper-border bg-hyper-bg px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-hyper-muted transition-colors hover:text-hyper-text"
+              >
+                Abort
+              </button>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col gap-5">
+
+              {/* ── Asset Classification Vector ── */}
+              <div>
+                <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-hyper-muted">
+                  Asset Classification Vector
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { type: "server" as AssetType,      icon: "🖥️", line1: "Central Rack",    line2: "Server" },
+                    { type: "workstation" as AssetType,  icon: "💻", line1: "Secure Terminal",  line2: "Workstation" },
+                    { type: "camera" as AssetType,       icon: "📹", line1: "CCTV Hub",         line2: "IP Camera" },
+                  ]).map(({ type, icon, line1, line2 }) => {
+                    const isActive = cmdbForm.assetType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setCmdbForm((f) => ({ ...f, assetType: type }))}
+                        className={`flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center transition-all ${
+                          isActive
+                            ? "border-hyper-accent bg-hyper-accent/10 shadow-[0_0_14px_rgba(209,132,0,0.2)]"
+                            : "border-hyper-border bg-hyper-bg hover:border-hyper-accent/40"
+                        }`}
+                      >
+                        <span className="text-2xl">{icon}</span>
+                        <span className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${isActive ? "text-hyper-text" : "text-hyper-muted"}`}>
+                          {line1}
+                        </span>
+                        <span className={`text-[10px] uppercase tracking-widest font-bold ${isActive ? "text-hyper-accent" : "text-hyper-muted"}`}>
+                          {line2}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── Metadata fields ── */}
+              <div className="flex flex-col gap-3">
+                {([
+                  { key: "owner",      label: "Operational Owner / Custodian",  placeholder: "Ing. Alejandro Vance (SecOps)" },
+                  { key: "department", label: "Critical Department / Scope",     placeholder: "Core Cryptography & Ledger" },
+                  { key: "location",   label: "Physical Deployment Zone",        placeholder: "Data Center Alpha - Rack 04-B" },
+                ] as const).map(({ key, label, placeholder }) => (
+                  <div key={key}>
+                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.3em] text-hyper-muted">
+                      {label}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={placeholder}
+                      value={cmdbForm[key]}
+                      onChange={(e) => setCmdbForm((f) => ({ ...f, [key]: e.target.value }))}
+                      className="w-full rounded-lg border border-hyper-border bg-hyper-bg px-3 py-2.5 font-mono text-sm text-hyper-text placeholder:text-hyper-muted focus:outline-none focus:ring-2 focus:ring-hyper-accent/40 transition-all"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Action row ── */}
+              <div className="flex gap-3 pt-1 border-t border-hyper-border">
+                <button
+                  type="button"
+                  onClick={saveCmdbEntry}
+                  disabled={!cmdbForm.assetType}
+                  className="mt-4 flex-1 rounded-xl border border-hyper-accent/50 bg-hyper-accent/10 py-2.5 text-xs font-bold uppercase tracking-[0.25em] text-hyper-accent transition-all hover:bg-hyper-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {cmdbModal.mode === "register" ? "⚡ Deploy Blueprint" : "⟳ Update Record"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCmdbModal(null)}
+                  className="mt-4 rounded-xl border border-hyper-border bg-hyper-bg px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.25em] text-hyper-muted transition-all hover:text-hyper-text"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

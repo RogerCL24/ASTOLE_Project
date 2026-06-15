@@ -137,3 +137,15 @@ html:not(.dark) [class*="bg-black"] {
 html:not(.dark) [class*="bg-zinc-950"] {
   background-color: var(--color-hyper-surface) !important;
 }
+
+/* Pass 3c — bg-zinc-900/* (botones de ventana de tráfico, botón Freeze y otros
+   controles) aparecen como gris oscuro sobre fondo blanco */
+html:not(.dark) [class*="bg-zinc-900"] {
+  background-color: var(--color-hyper-surface) !important;
+}
+
+html:not(.dark) [class*="bg-rose-500/20"] {
+  background-color: #ffe4e6 !important; /* Rosa más marcado */
+  color: #9f1239 !important;            /* Texto rosa oscuro/fresa legible */
+  border-color: #fda4af !important;
+}
